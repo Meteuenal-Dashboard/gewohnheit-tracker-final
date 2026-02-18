@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gewohnheit Tracker Pro</title>
+    <style>
+        /* * DESIGN TOKENS & VARIABLES */
+        :root {
+            /* Standard Light Theme */
+            --primary: #2563eb;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b; /* Für Streak */
+            --radius: 16px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --header-height: 70px;
+        }
+
+        /* Dark Mode Overrides */
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 15px;
+            padding-top: calc(var(--header-height) + 20px);
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden; /* Für Konfetti */
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 40px;
+        }
+
+        /* * CONFETTI CANVAS */
+        #confetti-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* * HEADER & PROFILE */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name { font-weight: 700; font-size: 0.9rem; line-height: 1.2; }
+        .app-title { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .icon-btn:active { transform: scale(0.95); }
+
+        /* * MONTH NAVIGATION */
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0 25px 0;
+        }
+        
+        .month-display {
+            font-size: 1.3rem;
+            font-weight: 800;
+            min-width: 160px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* * INPUT SECTION */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            background: var(--bg-body);
+            color: var(--text-main);
+            min-width: 200px;
+        }
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            white-space: nowrap;
+            flex-grow: 1;
+        }
+        @media(min-width: 500px) { .btn-primary { flex-grow: 0; } }
+        .btn-primary:active { opacity: 0.8; }
+
+        /* * SETTINGS & NOTES MODAL STYLES */
+        .settings-overlay, .custom-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(3px);
+        }
+        .settings-overlay.open, .custom-modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .settings-panel {
+            position: fixed;
+            top: 0; right: -100%;
+            width: 100%;
+            max-width: 350px;
+            height: 100vh;
+            background: var(--bg-card);
+            z-index: 201;
+            transition: right 0.3s ease-out;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        }
+        .settings-panel.open { right: 0; }
+
+        /* UNIVERSAL CUSTOM MODAL */
+        .custom-modal {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 90%; max-width: 500px; /* Etwas breiter für die Liste */
+            background: var(--bg-card);
+            z-index: 202;
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            opacity: 0; pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid var(--border);
+            display: none;
+            max-height: 85vh; /* Damit es auf kleinen Screens scrollbar bleibt */
+            display: flex;
+            flex-direction: column;
+        }
+        .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+
+        .custom-modal h3 { margin-bottom: 10px; font-size: 1.25rem; color: var(--text-main); flex-shrink: 0; }
+        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; flex-shrink: 0; }
+        
+        .custom-modal textarea, .custom-modal input[type="text"] {
+            width: 100%; 
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-family: inherit; font-size: 1rem;
+            resize: none;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .custom-modal textarea:focus, .custom-modal input:focus { border-color: var(--primary); outline: none; }
+        .custom-modal textarea { height: 120px; }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; flex-shrink: 0; }
+        
+        /* Archive & Notes List Styles */
+        .scrollable-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-right: 5px; /* Platz für Scrollbar */
+            min-height: 100px;
+        }
+        
+        .archive-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: var(--bg-body);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .archive-item-name { font-weight: 600; font-size: 0.9rem; }
+        .archive-item-actions { display: flex; gap: 5px; }
+
+        /* ALL NOTES LIST STYLES */
+        .note-summary-item {
+            background: var(--bg-body);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .note-summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+        .note-info { display: flex; flex-direction: column; gap: 2px; }
+        .note-actions { display: flex; gap: 8px; }
+        
+        .note-summary-date { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
+        .note-summary-habit { color: var(--primary); font-weight: 600; font-size: 0.8rem;}
+        .note-summary-text { font-size: 0.95rem; color: var(--text-muted); line-height: 1.4; white-space: pre-wrap; }
+
+        /* Small action buttons for note list */
+        .btn-icon-small {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-icon-small:hover { border-color: var(--primary); color: var(--primary); background: var(--bg-card); }
+        .btn-icon-small.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .settings-section { margin-bottom: 30px; }
+        .settings-label { font-weight: 600; margin-bottom: 12px; display: block; color: var(--text-main); }
+
+        /* Colors & Backup */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        .color-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .color-option.selected { border-color: var(--text-main); transform: scale(1.1); }
+
+        .backup-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn-secondary {
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .btn-danger {
+            background: #fee2e2;
+            color: var(--danger);
+            border: 1px solid transparent;
+        }
+        .btn-danger:hover { background: #fecaca; }
+
+        /* * HABIT LIST */
+        #habit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .habit-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .habit-title-row { flex: 1; padding-right: 10px; }
+        
+        .habit-title { 
+            font-size: 1.2rem; 
+            font-weight: 700; 
+            color: var(--text-main);
+            margin-bottom: 2px;
+            word-break: break-word;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .habit-title:hover {
+            color: var(--primary);
+        }
+        
+        .habit-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .habit-stats { 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            font-weight: 600; 
+        }
+
+        /* STREAK STYLE */
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.85rem;
+            color: var(--warning);
+            font-weight: 700;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .habit-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: -5px;
+            margin-right: -5px;
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-action:hover, .btn-action:active {
+            background-color: var(--bg-body);
+            color: var(--primary);
+        }
+        
+        .btn-delete:hover, .btn-delete:active {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        /* * CALENDAR GRID */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+
+        .weekday-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: 8px;
+            background: var(--bg-body);
+            color: var(--text-muted);
+            position: relative;
+            border: 1px solid transparent;
+            user-select: none;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        .day-cell:active { transform: scale(0.9); }
+        
+        .day-cell.today {
+            border: 2px solid var(--text-main);
+            font-weight: bold;
+        }
+
+        .day-cell.checked {
+            background: var(--bg-card);
+            border: 2px solid var(--danger);
+            color: var(--danger);
+        }
+        .day-cell.checked::after {
+            content: "✕";
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .day-cell.checked span { opacity: 0.1; }
+
+        /* Note Marker */
+        .has-note::before {
+            content: "";
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 6px;
+            height: 6px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Hilfstext für Interaktion */
+        .interaction-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- * HEADER -->
+    <header class="app-header">
+        <div class="user-profile" id="profile-trigger">
+            <div class="avatar" id="header-avatar">?</div>
+            <div class="user-info">
+                <div class="user-name" id="header-username">Gast</div>
+                <div class="app-title">Gewohnheit Tracker</div>
+            </div>
+        </div>
+
+        <div class="header-controls">
+            <!-- NEW: Notes Overview Button -->
+            <button class="icon-btn" id="notes-overview-toggle" aria-label="Alle Notizen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </button>
+
+            <button class="icon-btn" id="theme-toggle" aria-label="Design ändern">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <button class="icon-btn" id="settings-toggle" aria-label="Menü">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- * SETTINGS DRAWER -->
+    <div class="settings-overlay" id="settings-overlay"></div>
+    <div class="settings-panel" id="settings-panel">
+        <div class="settings-header">
+            <h2>Einstellungen</h2>
+            <button class="icon-btn" id="close-settings">✕</button>
+        </div>
+
+        <div class="settings-section">
+            <span class="settings-label">Dein Profil</span>
+            <div style="text-align:center; margin-bottom:15px;">
+                <div style="position:relative; width:80px; height:80px; margin:0 auto;">
+                    <img id="settings-avatar-preview" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:none; border:2px solid var(--primary);">
+                    <div id="settings-avatar-placeholder" style="width:100%; height:100%; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#666;">?</div>
+                    <label for="avatar-upload" style="position:absolute; bottom:0; right:0; background:var(--bg-card); width:28px; height:28px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    </label>
+                </div>
+                <input type="file" id="avatar-upload" accept="image/*" style="display:none">
+            </div>
+            <input type="text" id="settings-name-input" placeholder="Dein Name" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+        </div>
+
+        <div class="settings-section">
+            <span class="settings-label">Design Farbe</span>
+            <div class="color-grid" id="color-grid"></div>
+        </div>
+
+        <div class="settings-section">
+            <span class="settings-label">Verwaltung</span>
+            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 20px;">🗄️ Archiv öffnen</button>
+            
+            <span class="settings-label">Datensicherung</span>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
+                Speichere deine Daten als Datei ab oder lade ein Backup hoch.
+            </p>
+            <div class="backup-controls">
+                <button class="btn-secondary" id="btn-export">Exportieren ⬇</button>
+                <button class="btn-secondary" id="btn-import-trigger">Importieren ⬆</button>
+                <input type="file" id="file-import" accept=".json" style="display:none">
+            </div>
+        </div>
+        
+        <button class="btn-primary" id="save-settings" style="width:100%">Speichern</button>
+    </div>
+
+    <!-- * CUSTOM MODAL OVERLAY -->
+    <div class="custom-modal-overlay" id="custom-modal-overlay"></div>
+
+    <!-- 1. NOTE MODAL (SINGLE NOTE) -->
+    <div class="custom-modal" id="note-modal">
+        <h3>Notiz bearbeiten</h3>
+        <span id="note-date-label" style="display:block; margin-bottom:15px; color:var(--text-muted); font-size:0.9rem;">Datum</span>
+        <textarea id="note-input" placeholder="Schreibe hier deine Notiz... (z.B. '5km gelaufen')"></textarea>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-note">Abbrechen</button>
+            <button class="btn-primary" id="save-note">Speichern</button>
+        </div>
+    </div>
+
+    <!-- 2. EDIT NAME MODAL -->
+    <div class="custom-modal" id="edit-modal">
+        <h3>Gewohnheit umbenennen</h3>
+        <input type="text" id="edit-name-input" placeholder="Neuer Name...">
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-edit">Abbrechen</button>
+            <button class="btn-primary" id="save-edit">Speichern</button>
+        </div>
+    </div>
+
+    <!-- 3. ARCHIVE CONFIRM MODAL -->
+    <div class="custom-modal" id="archive-confirm-modal">
+        <h3>In das Archiv verschieben?</h3>
+        <p>Der Kalender wird aus der Hauptansicht entfernt, aber nicht gelöscht. Du findest ihn später in den Einstellungen unter "Archiv".</p>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-archive">Abbrechen</button>
+            <button class="btn-primary" id="confirm-archive">Ins Archiv</button>
+        </div>
+    </div>
+
+    <!-- 4. ARCHIVE MANAGER MODAL -->
+    <div class="custom-modal" id="archive-manager-modal" style="max-width: 500px;">
+        <h3>Archivierte Gewohnheiten</h3>
+        <div id="archive-list-container" class="scrollable-list archive-list">
+            <!-- Items populated by JS -->
+            <p style="text-align:center; color:var(--text-muted);">Keine archivierten Elemente.</p>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="close-archive">Schließen</button>
+        </div>
+    </div>
+
+    <!-- 5. PERMANENT DELETE MODAL -->
+    <div class="custom-modal" id="delete-permanent-modal">
+        <h3>Unwiderruflich löschen?</h3>
+        <p>Bist du sicher? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-delete-perm">Abbrechen</button>
+            <button class="btn-secondary btn-danger" id="confirm-delete-perm">Löschen</button>
+        </div>
+    </div>
+
+    <!-- 6. ALL NOTES OVERVIEW MODAL -->
+    <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
+        <h3>Meine Notizen</h3>
+        <div id="all-notes-list" class="scrollable-list">
+            <!-- Populated by JS -->
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="close-all-notes">Schließen</button>
+        </div>
+    </div>
+
+    <!-- 7. DELETE NOTE CONFIRM MODAL (NEW) -->
+    <div class="custom-modal" id="delete-note-modal">
+        <h3>Notiz löschen?</h3>
+        <p>Möchtest du diese Notiz wirklich entfernen?</p>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-delete-note">Abbrechen</button>
+            <button class="btn-secondary btn-danger" id="confirm-delete-note">Löschen</button>
+        </div>
+    </div>
+
+
+    <!-- * MAIN CONTENT -->
+    <div class="container">
+        
+        <div class="month-nav">
+            <button class="icon-btn" id="prev-month">❮</button>
+            <div class="month-display" id="current-month-display">Lade...</div>
+            <button class="icon-btn" id="next-month">❯</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="new-habit-input" placeholder="Neue Gewohnheit..." autocomplete="off">
+            <button id="add-btn" class="btn-primary">Hinzufügen</button>
+        </div>
+
+        <div id="habit-list"></div>
+        <p class="interaction-hint">Tipp: Lange drücken (Handy) oder Doppelklick für Notizen.</p>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+            Start deine Reise!<br>Füge oben deine erste Gewohnheit hinzu.
+        </div>
+    </div>
+
+    <script>
+        /**
+         * APP LOGIC
+         */
+        const STORAGE_KEY = 'habit_tracker_pro_data';
+        const SETTINGS_KEY = 'habit_tracker_pro_settings';
+
+        const COLOR_PALETTE = [
+            '#2563eb', '#3b82f6', '#60a5fa', '#0ea5e9', '#06b6d4',
+            '#10b981', '#059669', '#84cc16', '#65a30d', '#14b8a6',
+            '#f59e0b', '#d97706', '#ea580c', '#c2410c', '#f97316',
+            '#ef4444', '#dc2626', '#db2777', '#be185d', '#e11d48',
+            '#8b5cf6', '#7c3aed', '#6366f1', '#4f46e5', '#a855f7'
+        ];
+
+        let currentDate = new Date();
+        let habits = [];
+        let settings = {
+            theme: 'light',
+            primaryColor: '#2563eb',
+            username: 'Benutzer',
+            avatar: null
+        };
+
+        const listEl = document.getElementById('habit-list');
+        const monthDisplay = document.getElementById('current-month-display');
+        const emptyState = document.getElementById('empty-state');
+        
+        // Settings Elements
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const colorGrid = document.getElementById('color-grid');
+        const nameInput = document.getElementById('settings-name-input');
+        const avatarUpload = document.getElementById('avatar-upload');
+        const avatarPreview = document.getElementById('settings-avatar-preview');
+        const avatarPlaceholder = document.getElementById('settings-avatar-placeholder');
+        const headerName = document.getElementById('header-username');
+        const headerAvatar = document.getElementById('header-avatar');
+
+        // Modal Elements
+        const customModalOverlay = document.getElementById('custom-modal-overlay');
+        
+        // Note Modal
+        const noteModal = document.getElementById('note-modal');
+        const noteInput = document.getElementById('note-input');
+        const noteDateLabel = document.getElementById('note-date-label');
+        
+        // Edit Modal
+        const editModal = document.getElementById('edit-modal');
+        const editNameInput = document.getElementById('edit-name-input');
+        
+        // Archive Confirm Modal
+        const archiveConfirmModal = document.getElementById('archive-confirm-modal');
+        
+        // Archive Manager Modal
+        const archiveManagerModal = document.getElementById('archive-manager-modal');
+        const archiveListContainer = document.getElementById('archive-list-container');
+        
+        // Delete Permanent Modal
+        const deletePermanentModal = document.getElementById('delete-permanent-modal');
+        
+        // All Notes Modal
+        const allNotesModal = document.getElementById('all-notes-modal');
+        const allNotesList = document.getElementById('all-notes-list');
+
+        // Delete Note Modal
+        const deleteNoteModal = document.getElementById('delete-note-modal');
+
+        // State variables for modals
+        let currentNoteContext = { habitId: null, dateStr: null };
+        let currentEditId = null;
+        let currentArchiveId = null;
+        let currentDeletePermId = null;
+        let noteToDelete = null; // { habitId, dateStr }
+        let returnToAllNotes = false; // Flag to return to notes list after edit
+
+        // Confetti Canvas
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        init();
+
+        function init() {
+            loadData();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            applySettings();
+            renderColorGrid();
+            render();
+            setupEventListeners();
+            animateConfetti();
+        }
+
+        function loadData() {
+            try {
+                const storedHabits = localStorage.getItem(STORAGE_KEY);
+                if (storedHabits) habits = JSON.parse(storedHabits);
+                // Migration: Ensure notes object exists and archived flag
+                habits.forEach(h => { 
+                    if (!h.notes) h.notes = {}; 
+                    if (h.archived === undefined) h.archived = false;
+                });
+                
+                const storedSettings = localStorage.getItem(SETTINGS_KEY);
+                if (storedSettings) settings = { ...settings, ...JSON.parse(storedSettings) };
+            } catch (e) { console.error(e); }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+        }
+
+        function saveSettings() {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            applySettings();
+        }
+
+        function applySettings() {
+            document.body.setAttribute('data-theme', settings.theme);
+            document.documentElement.style.setProperty('--primary', settings.primaryColor);
+            headerName.textContent = settings.username;
+            nameInput.value = settings.username;
+            
+            if (settings.avatar) {
+                headerAvatar.innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
+                avatarPreview.src = settings.avatar;
+                avatarPreview.style.display = 'block';
+                avatarPlaceholder.style.display = 'none';
+            } else {
+                const initial = settings.username.charAt(0).toUpperCase() || '?';
+                headerAvatar.textContent = initial;
+                headerAvatar.innerHTML = initial;
+                avatarPreview.style.display = 'none';
+                avatarPlaceholder.style.display = 'flex';
+                avatarPlaceholder.textContent = initial;
+            }
+        }
+
+        // --- STREAK LOGIC ---
+        function calculateStreak(history) {
+            const sorted = [...history].sort();
+            if (sorted.length === 0) return 0;
+
+            const today = new Date().toISOString().split('T')[0];
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+            let current = sorted.includes(today) ? today : (sorted.includes(yesterday) ? yesterday : null);
+            if (!current) return 0;
+
+            let streak = 0;
+            let checkDate = new Date(current);
+
+            while (true) {
+                const dateStr = checkDate.toISOString().split('T')[0];
+                if (sorted.includes(dateStr)) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function render() {
+            const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
+            monthDisplay.textContent = formatter.format(currentDate);
+
+            listEl.innerHTML = '';
+            
+            // Filter active habits
+            const activeHabits = habits.filter(h => !h.archived);
+
+            if (activeHabits.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            } else {
+                emptyState.style.display = 'none';
+            }
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            activeHabits.forEach(habit => {
+                const yearPrefix = `${year}-`;
+                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
+                const streak = calculateStreak(habit.history);
+                const notes = habit.notes || {};
+
+                const card = document.createElement('div');
+                card.className = 'habit-card';
+                card.dataset.id = habit.id;
+
+                let gridHTML = `
+                    <div class="weekday-label">Mo</div><div class="weekday-label">Di</div>
+                    <div class="weekday-label">Mi</div><div class="weekday-label">Do</div>
+                    <div class="weekday-label">Fr</div><div class="weekday-label">Sa</div>
+                    <div class="weekday-label">So</div>
+                `;
+
+                for (let i = 0; i < adjustedFirstDay; i++) {
+                    gridHTML += `<div class="day-cell empty"></div>`;
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const isChecked = habit.history.includes(dateStr);
+                    const isToday = (dateStr === todayStr);
+                    const hasNote = notes[dateStr] ? 'has-note' : '';
+
+                    gridHTML += `
+                        <div class="day-cell ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''} ${hasNote}" 
+                             data-habit-id="${habit.id}" 
+                             data-date="${dateStr}">
+                             <span>${d}</span>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="habit-header">
+                        <div class="habit-title-row">
+                            <div class="habit-title" title="Klicken zum Bearbeiten">${escapeHtml(habit.name)}</div>
+                            <div class="habit-meta">
+                                <span class="habit-stats">${year}: ${yearCount}x</span>
+                                ${streak > 0 ? `<span class="streak-badge">🔥 ${streak} Tage</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="habit-actions">
+                            <button class="btn-action btn-edit" title="Umbenennen" type="button">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            </button>
+                            <button class="btn-action btn-delete" title="Archivieren" type="button">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid">
+                        ${gridHTML}
+                    </div>
+                `;
+
+                listEl.appendChild(card);
+            });
+        }
+
+        // --- EXPORT / IMPORT ---
+        function exportData() {
+            const data = {
+                habits: habits,
+                settings: settings,
+                exportDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.habits && Array.isArray(data.habits)) {
+                        habits = data.habits;
+                        // Migration safety
+                        habits.forEach(h => { 
+                            if (!h.notes) h.notes = {}; 
+                            if (h.archived === undefined) h.archived = false;
+                        });
+                        saveData();
+                    }
+                    if (data.settings) {
+                        settings = { ...settings, ...data.settings };
+                        saveSettings();
+                    }
+                    alert('Daten erfolgreich wiederhergestellt!');
+                    render();
+                } catch (err) {
+                    alert('Fehler beim Laden der Datei. Ist es eine gültige Backup-Datei?');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- MODAL HELPERS ---
+        function closeAllModals() {
+            customModalOverlay.classList.remove('open');
+            noteModal.classList.remove('open');
+            editModal.classList.remove('open');
+            archiveConfirmModal.classList.remove('open');
+            archiveManagerModal.classList.remove('open');
+            deletePermanentModal.classList.remove('open');
+            allNotesModal.classList.remove('open');
+            deleteNoteModal.classList.remove('open');
+        }
+
+        function openModal(modalEl) {
+            closeAllModals(); // close others first
+            customModalOverlay.classList.add('open');
+            modalEl.classList.add('open');
+        }
+
+        function setupEventListeners() {
+            // ... (Existing Navigation listeners)
+            document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); render(); });
+            document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); render(); });
+            document.getElementById('add-btn').addEventListener('click', addHabit);
+            document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addHabit(); });
+
+            // Backup Controls
+            document.getElementById('btn-export').addEventListener('click', exportData);
+            document.getElementById('btn-import-trigger').addEventListener('click', () => { document.getElementById('file-import').click(); });
+            document.getElementById('file-import').addEventListener('change', importData);
+
+            // Habit Interactions (Delegation)
+            listEl.addEventListener('click', handleListClick);
+            
+            // Notes Interactions
+            listEl.addEventListener('dblclick', (e) => {
+                const cell = e.target.closest('.day-cell');
+                if (cell && !cell.classList.contains('empty')) {
+                    openNoteDialog(parseInt(cell.dataset.habitId), cell.dataset.date);
+                    cell.dataset.longPress = "true"; 
+                }
+            });
+
+            // Long Press Mobile
+            let pressTimer;
+            listEl.addEventListener('touchstart', (e) => {
+                const cell = e.target.closest('.day-cell');
+                if (!cell || cell.classList.contains('empty')) return;
+                pressTimer = setTimeout(() => { openNoteDialog(parseInt(cell.dataset.habitId), cell.dataset.date); cell.dataset.longPress = "true"; }, 500);
+            }, {passive: true});
+            listEl.addEventListener('touchmove', () => { clearTimeout(pressTimer); }, {passive: true});
+            listEl.addEventListener('touchend', () => { clearTimeout(pressTimer); });
+            listEl.addEventListener('contextmenu', (e) => {
+                const cell = e.target.closest('.day-cell');
+                if (cell && !cell.classList.contains('empty')) { e.preventDefault(); openNoteDialog(parseInt(cell.dataset.habitId), cell.dataset.date); }
+            });
+
+            // --- MODAL ACTION LISTENERS ---
+
+            // 1. NOTES
+            document.getElementById('cancel-note').addEventListener('click', closeAllModals);
+            document.getElementById('save-note').addEventListener('click', () => {
+                const { habitId, dateStr } = currentNoteContext;
+                const habit = habits.find(h => h.id === habitId);
+                if (habit) {
+                    const text = noteInput.value.trim();
+                    if (!habit.notes) habit.notes = {};
+                    if (text === "") delete habit.notes[dateStr];
+                    else habit.notes[dateStr] = text;
+                    saveData();
+                    render();
+                    
+                    if (returnToAllNotes) {
+                        renderAllNotes();
+                        openModal(allNotesModal);
+                    } else {
+                        closeAllModals();
+                    }
+                }
+            });
+
+            // 2. EDIT NAME
+            document.getElementById('cancel-edit').addEventListener('click', closeAllModals);
+            document.getElementById('save-edit').addEventListener('click', () => {
+                const habit = habits.find(h => h.id === currentEditId);
+                if (habit) {
+                    const newName = editNameInput.value.trim();
+                    if (newName) {
+                        habit.name = newName;
+                        saveData();
+                        render();
+                    }
+                }
+                closeAllModals();
+            });
+
+            // 3. ARCHIVE CONFIRM
+            document.getElementById('cancel-archive').addEventListener('click', closeAllModals);
+            document.getElementById('confirm-archive').addEventListener('click', () => {
+                const habit = habits.find(h => h.id === currentArchiveId);
+                if (habit) {
+                    habit.archived = true;
+                    saveData();
+                    render();
+                }
+                closeAllModals();
+            });
+
+            // 4. ARCHIVE MANAGER
+            document.getElementById('open-archive').addEventListener('click', () => {
+                renderArchiveList();
+                // Close settings drawer if open, usually nice to focus on the modal
+                settingsPanel.classList.remove('open');
+                settingsOverlay.classList.remove('open');
+                openModal(archiveManagerModal);
+            });
+            document.getElementById('close-archive').addEventListener('click', closeAllModals);
+
+            // 5. DELETE PERMANENT CONFIRM
+            document.getElementById('cancel-delete-perm').addEventListener('click', () => {
+                closeAllModals(); 
+                openModal(archiveManagerModal); // Zurück zur Liste
+            });
+            document.getElementById('confirm-delete-perm').addEventListener('click', () => {
+                if (currentDeletePermId) {
+                    habits = habits.filter(h => h.id !== currentDeletePermId);
+                    saveData();
+                    renderArchiveList();
+                }
+                closeAllModals();
+                openModal(archiveManagerModal); // Zurück zur Liste
+            });
+
+            // 6. ALL NOTES OVERVIEW
+            document.getElementById('notes-overview-toggle').addEventListener('click', () => {
+                renderAllNotes();
+                openModal(allNotesModal);
+            });
+            document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
+
+            // 7. DELETE NOTE CONFIRM
+            document.getElementById('cancel-delete-note').addEventListener('click', () => {
+                closeAllModals(); 
+                renderAllNotes();
+                openModal(allNotesModal); // Zurück zur Liste
+            });
+            document.getElementById('confirm-delete-note').addEventListener('click', () => {
+                if (noteToDelete) {
+                    const { habitId, dateStr } = noteToDelete;
+                    const habit = habits.find(h => h.id === habitId);
+                    if (habit && habit.notes && habit.notes[dateStr]) {
+                        delete habit.notes[dateStr];
+                        saveData();
+                        render(); 
+                        renderAllNotes(); 
+                    }
+                }
+                closeAllModals();
+                openModal(allNotesModal); // Zurück zur Liste
+            });
+
+
+            // Universal Overlay Click close
+            customModalOverlay.addEventListener('click', closeAllModals);
+
+
+            // Settings UI Listeners
+            const toggleSettings = () => { settingsPanel.classList.toggle('open'); settingsOverlay.classList.toggle('open'); };
+            document.getElementById('settings-toggle').addEventListener('click', toggleSettings);
+            document.getElementById('profile-trigger').addEventListener('click', toggleSettings);
+            document.getElementById('close-settings').addEventListener('click', toggleSettings);
+            settingsOverlay.addEventListener('click', toggleSettings);
+
+            document.getElementById('theme-toggle').addEventListener('click', () => { settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
+            document.getElementById('save-settings').addEventListener('click', () => { settings.username = nameInput.value.trim() || 'Benutzer'; saveSettings(); toggleSettings(); });
+            avatarUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 500000) { alert('Bild ist zu groß (Max 500kb)'); return; }
+                const reader = new FileReader();
+                reader.onloadend = function() { settings.avatar = reader.result; avatarPreview.src = reader.result; avatarPreview.style.display = 'block'; avatarPlaceholder.style.display = 'none'; }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function handleListClick(e) {
+            const target = e.target;
+            
+            // Handle Delete (Archive)
+            const deleteBtn = target.closest('.btn-delete');
+            if (deleteBtn) {
+                const id = parseInt(deleteBtn.closest('.habit-card').dataset.id);
+                currentArchiveId = id;
+                openModal(archiveConfirmModal);
+                return;
+            }
+
+            // Handle Edit
+            if (target.closest('.btn-edit') || target.classList.contains('habit-title')) {
+                const card = target.closest('.habit-card');
+                const id = parseInt(card.dataset.id);
+                const habit = habits.find(h => h.id === id);
+                if (habit) {
+                    currentEditId = id;
+                    editNameInput.value = habit.name;
+                    openModal(editModal);
+                    setTimeout(() => editNameInput.focus(), 100);
+                }
+                return;
+            }
+
+            // Handle Day Click
+            const dayCell = target.closest('.day-cell');
+            if (dayCell && !dayCell.classList.contains('empty')) {
+                if (dayCell.dataset.longPress) { delete dayCell.dataset.longPress; return; }
+                const habitId = parseInt(dayCell.dataset.habitId);
+                const dateStr = dayCell.dataset.date;
+                toggleDate(habitId, dateStr);
+            }
+        }
+
+        // --- RENDER ARCHIVE LIST ---
+        function renderArchiveList() {
+            archiveListContainer.innerHTML = '';
+            const archivedHabits = habits.filter(h => h.archived);
+
+            if (archivedHabits.length === 0) {
+                archiveListContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">Keine archivierten Elemente.</p>';
+                return;
+            }
+
+            archivedHabits.forEach(h => {
+                const el = document.createElement('div');
+                el.className = 'archive-item';
+                el.innerHTML = `
+                    <span class="archive-item-name">${escapeHtml(h.name)}</span>
+                    <div class="archive-item-actions">
+                        <button class="btn-secondary" onclick="restoreHabit(${h.id})" style="padding: 5px 10px; font-size: 0.8rem;">Wiederherstellen</button>
+                        <button class="btn-secondary btn-danger" onclick="deleteHabitPermanently(${h.id})" style="padding: 5px 10px; font-size: 0.8rem;">Löschen</button>
+                    </div>
+                `;
+                archiveListContainer.appendChild(el);
+            });
+        }
+
+        // --- RENDER ALL NOTES LIST ---
+        function renderAllNotes() {
+            allNotesList.innerHTML = '';
+            
+            let allNotes = [];
+            habits.forEach(h => {
+                if (h.notes) {
+                    Object.entries(h.notes).forEach(([date, text]) => {
+                        allNotes.push({
+                            date: date,
+                            habitName: h.name,
+                            text: text,
+                            habitId: h.id
+                        });
+                    });
+                }
+            });
+
+            // Sort by date descending (Newest first)
+            allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (allNotes.length === 0) {
+                allNotesList.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">Keine Notizen gefunden.</p>';
+                return;
+            }
+
+            allNotes.forEach(note => {
+                const el = document.createElement('div');
+                el.className = 'note-summary-item';
+                
+                // Format Date for display
+                const displayDate = note.date.split('-').reverse().join('.');
+                
+                el.innerHTML = `
+                    <div class="note-summary-header">
+                        <div class="note-info">
+                            <span class="note-summary-date">${displayDate}</span>
+                            <span class="note-summary-habit">${escapeHtml(note.habitName)}</span>
+                        </div>
+                        <div class="note-actions">
+                            <button class="btn-icon-small" onclick="editNoteFromList(${note.habitId}, '${note.date}')" title="Bearbeiten">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button class="btn-icon-small danger" onclick="deleteNoteFromList(${note.habitId}, '${note.date}')" title="Löschen">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="note-summary-text">${escapeHtml(note.text)}</div>
+                `;
+                allNotesList.appendChild(el);
+            });
+        }
+
+        // Global functions for inline onclick in list
+        window.restoreHabit = function(id) {
+            const habit = habits.find(h => h.id === id);
+            if (habit) {
+                habit.archived = false;
+                saveData();
+                renderArchiveList(); // Re-render list
+                render(); // Re-render main list in background
+            }
+        };
+
+        window.deleteHabitPermanently = function(id) {
+            currentDeletePermId = id;
+            // Schließe das Archiv-Fenster temporär und öffne die Lösch-Bestätigung
+            archiveManagerModal.classList.remove('open'); 
+            openModal(deletePermanentModal);
+        };
+
+        window.editNoteFromList = function(habitId, dateStr) {
+            returnToAllNotes = true;
+            openNoteDialog(habitId, dateStr);
+        };
+
+        window.deleteNoteFromList = function(habitId, dateStr) {
+            noteToDelete = { habitId, dateStr };
+            // Temporarily close list to show confirm
+            allNotesModal.classList.remove('open');
+            openModal(deleteNoteModal);
+        };
+
+        function openNoteDialog(habitId, dateStr) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            if (!habit.notes) habit.notes = {};
+
+            currentNoteContext = { habitId, dateStr };
+            noteDateLabel.textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
+            noteInput.value = habit.notes[dateStr] || "";
+
+            openModal(noteModal);
+            setTimeout(() => noteInput.focus(), 100);
+        }
+
+        function addHabit() {
+            const input = document.getElementById('new-habit-input');
+            const name = input.value.trim();
+            if (!name) return;
+
+            habits.push({
+                id: Date.now(),
+                name: name,
+                history: [],
+                notes: {},
+                archived: false
+            });
+            saveData();
+            input.value = '';
+            render();
+        }
+
+        function toggleDate(habitId, dateStr) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            const idx = habit.history.indexOf(dateStr);
+            if (idx > -1) {
+                habit.history.splice(idx, 1);
+            } else {
+                habit.history.push(dateStr);
+                fireConfetti();
+            }
+
+            saveData();
+            render();
+        }
+
+        function renderColorGrid() {
+            colorGrid.innerHTML = '';
+            COLOR_PALETTE.forEach(color => {
+                const div = document.createElement('div');
+                div.className = 'color-option';
+                div.style.backgroundColor = color;
+                if (settings.primaryColor === color) div.classList.add('selected');
+                
+                div.addEventListener('click', () => {
+                    settings.primaryColor = color;
+                    document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected'));
+                    div.classList.add('selected');
+                    document.documentElement.style.setProperty('--primary', color);
+                });
+                
+                colorGrid.appendChild(div);
+            });
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
+        }
+
+        // --- CONFETTI SYSTEM ---
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function fireConfetti() {
+            const count = 60;
+            const colors = [settings.primaryColor, '#ef4444', '#10b981', '#f59e0b', '#ec4899'];
+            
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 1) * 15,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 8 + 4,
+                    life: 100
+                });
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for(let i=0; i<particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.5; // Gravity
+                p.life -= 2;
+                p.size *= 0.96;
+
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+
+                if(p.life <= 0 || p.size < 0.5) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+
+    </script>
+</body>
+</html>
