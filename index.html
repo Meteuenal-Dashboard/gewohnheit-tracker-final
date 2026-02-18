@@ -222,7 +222,7 @@
             position: fixed;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0.95);
-            width: 90%; max-width: 400px;
+            width: 90%; max-width: 500px; /* Etwas breiter für die Liste */
             background: var(--bg-card);
             z-index: 202;
             padding: 24px;
@@ -231,12 +231,15 @@
             opacity: 0; pointer-events: none;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             border: 1px solid var(--border);
-            display: none; /* Hidden by default */
+            display: none;
+            max-height: 85vh; /* Damit es auf kleinen Screens scrollbar bleibt */
+            display: flex;
+            flex-direction: column;
         }
-        .custom-modal.open { display: block; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
 
-        .custom-modal h3 { margin-bottom: 10px; font-size: 1.25rem; color: var(--text-main); }
-        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
+        .custom-modal h3 { margin-bottom: 10px; font-size: 1.25rem; color: var(--text-main); flex-shrink: 0; }
+        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; flex-shrink: 0; }
         
         .custom-modal textarea, .custom-modal input[type="text"] {
             width: 100%; 
@@ -253,17 +256,20 @@
         .custom-modal textarea:focus, .custom-modal input:focus { border-color: var(--primary); outline: none; }
         .custom-modal textarea { height: 120px; }
 
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; flex-shrink: 0; }
         
-        /* Archive List Styles */
-        .archive-list {
-            max-height: 300px;
+        /* Archive & Notes List Styles */
+        .scrollable-list {
+            flex-grow: 1;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
             margin-bottom: 20px;
+            padding-right: 5px; /* Platz für Scrollbar */
+            min-height: 100px;
         }
+        
         .archive-item {
             display: flex;
             align-items: center;
@@ -275,6 +281,41 @@
         }
         .archive-item-name { font-weight: 600; font-size: 0.9rem; }
         .archive-item-actions { display: flex; gap: 5px; }
+
+        /* ALL NOTES LIST STYLES */
+        .note-summary-item {
+            background: var(--bg-body);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .note-summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+        .note-info { display: flex; flex-direction: column; gap: 2px; }
+        .note-actions { display: flex; gap: 8px; }
+        
+        .note-summary-date { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
+        .note-summary-habit { color: var(--primary); font-weight: 600; font-size: 0.8rem;}
+        .note-summary-text { font-size: 0.95rem; color: var(--text-muted); line-height: 1.4; white-space: pre-wrap; }
+
+        /* Small action buttons for note list */
+        .btn-icon-small {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-icon-small:hover { border-color: var(--primary); color: var(--primary); background: var(--bg-card); }
+        .btn-icon-small.danger:hover { border-color: var(--danger); color: var(--danger); }
 
         .settings-header {
             display: flex;
@@ -517,6 +558,11 @@
         </div>
 
         <div class="header-controls">
+            <!-- NEW: Notes Overview Button -->
+            <button class="icon-btn" id="notes-overview-toggle" aria-label="Alle Notizen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </button>
+
             <button class="icon-btn" id="theme-toggle" aria-label="Design ändern">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </button>
@@ -575,7 +621,7 @@
     <!-- * CUSTOM MODAL OVERLAY -->
     <div class="custom-modal-overlay" id="custom-modal-overlay"></div>
 
-    <!-- 1. NOTE MODAL -->
+    <!-- 1. NOTE MODAL (SINGLE NOTE) -->
     <div class="custom-modal" id="note-modal">
         <h3>Notiz bearbeiten</h3>
         <span id="note-date-label" style="display:block; margin-bottom:15px; color:var(--text-muted); font-size:0.9rem;">Datum</span>
@@ -609,7 +655,7 @@
     <!-- 4. ARCHIVE MANAGER MODAL -->
     <div class="custom-modal" id="archive-manager-modal" style="max-width: 500px;">
         <h3>Archivierte Gewohnheiten</h3>
-        <div id="archive-list-container" class="archive-list">
+        <div id="archive-list-container" class="scrollable-list archive-list">
             <!-- Items populated by JS -->
             <p style="text-align:center; color:var(--text-muted);">Keine archivierten Elemente.</p>
         </div>
@@ -625,6 +671,27 @@
         <div class="modal-actions">
             <button class="btn-secondary" id="cancel-delete-perm">Abbrechen</button>
             <button class="btn-secondary btn-danger" id="confirm-delete-perm">Löschen</button>
+        </div>
+    </div>
+
+    <!-- 6. ALL NOTES OVERVIEW MODAL -->
+    <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
+        <h3>Meine Notizen</h3>
+        <div id="all-notes-list" class="scrollable-list">
+            <!-- Populated by JS -->
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="close-all-notes">Schließen</button>
+        </div>
+    </div>
+
+    <!-- 7. DELETE NOTE CONFIRM MODAL (NEW) -->
+    <div class="custom-modal" id="delete-note-modal">
+        <h3>Notiz löschen?</h3>
+        <p>Möchtest du diese Notiz wirklich entfernen?</p>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-delete-note">Abbrechen</button>
+            <button class="btn-secondary btn-danger" id="confirm-delete-note">Löschen</button>
         </div>
     </div>
 
@@ -711,12 +778,21 @@
         
         // Delete Permanent Modal
         const deletePermanentModal = document.getElementById('delete-permanent-modal');
+        
+        // All Notes Modal
+        const allNotesModal = document.getElementById('all-notes-modal');
+        const allNotesList = document.getElementById('all-notes-list');
+
+        // Delete Note Modal
+        const deleteNoteModal = document.getElementById('delete-note-modal');
 
         // State variables for modals
         let currentNoteContext = { habitId: null, dateStr: null };
         let currentEditId = null;
         let currentArchiveId = null;
         let currentDeletePermId = null;
+        let noteToDelete = null; // { habitId, dateStr }
+        let returnToAllNotes = false; // Flag to return to notes list after edit
 
         // Confetti Canvas
         const canvas = document.getElementById('confetti-canvas');
@@ -950,6 +1026,8 @@
             archiveConfirmModal.classList.remove('open');
             archiveManagerModal.classList.remove('open');
             deletePermanentModal.classList.remove('open');
+            allNotesModal.classList.remove('open');
+            deleteNoteModal.classList.remove('open');
         }
 
         function openModal(modalEl) {
@@ -977,7 +1055,7 @@
             listEl.addEventListener('dblclick', (e) => {
                 const cell = e.target.closest('.day-cell');
                 if (cell && !cell.classList.contains('empty')) {
-                    openNoteDialog(cell);
+                    openNoteDialog(parseInt(cell.dataset.habitId), cell.dataset.date);
                     cell.dataset.longPress = "true"; 
                 }
             });
@@ -987,13 +1065,13 @@
             listEl.addEventListener('touchstart', (e) => {
                 const cell = e.target.closest('.day-cell');
                 if (!cell || cell.classList.contains('empty')) return;
-                pressTimer = setTimeout(() => { openNoteDialog(cell); cell.dataset.longPress = "true"; }, 500);
+                pressTimer = setTimeout(() => { openNoteDialog(parseInt(cell.dataset.habitId), cell.dataset.date); cell.dataset.longPress = "true"; }, 500);
             }, {passive: true});
             listEl.addEventListener('touchmove', () => { clearTimeout(pressTimer); }, {passive: true});
             listEl.addEventListener('touchend', () => { clearTimeout(pressTimer); });
             listEl.addEventListener('contextmenu', (e) => {
                 const cell = e.target.closest('.day-cell');
-                if (cell && !cell.classList.contains('empty')) { e.preventDefault(); openNoteDialog(cell); }
+                if (cell && !cell.classList.contains('empty')) { e.preventDefault(); openNoteDialog(parseInt(cell.dataset.habitId), cell.dataset.date); }
             });
 
             // --- MODAL ACTION LISTENERS ---
@@ -1010,8 +1088,14 @@
                     else habit.notes[dateStr] = text;
                     saveData();
                     render();
+                    
+                    if (returnToAllNotes) {
+                        renderAllNotes();
+                        openModal(allNotesModal);
+                    } else {
+                        closeAllModals();
+                    }
                 }
-                closeAllModals();
             });
 
             // 2. EDIT NAME
@@ -1064,6 +1148,34 @@
                 }
                 closeAllModals();
                 openModal(archiveManagerModal); // Zurück zur Liste
+            });
+
+            // 6. ALL NOTES OVERVIEW
+            document.getElementById('notes-overview-toggle').addEventListener('click', () => {
+                renderAllNotes();
+                openModal(allNotesModal);
+            });
+            document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
+
+            // 7. DELETE NOTE CONFIRM
+            document.getElementById('cancel-delete-note').addEventListener('click', () => {
+                closeAllModals(); 
+                renderAllNotes();
+                openModal(allNotesModal); // Zurück zur Liste
+            });
+            document.getElementById('confirm-delete-note').addEventListener('click', () => {
+                if (noteToDelete) {
+                    const { habitId, dateStr } = noteToDelete;
+                    const habit = habits.find(h => h.id === habitId);
+                    if (habit && habit.notes && habit.notes[dateStr]) {
+                        delete habit.notes[dateStr];
+                        saveData();
+                        render(); 
+                        renderAllNotes(); 
+                    }
+                }
+                closeAllModals();
+                openModal(allNotesModal); // Zurück zur Liste
             });
 
 
@@ -1150,7 +1262,61 @@
             });
         }
 
-        // Global functions for inline onclick in archive list
+        // --- RENDER ALL NOTES LIST ---
+        function renderAllNotes() {
+            allNotesList.innerHTML = '';
+            
+            let allNotes = [];
+            habits.forEach(h => {
+                if (h.notes) {
+                    Object.entries(h.notes).forEach(([date, text]) => {
+                        allNotes.push({
+                            date: date,
+                            habitName: h.name,
+                            text: text,
+                            habitId: h.id
+                        });
+                    });
+                }
+            });
+
+            // Sort by date descending (Newest first)
+            allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (allNotes.length === 0) {
+                allNotesList.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">Keine Notizen gefunden.</p>';
+                return;
+            }
+
+            allNotes.forEach(note => {
+                const el = document.createElement('div');
+                el.className = 'note-summary-item';
+                
+                // Format Date for display
+                const displayDate = note.date.split('-').reverse().join('.');
+                
+                el.innerHTML = `
+                    <div class="note-summary-header">
+                        <div class="note-info">
+                            <span class="note-summary-date">${displayDate}</span>
+                            <span class="note-summary-habit">${escapeHtml(note.habitName)}</span>
+                        </div>
+                        <div class="note-actions">
+                            <button class="btn-icon-small" onclick="editNoteFromList(${note.habitId}, '${note.date}')" title="Bearbeiten">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button class="btn-icon-small danger" onclick="deleteNoteFromList(${note.habitId}, '${note.date}')" title="Löschen">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="note-summary-text">${escapeHtml(note.text)}</div>
+                `;
+                allNotesList.appendChild(el);
+            });
+        }
+
+        // Global functions for inline onclick in list
         window.restoreHabit = function(id) {
             const habit = habits.find(h => h.id === id);
             if (habit) {
@@ -1168,9 +1334,19 @@
             openModal(deletePermanentModal);
         };
 
-        function openNoteDialog(cell) {
-            const habitId = parseInt(cell.dataset.habitId);
-            const dateStr = cell.dataset.date;
+        window.editNoteFromList = function(habitId, dateStr) {
+            returnToAllNotes = true;
+            openNoteDialog(habitId, dateStr);
+        };
+
+        window.deleteNoteFromList = function(habitId, dateStr) {
+            noteToDelete = { habitId, dateStr };
+            // Temporarily close list to show confirm
+            allNotesModal.classList.remove('open');
+            openModal(deleteNoteModal);
+        };
+
+        function openNoteDialog(habitId, dateStr) {
             const habit = habits.find(h => h.id === habitId);
             if (!habit) return;
 
