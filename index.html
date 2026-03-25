@@ -2,12 +2,17 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Gewohnheit Tracker Pro</title>
+    
+    <link id="dynamic-manifest" rel="manifest" href="">
+    <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
+
     <style>
-        /* * DESIGN TOKENS & VARIABLES */
+        /* DESIGN TOKENS */
         :root {
-            /* Standard Light Theme */
             --primary: #2563eb;
             --bg-body: #f8fafc;
             --bg-card: #ffffff;
@@ -16,13 +21,13 @@
             --border: #e2e8f0;
             --danger: #ef4444;
             --success: #10b981;
-            --warning: #f59e0b; /* Für Streak & Notizen */
+            --warning: #f59e0b;
             --radius: 16px;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --header-height: 70px;
+            --safe-area-top: env(safe-area-inset-top, 0px);
         }
 
-        /* Dark Mode Overrides */
         [data-theme="dark"] {
             --bg-body: #0f172a;
             --bg-card: #1e293b;
@@ -39,224 +44,146 @@
             background-color: var(--bg-body);
             color: var(--text-main);
             padding: 15px;
-            padding-top: calc(var(--header-height) + 20px);
+            padding-top: calc(var(--header-height) + var(--safe-area-top) + 20px);
             min-height: 100vh;
             transition: background-color 0.3s, color 0.3s;
-            overflow-x: hidden; 
+            overflow-x: hidden;
+            overscroll-behavior-y: none; 
         }
 
         .container { max-width: 800px; margin: 0 auto; padding-bottom: 40px; }
 
-        /* * CONFETTI CANVAS */
-        #confetti-canvas {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            pointer-events: none; z-index: 9999;
-        }
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
 
-        /* * HEADER & PROFILE */
+        /* HEADER */
         .app-header {
-            position: fixed; top: 0; left: 0; right: 0; height: var(--header-height);
-            background: var(--bg-card); border-bottom: 1px solid var(--border);
+            position: fixed; top: 0; left: 0; right: 0;
+            height: calc(var(--header-height) + var(--safe-area-top));
+            padding-top: var(--safe-area-top);
+            background: rgba(var(--bg-card), 0.85);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding-left: 15px; padding-right: 15px;
+            z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .user-profile {
-            display: flex; align-items: center; gap: 10px; cursor: pointer;
-            padding: 5px; border-radius: 8px;
-        }
-
-        .avatar {
-            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
-            background: var(--primary); color: white; display: flex;
-            align-items: center; justify-content: center; font-weight: bold;
-            font-size: 1.1rem; border: 2px solid var(--border); flex-shrink: 0;
-        }
-
+        .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px; border-radius: 8px; user-select: none; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 2px solid var(--border); flex-shrink: 0; }
         .user-info { display: flex; flex-direction: column; }
         .user-name { font-weight: 700; font-size: 0.9rem; line-height: 1.2; }
         .app-title { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; }
 
         .header-controls { display: flex; gap: 8px; }
+        .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, background-color 0.2s; flex-shrink: 0; user-select: none; }
+        .icon-btn:active { transform: scale(0.9); background-color: var(--border); }
 
-        .icon-btn {
-            background: transparent; border: 1px solid var(--border); color: var(--text-main);
-            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
-            font-size: 1.1rem;
-        }
-        .icon-btn:active { transform: scale(0.95); }
-        .btn-star { border-color: var(--warning); color: var(--warning); background: rgba(245, 158, 11, 0.1); }
-
-        /* * INPUT SECTION */
-        .input-group {
-            display: flex; gap: 10px; margin-bottom: 2rem; background: var(--bg-card);
-            padding: 10px; border-radius: var(--radius); box-shadow: var(--shadow);
-            border: 1px solid var(--border); flex-wrap: wrap;
-        }
-
-        input[type="text"] {
-            flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px;
-            font-size: 16px; outline: none; background: var(--bg-body); color: var(--text-main);
-            min-width: 200px;
-        }
+        /* INPUT */
+        .input-group { display: flex; gap: 10px; margin-bottom: 2rem; background: var(--bg-card); padding: 10px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); flex-wrap: wrap; }
+        input[type="text"] { flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 16px; outline: none; background: var(--bg-body); color: var(--text-main); min-width: 200px; transition: border-color 0.2s; }
         input[type="text"]:focus { border-color: var(--primary); }
-
-        .btn-primary {
-            background: var(--primary); color: #fff; border: none; padding: 12px 20px;
-            border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem;
-            white-space: nowrap; flex-grow: 1;
-        }
+        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; flex-grow: 1; transition: transform 0.1s, opacity 0.2s; user-select: none; }
         @media(min-width: 500px) { .btn-primary { flex-grow: 0; } }
-        .btn-primary:active { opacity: 0.8; }
+        .btn-primary:active { opacity: 0.8; transform: scale(0.96); }
 
-        /* * SETTINGS DRAWER */
-        .settings-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
-            z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-            backdrop-filter: blur(3px);
-        }
-        .settings-overlay.open { opacity: 1; pointer-events: auto; }
-
-        .settings-panel {
-            position: fixed; top: 0; right: -100%; width: 100%; max-width: 350px; height: 100vh;
-            background: var(--bg-card); z-index: 201; transition: right 0.3s ease-out;
-            padding: 20px; overflow-y: auto; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-        }
+        /* MODALS */
+        .settings-overlay, .custom-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+        .settings-overlay.open, .custom-modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .settings-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 350px; height: 100vh; background: var(--bg-card); z-index: 201; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px; overflow-y: auto; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding-top: calc(20px + var(--safe-area-top)); }
         .settings-panel.open { right: 0; }
-        .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: 90%; max-width: 500px; background: var(--bg-card); z-index: 202; padding: 24px; border-radius: var(--radius); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border); display: none; flex-direction: column; max-height: 85vh; }
+        .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .custom-modal h3 { margin-bottom: 10px; font-size: 1.25rem; color: var(--text-main); flex-shrink: 0; }
+        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; flex-shrink: 0; }
+        .custom-modal textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 12px; background: var(--bg-body); color: var(--text-main); font-family: inherit; font-size: 1rem; resize: none; margin-bottom: 20px; height: 120px; transition: border-color 0.2s; }
+        .custom-modal textarea:focus { border-color: var(--primary); outline: none; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; flex-shrink: 0; }
+
+        /* BUTTONS */
+        .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: background-color 0.2s, transform 0.1s; user-select: none; }
+        .btn-secondary:active { transform: scale(0.96); background-color: var(--border); }
+        .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid transparent; }
+        .btn-danger:active { background: #fecaca; }
+
+        /* LISTS */
+        .scrollable-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding-right: 5px; min-height: 100px; }
+        #habit-list { display: flex; flex-direction: column; gap: 20px; }
+        
+        /* HABIT CARD */
+        .habit-card { background: var(--bg-card); border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); border: 1px solid var(--border); animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* INDIVIDUAL MONTH NAV & HEADER */
+        .habit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .habit-title-row { flex: 1; padding-right: 10px; }
+        .habit-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; word-break: break-word; cursor: pointer; }
+        
+        .habit-month-nav { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--bg-body); padding: 4px 8px; border-radius: 8px; display: inline-flex; border: 1px solid var(--border); }
+        .habit-month-nav button { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); padding: 2px 8px; }
+        .habit-month-nav button:active { transform: scale(0.9); }
+        .habit-month-nav span { font-size: 0.85rem; font-weight: 600; min-width: 80px; text-align: center; }
+
+        .habit-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .habit-stats { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+        .streak-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--warning); font-weight: 700; background: rgba(245, 158, 11, 0.1); padding: 4px 10px; border-radius: 12px; }
+        
+        /* PROGRESS BAR */
+        .progress-bar-container { width: 100%; height: 6px; background: var(--bg-body); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+
+        .habit-actions { display: flex; gap: 5px; }
+        .btn-action { background: transparent; border: 1px solid transparent; color: var(--text-muted); width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .btn-action:active { background-color: var(--bg-body); color: var(--primary); transform: scale(0.9); }
+
+        /* CALENDAR GRID */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+        .weekday-label { font-size: 0.7rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 600; user-select: none; }
+        
+        /* DIE X-LOGIK (Anpassung) */
+        .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 500; cursor: pointer; border-radius: 10px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.1s, background-color 0.2s, color 0.2s; }
+        .day-cell:active:not(.empty) { transform: scale(0.85); }
+        .day-cell.today { border-color: var(--text-muted); font-weight: bold; }
+        
+        .day-cell.checked { background: var(--bg-card); border-color: var(--danger); color: var(--danger); }
+        .day-cell.checked::after { content: "✕"; position: absolute; font-size: 1.4rem; font-weight: bold; color: var(--danger); }
+        .day-cell.checked span { opacity: 0.1; } /* Verblasst die Zahl */
+        
+        .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
+        .day-cell.checked.has-note::before { background-color: var(--warning); }
+
+        .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
+        .interaction-hint { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px; font-style: italic; }
+
+        /* SETTINGS GRID */
         .settings-section { margin-bottom: 30px; }
         .settings-label { font-weight: 600; margin-bottom: 12px; display: block; color: var(--text-main); }
-
-        /* Colors & Backup */
         .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-        .color-option { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-option { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
         .color-option.selected { border-color: var(--text-main); transform: scale(1.1); }
-
         .backup-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-secondary {
-            background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main);
-            padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 1rem;
-            text-align: center;
-        }
-        .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid transparent; }
 
-        /* * HABIT LIST */
-        #habit-list { display: flex; flex-direction: column; gap: 20px; }
+        /* ARCHIVE ITEM */
+        .archive-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-body); border-radius: 10px; border: 1px solid var(--border); }
+        .archive-item-name { font-weight: 600; font-size: 0.95rem; }
 
-        .habit-card {
-            background: var(--bg-card); border-radius: var(--radius); padding: 15px;
-            box-shadow: var(--shadow); border: 1px solid var(--border); position: relative;
-        }
+        /* DASHBOARD / STATS */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; text-align: center; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-body); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .stat-card h4 { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; font-weight: 600; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: var(--text-main); }
         
-        .habit-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
-        }
-        .habit-title-row { flex: 1; padding-right: 10px; }
-        .habit-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px; word-break: break-word; cursor: pointer; }
-        
-        .habit-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .habit-stats { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
-        .streak-badge {
-            display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem;
-            color: var(--warning); font-weight: 700; background: rgba(245, 158, 11, 0.1);
-            padding: 2px 8px; border-radius: 12px;
-        }
-
-        .habit-actions { display: flex; gap: 5px; margin-top: -5px; margin-right: -5px; }
-        .btn-action {
-            background: transparent; border: 1px solid transparent; color: var(--text-muted);
-            width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center;
-            justify-content: center; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-action:active { background-color: var(--bg-body); color: var(--primary); }
-
-        /* INDIVIDUELLE MONATS-NAVIGATION */
-        .individual-month-nav {
-            display: flex; align-items: center; justify-content: space-between;
-            background: var(--bg-body); padding: 8px 12px; border-radius: 8px;
-            margin-bottom: 15px; border: 1px solid var(--border);
-        }
-        .nav-btn { background: transparent; border: none; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; padding: 0 10px; font-weight: bold; }
-        .nav-month-label { font-weight: bold; font-size: 0.95rem; color: var(--text-main); }
-
-        /* * CALENDAR GRID */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-        .weekday-label { font-size: 0.7rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 600; }
-
-        .day-cell {
-            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; cursor: pointer; border-radius: 8px; background: var(--bg-body);
-            color: var(--text-muted); position: relative; border: 1px solid transparent;
-            user-select: none; touch-action: manipulation; transition: transform 0.1s;
-        }
-        .day-cell:active { transform: scale(0.9); }
-        .day-cell.today { border: 2px solid var(--text-main); font-weight: bold; }
-
-        /* DAS ROTE X - EXAKT WIE GEWÜNSCHT */
-        .day-cell.checked {
-            background: var(--danger);
-            border: 2px solid var(--danger);
-            color: white;
-        }
-        .day-cell.checked::after {
-            content: "✕";
-            position: absolute;
-            font-size: 1.3rem;
-            font-weight: 900;
-            line-height: 1;
-        }
-        .day-cell.checked span { opacity: 0; } /* Versteckt das Datum unter dem X */
-
-        /* Note Marker */
-        .has-note::before {
-            content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px;
-            background-color: var(--warning); border-radius: 50%; z-index: 2;
-        }
-
-        /* * MODALS */
-        .custom-modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
-            z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(3px);
-        }
-        .custom-modal-overlay.open { opacity: 1; pointer-events: auto; }
-
-        .custom-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
-            width: 90%; max-width: 500px; background: var(--bg-card); z-index: 202; padding: 24px;
-            border-radius: var(--radius); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            border: 1px solid var(--border); display: none; flex-direction: column; max-height: 85vh;
-        }
-        .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
-        
-        .custom-modal h3 { margin-bottom: 10px; font-size: 1.25rem; color: var(--text-main); }
-        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
-        
-        .custom-modal textarea, .custom-modal input[type="text"] {
-            width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 12px;
-            background: var(--bg-body); color: var(--text-main); font-family: inherit; font-size: 1rem;
-            margin-bottom: 20px;
-        }
-        .custom-modal textarea { height: 120px; resize: none; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-
-        /* Stats Circle */
-        .stats-circle-container { display: flex; justify-content: center; align-items: center; position: relative; margin: 20px 0; }
-        .stats-percentage { position: absolute; font-size: 2rem; font-weight: 800; color: var(--text-main); }
-        
-        .scrollable-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .archive-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: var(--bg-body); border-radius: 8px; border: 1px solid var(--border); }
-        
-        .interaction-hint { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 5px; font-style: italic; }
+        /* SVG Circle */
+        .circle-chart { width: 120px; height: 120px; margin: 0 auto; }
+        .circle-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+        .circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
+        .circle-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
     </style>
 </head>
 <body>
 
     <canvas id="confetti-canvas"></canvas>
 
-    <!-- * HEADER -->
+    <!-- HEADER -->
     <header class="app-header">
         <div class="user-profile" id="profile-trigger">
             <div class="avatar" id="header-avatar">?</div>
@@ -265,19 +192,28 @@
                 <div class="app-title">Gewohnheit Tracker</div>
             </div>
         </div>
-
         <div class="header-controls">
-            <!-- Neue Ultimative Zentrale -->
-            <button class="icon-btn btn-star" id="btn-stats" title="Ziele & Statistik">🌟</button>
-            <button class="icon-btn" id="theme-toggle" title="Design">🌓</button>
-            <button class="icon-btn" id="settings-toggle" title="Einstellungen">⚙️</button>
+            <!-- Share Button -->
+            <button class="icon-btn" id="share-toggle" aria-label="Teilen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            </button>
+            <!-- Stats Button -->
+            <button class="icon-btn" id="stats-toggle" aria-label="Statistiken">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"></rect><rect x="10" y="8" width="4" height="13"></rect><rect x="2" y="13" width="4" height="8"></rect></svg>
+            </button>
+            <button class="icon-btn" id="theme-toggle" aria-label="Design ändern">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <button class="icon-btn" id="settings-toggle" aria-label="Menü">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
         </div>
     </header>
 
-    <!-- * SETTINGS DRAWER (WIE IM ORIGINAL) -->
+    <!-- SETTINGS DRAWER -->
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
-        <div class="settings-header">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
             <h2>Einstellungen</h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
@@ -287,14 +223,14 @@
             <div style="text-align:center; margin-bottom:15px;">
                 <div style="position:relative; width:80px; height:80px; margin:0 auto;">
                     <img id="settings-avatar-preview" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:none; border:2px solid var(--primary);">
-                    <div id="settings-avatar-placeholder" style="width:100%; height:100%; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#666;">?</div>
-                    <label for="avatar-upload" style="position:absolute; bottom:0; right:0; background:var(--bg-card); width:28px; height:28px; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                         📸
+                    <div id="settings-avatar-placeholder" style="width:100%; height:100%; border-radius:50%; background:var(--border); display:flex; align-items:center; justify-content:center; font-size:2rem; color:var(--text-muted);">?</div>
+                    <label for="avatar-upload" style="position:absolute; bottom:0; right:0; background:var(--bg-card); width:32px; height:32px; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                     </label>
                 </div>
                 <input type="file" id="avatar-upload" accept="image/*" style="display:none">
             </div>
-            <input type="text" id="settings-name-input" placeholder="Dein Name" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+            <input type="text" id="settings-name-input" placeholder="Dein Name" inputmode="text" enterkeyhint="done" style="width:100%; padding:12px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main);">
         </div>
 
         <div class="settings-section">
@@ -304,561 +240,635 @@
 
         <div class="settings-section">
             <span class="settings-label">Verwaltung</span>
-            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 20px;">🗄️ Archiv öffnen</button>
+            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 20px;">🗄️ Archiv & Mülleimer</button>
             
-            <span class="settings-label">Sicherheit & Teilen</span>
-            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
-                Speichere deine Daten vor einem Handy-Update als Datei oder teile sie per WhatsApp mit Freunden!
-            </p>
+            <span class="settings-label">Datensicherung (Update-Sicher)</span>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">Die App speichert Daten nun sicher lokal im Browser. Exportiere sie trotzdem zur Sicherheit ab und zu.</p>
             <div class="backup-controls">
-                <button class="btn-secondary" id="btn-export" style="background:var(--primary); color:white; border:none;">⬇ Backup/Teilen</button>
-                <button class="btn-secondary" id="btn-import-trigger">⬆ Importieren</button>
+                <button class="btn-secondary" id="btn-export">Export ⬇</button>
+                <button class="btn-secondary" id="btn-import-trigger">Import ⬆</button>
                 <input type="file" id="file-import" accept=".json" style="display:none">
             </div>
         </div>
         
-        <button class="btn-primary" id="save-settings" style="width:100%">Speichern</button>
+        <button class="btn-primary" id="save-settings" style="width:100%; margin-top: 10px;">Speichern</button>
     </div>
 
-    <!-- * MODAL OVERLAY -->
+    <!-- MODALS -->
     <div class="custom-modal-overlay" id="custom-modal-overlay"></div>
 
-    <!-- 1. NOTE MODAL (WIE IM ORIGINAL) -->
     <div class="custom-modal" id="note-modal">
         <h3>Notiz bearbeiten</h3>
         <span id="note-date-label" style="display:block; margin-bottom:15px; color:var(--text-muted); font-size:0.9rem;">Datum</span>
-        <textarea id="note-input" placeholder="Schreibe hier deine Notiz..."></textarea>
+        <textarea id="note-input" placeholder="Schreibe hier deine Notiz... (z.B. '5km gelaufen')"></textarea>
         <div class="modal-actions">
-            <button class="btn-secondary modal-close">Abbrechen</button>
+            <button class="btn-secondary" id="cancel-note">Abbrechen</button>
             <button class="btn-primary" id="save-note">Speichern</button>
         </div>
     </div>
 
-    <!-- 2. EDIT NAME MODAL -->
     <div class="custom-modal" id="edit-modal">
         <h3>Gewohnheit umbenennen</h3>
-        <input type="text" id="edit-name-input" placeholder="Neuer Name...">
+        <input type="text" id="edit-name-input" inputmode="text" enterkeyhint="done" placeholder="Neuer Name...">
         <div class="modal-actions">
-            <button class="btn-secondary modal-close">Abbrechen</button>
+            <button class="btn-secondary" id="cancel-edit">Abbrechen</button>
             <button class="btn-primary" id="save-edit">Speichern</button>
         </div>
     </div>
 
-    <!-- 3. ARCHIVE MANAGER (WIE IM ORIGINAL) -->
     <div class="custom-modal" id="archive-manager-modal">
         <h3>Archivierte Gewohnheiten</h3>
-        <div id="archive-list-container" class="scrollable-list archive-list"></div>
+        <div id="archive-list-container" class="scrollable-list"></div>
         <div class="modal-actions">
-            <button class="btn-secondary modal-close">Schließen</button>
+            <button class="btn-secondary" id="close-archive">Schließen</button>
         </div>
     </div>
 
-    <!-- 4. STATS & ULTIMATE DASHBOARD (NEU, ABER SICHER INTEGRIERT) -->
+    <!-- DASHBOARD MODAL -->
     <div class="custom-modal" id="stats-modal">
-        <h3 style="text-align: center;">Zielerreichung heute</h3>
-        <div class="stats-circle-container">
-            <canvas id="progress-circle" width="160" height="160"></canvas>
-            <div class="stats-percentage" id="progress-text">0%</div>
+        <h3>Deine Ziele & Erfolge 🏆</h3>
+        <p>So hast du in den letzten 30 Tagen abgeschnitten.</p>
+        
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <h4>Erfolgsquote (30 Tage)</h4>
+                <svg class="circle-chart" viewBox="0 0 100 100">
+                    <circle class="circle-bg" cx="50" cy="50" r="40" />
+                    <circle class="circle-progress" id="stat-circle-progress" cx="50" cy="50" r="40" stroke-dasharray="0, 251.2" transform="rotate(-90 50 50)" />
+                    <text class="circle-text" id="stat-circle-text" x="50" y="55">0%</text>
+                </svg>
+            </div>
         </div>
-        <p style="text-align: center; color: var(--text-muted);">Wie viele deiner Gewohnheiten hast du heute schon abgehakt?</p>
-        <div class="modal-actions" style="justify-content: center;">
-            <button class="btn-primary modal-close" style="width: 100%;">Super!</button>
+        <div style="display:flex; justify-content:space-between; text-align:center; margin-bottom:20px;">
+            <div style="flex:1;">
+                <div style="font-size:1.5rem; font-weight:bold; color:var(--primary);" id="stat-total-habits">0</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Aktive Gewohnheiten</div>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:1.5rem; font-weight:bold; color:var(--warning);" id="stat-best-streak">0</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Bester Streak 🔥</div>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-secondary" id="close-stats">Schließen</button>
         </div>
     </div>
 
-    <!-- * MAIN CONTENT -->
+
+    <!-- MAIN CONTENT -->
     <div class="container">
-        
+        <!-- Zitat Motivation -->
+        <div id="daily-quote" style="text-align:center; font-style:italic; color:var(--text-muted); font-size:0.85rem; margin-bottom:15px; padding: 0 20px;">
+            "Erfolg ist die Summe kleiner Anstrengungen, die jeden Tag wiederholt werden."
+        </div>
+
         <div class="input-group">
-            <input type="text" id="new-habit-input" placeholder="Neue Gewohnheit..." autocomplete="off">
+            <input type="text" id="new-habit-input" inputmode="text" enterkeyhint="done" placeholder="Neue Gewohnheit aufbauen..." autocomplete="off">
             <button id="add-btn" class="btn-primary">Hinzufügen</button>
         </div>
 
         <div id="habit-list"></div>
-        <p class="interaction-hint">Tipp: Tag lange gedrückt halten für Notizen.</p>
         
-        <div id="empty-state" style="text-align: center; padding: 3rem 1rem; color: var(--text-muted); display: none;">
-            Start deine Reise!<br>Füge oben deine erste Gewohnheit hinzu.
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <h3>Start deine Reise! 🚀</h3>
+            <p style="margin-top: 10px;">Füge oben deine erste Gewohnheit hinzu<br>und beginne deinen Streak.</p>
         </div>
+        
+        <p class="interaction-hint">Tipp: Tag gedrückt halten (Handy) oder Doppelklick für Notizen.</p>
     </div>
 
     <script>
         /**
-         * GEWOHNHEIT TRACKER - DAS ORIGINAL (Optimiert)
+         * PWA SETUP
          */
-        const STORAGE_KEY = 'habit_tracker_pro_data'; // DER ALTE SCHLÜSSEL!
-        const SETTINGS_KEY = 'habit_tracker_pro_settings';
+        function setupPWA() {
+            const manifestObj = {
+                "name": "Habit Tracker Pro",
+                "short_name": "Habits",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#0f172a",
+                "theme_color": "#2563eb",
+                "icons": [{ "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMwIiBmaWxsPSIjZmZmIi8+PC9zdmc+", "sizes": "192x192", "type": "image/svg+xml" }]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
+            document.getElementById('dynamic-manifest').setAttribute('href', URL.createObjectURL(manifestBlob));
+            document.getElementById('dynamic-apple-icon').setAttribute('href', manifestObj.icons[0].src);
+            const swCode = `self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('activate', (e) => self.clients.claim()); self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Offline'))); });`;
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(console.log);
+        }
+        setupPWA();
 
-        const COLOR_PALETTE = [
-            '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#10b981', '#059669', '#84cc16', 
-            '#f59e0b', '#d97706', '#ea580c', '#ef4444', '#db2777', '#8b5cf6', '#6366f1'
-        ];
+        /**
+         * INDEXED-DB PERSISTENCE (Safe from OS Updates)
+         */
+        const DB_NAME = 'HabitTrackerProDB';
+        const STORE_NAME = 'appData';
+        
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => { e.target.result.createObjectStore(STORE_NAME); };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject('IndexedDB Fehler');
+            });
+        }
 
+        async function dbGet(key) {
+            try {
+                const db = await initDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const req = tx.objectStore(STORE_NAME).get(key);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => resolve(null); // Fallback
+                });
+            } catch(e) { return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null; }
+        }
+
+        async function dbSet(key, val) {
+            try {
+                const db = await initDB();
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put(val, key);
+                // Dual-Save für ältere Geräte als Fallback
+                localStorage.setItem(key, JSON.stringify(val));
+            } catch(e) { localStorage.setItem(key, JSON.stringify(val)); }
+        }
+
+        /**
+         * APP LOGIC & STATE
+         */
+        const COLOR_PALETTE = ['#2563eb', '#06b6d4', '#10b981', '#84cc16', '#f59e0b', '#ea580c', '#ef4444', '#db2777', '#8b5cf6', '#6366f1'];
         let habits = [];
-        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Benutzer', avatar: null };
+        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null };
+        let habitDisplayDates = {}; // Speichert den aktuell angezeigten Monat für jede Gewohnheit { habitId: Date }
 
-        // DOM Elements
         const listEl = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
-        const settingsPanel = document.getElementById('settings-panel');
-        const settingsOverlay = document.getElementById('settings-overlay');
-        const colorGrid = document.getElementById('color-grid');
-        const nameInput = document.getElementById('settings-name-input');
-        const avatarPreview = document.getElementById('settings-avatar-preview');
-        const avatarPlaceholder = document.getElementById('settings-avatar-placeholder');
-        const headerName = document.getElementById('header-username');
-        const headerAvatar = document.getElementById('header-avatar');
         const customModalOverlay = document.getElementById('custom-modal-overlay');
-        
-        let currentNoteContext = { habitId: null, dateStr: null };
-        let currentEditId = null;
+        const noteModal = document.getElementById('note-modal');
+        const editModal = document.getElementById('edit-modal');
+        const archiveManagerModal = document.getElementById('archive-manager-modal');
+        const statsModal = document.getElementById('stats-modal');
 
-        // Confetti
+        let currentContext = { habitId: null, dateStr: null, action: null };
+        let animationFrameId = null;
         const canvas = document.getElementById('confetti-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
 
-        init();
+        // HAPTIC & SOUND FEEDBACK
+        const vibrate = (ms = 50) => { if (navigator.vibrate) navigator.vibrate(ms); };
+        const playSound = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if(!AudioContext) return;
+                const actx = new AudioContext();
+                const osc = actx.createOscillator();
+                const gain = actx.createGain();
+                osc.connect(gain); gain.connect(actx.destination);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, actx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, actx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, actx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.1);
+                osc.start(actx.currentTime); osc.stop(actx.currentTime + 0.1);
+            } catch(e){}
+        };
 
-        function init() {
-            loadData();
+        // INITIALIZATION
+        async function init() {
+            await loadData();
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             applySettings();
             renderColorGrid();
-            render();
+            render(); 
             setupEventListeners();
-            animateConfetti();
         }
 
-        // --- DATA MANAGEMENT ---
-        function loadData() {
-            try {
-                // Versuche alte Daten zu laden!
-                const storedHabits = localStorage.getItem(STORAGE_KEY);
-                if (storedHabits) habits = JSON.parse(storedHabits);
-                
-                // Migration: Stelle sicher, dass jede Gewohnheit eigene Monate und Notizen hat
-                const d = new Date();
-                habits.forEach(h => { 
-                    if (!h.notes) h.notes = {}; 
-                    if (h.archived === undefined) h.archived = false;
-                    if (h.viewYear === undefined) h.viewYear = d.getFullYear();
-                    if (h.viewMonth === undefined) h.viewMonth = d.getMonth();
-                });
-                
-                const storedSettings = localStorage.getItem(SETTINGS_KEY);
-                if (storedSettings) settings = { ...settings, ...JSON.parse(storedSettings) };
-            } catch (e) { console.error(e); }
+        async function loadData() {
+            // Check IndexedDB first, fallback to localStorage (Migration)
+            const hData = await dbGet('habit_tracker_pro_habits');
+            const sData = await dbGet('habit_tracker_pro_settings');
+            
+            // Wenn in IDB nichts ist, schau im alten LocalStorage nach (Migration)
+            if(hData) { habits = hData; } 
+            else if (localStorage.getItem('habit_tracker_pro_data')) { habits = JSON.parse(localStorage.getItem('habit_tracker_pro_data')); }
+
+            if(sData) { settings = { ...settings, ...sData }; }
+            else if (localStorage.getItem('habit_tracker_pro_settings')) { settings = { ...settings, ...JSON.parse(localStorage.getItem('habit_tracker_pro_settings')) }; }
+
+            // Clean data
+            habits.forEach(h => { if (!h.notes) h.notes = {}; if (h.archived === undefined) h.archived = false; });
+            
+            // Initialisiere Display Dates
+            habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
         }
 
-        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(habits)); }
-        function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); applySettings(); }
+        function saveData() { dbSet('habit_tracker_pro_habits', habits); }
+        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); }
 
-        // --- UI & SETTINGS ---
         function applySettings() {
             document.body.setAttribute('data-theme', settings.theme);
             document.documentElement.style.setProperty('--primary', settings.primaryColor);
-            headerName.textContent = settings.username;
-            nameInput.value = settings.username;
             
+            let metaTheme = document.querySelector('meta[name="theme-color"]');
+            if(!metaTheme) { metaTheme = document.createElement('meta'); metaTheme.name = "theme-color"; document.head.appendChild(metaTheme); }
+            metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
+
+            document.getElementById('header-username').textContent = settings.username;
+            document.getElementById('settings-name-input').value = settings.username;
+            
+            const avatarEl = document.getElementById('header-avatar');
+            const previewEl = document.getElementById('settings-avatar-preview');
+            const placeEl = document.getElementById('settings-avatar-placeholder');
+
             if (settings.avatar) {
-                headerAvatar.innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
-                avatarPreview.src = settings.avatar;
-                avatarPreview.style.display = 'block';
-                avatarPlaceholder.style.display = 'none';
+                avatarEl.innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
+                previewEl.src = settings.avatar;
+                previewEl.style.display = 'block'; placeEl.style.display = 'none';
             } else {
                 const initial = settings.username.charAt(0).toUpperCase() || '?';
-                headerAvatar.innerHTML = initial;
-                avatarPreview.style.display = 'none';
-                avatarPlaceholder.style.display = 'flex';
-                avatarPlaceholder.textContent = initial;
+                avatarEl.textContent = initial; avatarEl.innerHTML = initial;
+                previewEl.style.display = 'none'; placeEl.style.display = 'flex'; placeEl.textContent = initial;
             }
         }
 
-        function renderColorGrid() {
-            colorGrid.innerHTML = '';
-            COLOR_PALETTE.forEach(color => {
-                const div = document.createElement('div');
-                div.className = 'color-option';
-                div.style.backgroundColor = color;
-                if (settings.primaryColor === color) div.classList.add('selected');
-                div.onclick = () => {
-                    settings.primaryColor = color;
-                    document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected'));
-                    div.classList.add('selected');
-                    document.documentElement.style.setProperty('--primary', color);
-                };
-                colorGrid.appendChild(div);
-            });
-        }
-
-        // --- BACKUP & SHARING (Update-Sicherheit) ---
-        function exportData() {
-            const data = { habits: habits, settings: settings, date: new Date().toISOString() };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Habits-Backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click(); document.body.removeChild(a);
-            alert("Sicherung erfolgreich! Diese Datei kannst du nach einem Update wieder importieren oder per WhatsApp teilen.");
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.habits) { habits = data.habits; saveData(); }
-                    if (data.settings) { settings = { ...settings, ...data.settings }; saveSettings(); }
-                    alert('Daten erfolgreich wiederhergestellt!');
-                    render();
-                } catch (err) { alert('Fehler beim Laden der Datei.'); }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- CORE LOGIC ---
         function calculateStreak(history) {
-            if (!history || history.length === 0) return 0;
-            const set = new Set(history);
-            const d = new Date();
-            let streak = 0;
-            if (set.has(d.toISOString().split('T')[0])) streak++;
-            d.setDate(d.getDate() - 1);
-            while (set.has(d.toISOString().split('T')[0])) { streak++; d.setDate(d.getDate() - 1); }
-            if (streak === 0) {
-                let temp = new Date(); temp.setDate(temp.getDate() - 1);
-                if(set.has(temp.toISOString().split('T')[0])) {
-                    streak++; temp.setDate(temp.getDate() - 1);
-                    while(set.has(temp.toISOString().split('T')[0])) { streak++; temp.setDate(temp.getDate() - 1); }
-                }
+            const sorted = [...history].sort();
+            if (sorted.length === 0) return 0;
+            const today = new Date().toISOString().split('T')[0];
+            const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+            let current = sorted.includes(today) ? today : (sorted.includes(yesterday) ? yesterday : null);
+            if (!current) return 0;
+
+            let streak = 0; let checkDate = new Date(current);
+            while (true) {
+                const dStr = checkDate.toISOString().split('T')[0];
+                if (sorted.includes(dStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } 
+                else break;
             }
             return streak;
         }
 
-        // Expose to Window for inline onclicks
-        window.changeHabitMonth = function(habitId, offset) {
-            const habit = habits.find(h => h.id === habitId);
-            if (!habit) return;
-            let date = new Date(habit.viewYear, habit.viewMonth, 1);
-            date.setMonth(date.getMonth() + offset);
-            habit.viewYear = date.getFullYear();
-            habit.viewMonth = date.getMonth();
-            saveData(); render();
-        };
-
-        window.archiveHabit = function(id) {
-            if(confirm("Ins Archiv verschieben?")) {
-                const habit = habits.find(h => h.id === id);
-                if(habit) { habit.archived = true; saveData(); render(); }
-            }
-        };
-
-        window.restoreHabit = function(id) {
-            const habit = habits.find(h => h.id === id);
-            if(habit) { habit.archived = false; saveData(); renderArchiveList(); render(); }
-        };
-
-        window.deletePerm = function(id) {
-            if(confirm("Endgültig löschen?")) {
-                habits = habits.filter(h => h.id !== id);
-                saveData(); renderArchiveList();
-            }
-        };
-
-        function toggleDate(habitId, dateStr) {
-            const habit = habits.find(h => h.id === habitId);
-            if (!habit) return;
-            const idx = habit.history.indexOf(dateStr);
-            if (idx > -1) {
-                habit.history.splice(idx, 1);
-            } else {
-                habit.history.push(dateStr);
-                fireConfetti();
-            }
-            saveData(); render();
-        }
-
-        function openNoteDialog(habitId, dateStr) {
-            const habit = habits.find(h => h.id === habitId);
-            if (!habit) return;
-            currentNoteContext = { habitId, dateStr };
-            document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
-            document.getElementById('note-input').value = habit.notes[dateStr] || "";
-            openModal(document.getElementById('note-modal'));
-        }
-
-        // --- RENDER ---
+        /**
+         * RENDER LOGIC (Per Habit Navigation)
+         */
         function render() {
-            listEl.innerHTML = '';
+            const formatter = new Intl.DateTimeFormat('de-DE', { month: 'short', year: 'numeric' });
             const activeHabits = habits.filter(h => !h.archived);
-
+            
             if (activeHabits.length === 0) {
-                emptyState.style.display = 'block';
-                return;
-            } else {
-                emptyState.style.display = 'none';
-            }
+                listEl.innerHTML = ''; emptyState.style.display = 'block'; return;
+            } else { emptyState.style.display = 'none'; }
 
             const todayStr = new Date().toISOString().split('T')[0];
+            const fragment = document.createDocumentFragment();
 
             activeHabits.forEach(habit => {
-                const year = habit.viewYear;
-                const month = habit.viewMonth;
+                // Finde das anzuzeigende Datum für DIESE Gewohnheit
+                if (!habitDisplayDates[habit.id]) habitDisplayDates[habit.id] = new Date();
+                const displayDate = habitDisplayDates[habit.id];
+                
+                const year = displayDate.getFullYear();
+                const month = displayDate.getMonth();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
                 const firstDayIndex = new Date(year, month, 1).getDay();
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
-                const monthName = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(year, month, 1));
+                const monthLabel = formatter.format(displayDate);
+                const yearPrefix = `${year}-`;
+                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const streak = calculateStreak(habit.history);
+                const notes = habit.notes || {};
+
+                // Progress Berechnung für diesen Monat
+                const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+                const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                let daysPassed = daysInMonth;
+                if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
+                const progressPct = daysPassed > 0 ? Math.min(100, Math.round((monthChecks / daysPassed) * 100)) : 0;
 
                 const card = document.createElement('div');
-                card.className = 'habit-card';
+                card.className = 'habit-card'; card.dataset.id = habit.id;
 
-                let gridHTML = `
-                    <div class="weekday-label">Mo</div><div class="weekday-label">Di</div>
-                    <div class="weekday-label">Mi</div><div class="weekday-label">Do</div>
-                    <div class="weekday-label">Fr</div><div class="weekday-label">Sa</div>
-                    <div class="weekday-label">So</div>
-                `;
-
-                for (let i = 0; i < adjustedFirstDay; i++) { gridHTML += `<div></div>`; }
+                let gridHTML = `<div class="weekday-label">Mo</div><div class="weekday-label">Di</div><div class="weekday-label">Mi</div><div class="weekday-label">Do</div><div class="weekday-label">Fr</div><div class="weekday-label">Sa</div><div class="weekday-label">So</div>`;
+                for (let i = 0; i < adjustedFirstDay; i++) gridHTML += `<div class="day-cell empty"></div>`;
 
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     const isChecked = habit.history.includes(dateStr);
                     const isToday = (dateStr === todayStr);
-                    const hasNote = habit.notes && habit.notes[dateStr] ? 'has-note' : '';
-
-                    gridHTML += `
-                        <div class="day-cell ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''} ${hasNote}" 
-                             data-habit-id="${habit.id}" data-date="${dateStr}">
-                             <span>${d}</span>
-                        </div>
-                    `;
+                    const hasNote = notes[dateStr] ? 'has-note' : '';
+                    gridHTML += `<div class="day-cell ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''} ${hasNote}" data-habit-id="${habit.id}" data-date="${dateStr}"><span>${d}</span></div>`;
                 }
 
                 card.innerHTML = `
                     <div class="habit-header">
                         <div class="habit-title-row">
-                            <div class="habit-title btn-edit" data-id="${habit.id}">${escapeHtml(habit.name)}</div>
+                            <div class="habit-title">${escapeHtml(habit.name)}</div>
+                            <div class="habit-month-nav">
+                                <button onclick="changeHabitMonth('${habit.id}', -1)">❮</button>
+                                <span>${monthLabel}</span>
+                                <button onclick="changeHabitMonth('${habit.id}', 1)">❯</button>
+                            </div>
                             <div class="habit-meta">
-                                ${streak > 0 ? `<span class="streak-badge">🔥 ${streak} Tage</span>` : '<span class="habit-stats">Start jetzt!</span>'}
+                                <span class="habit-stats">${year}: ${yearCount}x</span>
+                                ${streak > 0 ? `<span class="streak-badge">🔥 ${streak}</span>` : ''}
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: ${progressPct}%"></div>
                             </div>
                         </div>
                         <div class="habit-actions">
-                            <button class="btn-action" onclick="archiveHabit(${habit.id})" title="Archivieren">🗑️</button>
+                            <button class="btn-action btn-edit" aria-label="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                            <button class="btn-action btn-delete" aria-label="Archive"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                         </div>
                     </div>
-                    
-                    <!-- NEU: INDIVIDUELLE MONATSNAVIGATION -->
-                    <div class="individual-month-nav">
-                        <button class="nav-btn" onclick="changeHabitMonth(${habit.id}, -1)">❮</button>
-                        <span class="nav-month-label">${monthName}</span>
-                        <button class="nav-btn" onclick="changeHabitMonth(${habit.id}, 1)">❯</button>
-                    </div>
-
                     <div class="calendar-grid">${gridHTML}</div>
                 `;
-                listEl.appendChild(card);
+                fragment.appendChild(card);
             });
+
+            listEl.innerHTML = '';
+            listEl.appendChild(fragment);
         }
 
-        function renderArchiveList() {
-            const container = document.getElementById('archive-list-container');
-            container.innerHTML = '';
-            const archived = habits.filter(h => h.archived);
-            if(archived.length === 0) { container.innerHTML = '<p style="text-align:center;">Leer.</p>'; return; }
-            archived.forEach(h => {
-                container.innerHTML += `
-                    <div class="archive-item">
-                        <span>${escapeHtml(h.name)}</span>
-                        <div>
-                            <button onclick="restoreHabit(${h.id})" style="padding:4px 8px;">Zurück</button>
-                            <button onclick="deletePerm(${h.id})" style="padding:4px 8px; color:red;">Löschen</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+        // --- GLOBAL HELPER FOR INLINE CLICKS ---
+        window.changeHabitMonth = function(habitId, delta) {
+            vibrate(20);
+            const d = habitDisplayDates[habitId];
+            d.setMonth(d.getMonth() + delta);
+            render();
+        };
 
-        // --- STATS CIRCLE (ULTIMATE FEATURE) ---
-        function renderStats() {
-            const canvas = document.getElementById('progress-circle');
-            const ctx = canvas.getContext('2d');
-            const todayStr = new Date().toISOString().split('T')[0];
+        // --- STATS DASHBOARD ---
+        function updateStatsDashboard() {
+            const activeHabits = habits.filter(h => !h.archived);
+            document.getElementById('stat-total-habits').textContent = activeHabits.length;
             
-            const active = habits.filter(h => !h.archived);
-            let total = active.length;
-            let done = active.filter(h => h.history.includes(todayStr)).length;
-            let percent = total === 0 ? 0 : Math.round((done / total) * 100);
+            let bestStreak = 0;
+            let totalPossibleChecks = 0;
+            let actualChecks = 0;
 
-            document.getElementById('progress-text').textContent = `${percent}%`;
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
 
-            ctx.clearRect(0, 0, 160, 160);
-            ctx.beginPath(); ctx.arc(80, 80, 65, 0, 2 * Math.PI);
-            ctx.strokeStyle = 'rgba(100,116,139,0.1)'; ctx.lineWidth = 14; ctx.stroke();
-            
-            if (percent > 0) {
-                ctx.beginPath();
-                const endAngle = (-Math.PI / 2) + (2 * Math.PI * (percent / 100));
-                ctx.arc(80, 80, 65, -Math.PI / 2, endAngle);
-                ctx.strokeStyle = settings.primaryColor; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.stroke();
+            activeHabits.forEach(h => {
+                const s = calculateStreak(h.history);
+                if (s > bestStreak) bestStreak = s;
                 
-                if(percent === 100) fireConfetti();
-            }
+                // Kalkuliere 30-Tage Quote
+                totalPossibleChecks += 30;
+                h.history.forEach(d => {
+                    const checkDate = new Date(d);
+                    if(checkDate >= thirtyDaysAgo && checkDate <= today) actualChecks++;
+                });
+            });
+
+            document.getElementById('stat-best-streak').textContent = bestStreak;
+
+            const pct = totalPossibleChecks === 0 ? 0 : Math.round((actualChecks / totalPossibleChecks) * 100);
+            
+            // Animiertes SVG Update (Umfang ist 251.2 für r=40)
+            const circle = document.getElementById('stat-circle-progress');
+            const text = document.getElementById('stat-circle-text');
+            const dashArray = 251.2;
+            const dashOffset = dashArray - (dashArray * pct) / 100;
+            
+            setTimeout(() => {
+                circle.style.strokeDasharray = `${dashArray - dashOffset}, 251.2`;
+                text.textContent = `${pct}%`;
+            }, 100);
         }
 
-        // --- MODAL HELPERS ---
-        function closeAllModals() {
-            customModalOverlay.classList.remove('open');
-            document.querySelectorAll('.custom-modal').forEach(m => m.classList.remove('open'));
-        }
-        function openModal(modal) {
-            closeAllModals();
-            customModalOverlay.classList.add('open');
-            modal.classList.add('open');
+        // --- IMAGE COMPRESSION ---
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const MAX = 250; let w = img.width; let h = img.height;
+                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
+                    callback(canvas.toDataURL('image/webp', 0.7));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
         // --- EVENTS ---
+        function closeAllModals() {
+            customModalOverlay.classList.remove('open');
+            noteModal.classList.remove('open'); editModal.classList.remove('open');
+            archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open');
+            currentContext = { habitId: null, dateStr: null, action: null };
+        }
+
         function setupEventListeners() {
-            // Settings Toggle
-            const toggleSettings = () => { settingsPanel.classList.toggle('open'); settingsOverlay.classList.toggle('open'); };
-            document.getElementById('settings-toggle').onclick = toggleSettings;
-            document.getElementById('profile-trigger').onclick = toggleSettings;
-            document.getElementById('close-settings').onclick = toggleSettings;
-            settingsOverlay.onclick = toggleSettings;
+            // Header Actions
+            document.getElementById('stats-toggle').addEventListener('click', () => {
+                vibrate(30); updateStatsDashboard();
+                customModalOverlay.classList.add('open'); statsModal.classList.add('open');
+            });
+            document.getElementById('close-stats').addEventListener('click', closeAllModals);
 
-            // Stats / Ultimate
-            document.getElementById('btn-stats').onclick = () => { renderStats(); openModal(document.getElementById('stats-modal')); };
-
-            // Backup
-            document.getElementById('btn-export').onclick = exportData;
-            document.getElementById('btn-import-trigger').onclick = () => document.getElementById('file-import').click();
-            document.getElementById('file-import').onchange = importData;
-
-            // Add
-            document.getElementById('add-btn').onclick = () => {
-                const name = document.getElementById('new-habit-input').value.trim();
-                if(name) {
-                    const d = new Date();
-                    habits.unshift({ id: Date.now(), name, history: [], notes: {}, archived: false, viewYear: d.getFullYear(), viewMonth: d.getMonth() });
-                    saveData(); document.getElementById('new-habit-input').value = ''; render();
-                }
-            };
-
-            // Theme & Save Settings
-            document.getElementById('theme-toggle').onclick = () => { settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); };
-            document.getElementById('save-settings').onclick = () => { settings.username = nameInput.value.trim() || 'Benutzer'; saveSettings(); toggleSettings(); };
-
-            // Avatar Upload
-            document.getElementById('avatar-upload').onchange = function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onloadend = function() { settings.avatar = reader.result; applySettings(); }
-                reader.readAsDataURL(file);
-            };
-
-            // Archive Open
-            document.getElementById('open-archive').onclick = () => { toggleSettings(); renderArchiveList(); openModal(document.getElementById('archive-manager-modal')); };
-
-            // Universal close modals
-            document.querySelectorAll('.modal-close').forEach(btn => btn.onclick = closeAllModals);
-            customModalOverlay.onclick = closeAllModals;
-
-            // Save Note
-            document.getElementById('save-note').onclick = () => {
-                const habit = habits.find(h => h.id === currentNoteContext.habitId);
-                if (habit) {
-                    const val = document.getElementById('note-input').value.trim();
-                    if(val) habit.notes[currentNoteContext.dateStr] = val;
-                    else delete habit.notes[currentNoteContext.dateStr];
-                    saveData(); render();
-                }
-                closeAllModals();
-            };
-
-            // Save Edit Name
-            document.getElementById('save-edit').onclick = () => {
-                const habit = habits.find(h => h.id === currentEditId);
-                if(habit) { habit.name = document.getElementById('edit-name-input').value.trim(); saveData(); render(); }
-                closeAllModals();
-            };
-
-            // Event Delegation for List (Clicks, Edits, Longpress)
-            let pressTimer;
-            listEl.addEventListener('click', (e) => {
-                const titleBtn = e.target.closest('.btn-edit');
-                if(titleBtn) {
-                    currentEditId = parseInt(titleBtn.dataset.id);
-                    document.getElementById('edit-name-input').value = titleBtn.textContent;
-                    openModal(document.getElementById('edit-modal'));
-                    return;
-                }
-
-                const day = e.target.closest('.day-cell');
-                if (day && !day.dataset.preventClick) {
-                    toggleDate(parseInt(day.dataset.habitId), day.dataset.date);
+            document.getElementById('share-toggle').addEventListener('click', async () => {
+                vibrate(30);
+                if (navigator.share) {
+                    try { await navigator.share({ title: 'Gewohnheit Tracker', text: 'Hier ist meine Habits App!', url: window.location.href }); } 
+                    catch (err) { console.log('Share error', err); }
+                } else {
+                    alert('Teilen wird in diesem Browser nicht nativ unterstützt. Kopiere einfach die URL!');
                 }
             });
 
-            // LONG PRESS LOGIC FOR NOTES (Original Wish!)
-            const startPress = (e) => {
-                const day = e.target.closest('.day-cell');
-                if(!day) return;
-                day.dataset.preventClick = 'false';
-                pressTimer = setTimeout(() => {
-                    day.dataset.preventClick = 'true';
-                    openNoteDialog(parseInt(day.dataset.habitId), day.dataset.date);
-                }, 500);
+            // Add Habit
+            const addFn = () => {
+                const input = document.getElementById('new-habit-input'); const name = input.value.trim();
+                if (!name) return;
+                const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+                habits.unshift({ id: newId, name: name, history: [], notes: {}, archived: false });
+                habitDisplayDates[newId] = new Date();
+                saveData(); input.value = ''; vibrate([30, 50, 30]); render(); input.blur();
             };
-            const cancelPress = () => clearTimeout(pressTimer);
+            document.getElementById('add-btn').addEventListener('click', addFn);
+            document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
 
-            listEl.addEventListener('touchstart', startPress, {passive: true});
-            listEl.addEventListener('touchmove', cancelPress, {passive: true});
-            listEl.addEventListener('touchend', cancelPress);
-            
-            listEl.addEventListener('mousedown', startPress);
-            listEl.addEventListener('mousemove', cancelPress);
-            listEl.addEventListener('mouseup', cancelPress);
-            listEl.addEventListener('mouseleave', cancelPress);
+            // Robust Grid Clicking & Touches
+            listEl.addEventListener('click', (e) => {
+                const target = e.target;
+                const dayCell = target.closest('.day-cell:not(.empty)');
+                if (dayCell) {
+                    if (dayCell.dataset.preventClick === "true") { delete dayCell.dataset.preventClick; return; }
+                    const id = dayCell.dataset.habitId; const date = dayCell.dataset.date;
+                    const habit = habits.find(h => h.id == id);
+                    if (!habit) return;
 
-            listEl.addEventListener('contextmenu', e => {
-                const day = e.target.closest('.day-cell');
-                if(day) { e.preventDefault(); openNoteDialog(parseInt(day.dataset.habitId), day.dataset.date); }
+                    const idx = habit.history.indexOf(date);
+                    if (idx > -1) { habit.history.splice(idx, 1); vibrate(20); } 
+                    else { habit.history.push(date); vibrate([30, 50, 30]); playSound(); fireConfetti(); }
+                    saveData(); render(); return;
+                }
+                
+                if (target.closest('.btn-edit') || target.classList.contains('habit-title')) {
+                    vibrate(30); const id = target.closest('.habit-card').dataset.id;
+                    const habit = habits.find(h => h.id == id);
+                    currentContext = { habitId: id, action: 'edit' };
+                    document.getElementById('edit-name-input').value = habit.name;
+                    customModalOverlay.classList.add('open'); editModal.classList.add('open');
+                    setTimeout(() => document.getElementById('edit-name-input').focus(), 100); return;
+                }
+
+                if (target.closest('.btn-delete')) {
+                    vibrate([50, 100, 50]);
+                    if(confirm("Gewohnheit ins Archiv verschieben?")) {
+                        const id = target.closest('.habit-card').dataset.id;
+                        habits.find(h => h.id == id).archived = true; saveData(); render();
+                    }
+                }
+            });
+
+            // Robust Long Press for Mobile
+            let pressTimer; let startY = 0;
+            listEl.addEventListener('touchstart', (e) => {
+                const cell = e.target.closest('.day-cell:not(.empty)');
+                if (!cell) return;
+                startY = e.touches[0].clientY;
+                pressTimer = setTimeout(() => {
+                    vibrate(80); cell.dataset.preventClick = "true";
+                    openNoteDialog(cell.dataset.habitId, cell.dataset.date);
+                }, 500); // 500ms hold
+            }, {passive: true});
+            listEl.addEventListener('touchmove', (e) => {
+                // Cancel if moving finger significantly (scrolling)
+                if (Math.abs(e.touches[0].clientY - startY) > 10) clearTimeout(pressTimer);
+            }, {passive: true});
+            listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
+            listEl.addEventListener('contextmenu', (e) => { // PC Fallback / Right click
+                const cell = e.target.closest('.day-cell:not(.empty)');
+                if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openNoteDialog(cell.dataset.habitId, cell.dataset.date); }
+            });
+
+            // Modals
+            document.getElementById('save-note').addEventListener('click', () => {
+                const h = habits.find(h => h.id == currentContext.habitId);
+                const text = document.getElementById('note-input').value.trim();
+                if (text === "") delete h.notes[currentContext.dateStr]; else h.notes[currentContext.dateStr] = text;
+                saveData(); render(); closeAllModals();
+            });
+            document.getElementById('save-edit').addEventListener('click', () => {
+                const h = habits.find(h => h.id == currentContext.habitId);
+                const newName = document.getElementById('edit-name-input').value.trim();
+                if (newName) { h.name = newName; saveData(); render(); }
+                closeAllModals();
+            });
+            document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive').forEach(b => b.addEventListener('click', closeAllModals));
+            customModalOverlay.addEventListener('click', closeAllModals);
+
+            // Settings
+            const toggleSettings = () => { document.getElementById('settings-panel').classList.toggle('open'); document.getElementById('settings-overlay').classList.toggle('open'); };
+            ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => document.getElementById(id).addEventListener('click', toggleSettings));
+
+            document.getElementById('theme-toggle').addEventListener('click', () => { vibrate(30); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
+            document.getElementById('save-settings').addEventListener('click', () => { vibrate(30); settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; saveSettings(); toggleSettings(); });
+
+            document.getElementById('avatar-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0]; if (!file) return;
+                compressImage(file, (optimizedBase64) => {
+                    settings.avatar = optimizedBase64;
+                    document.getElementById('settings-avatar-preview').src = optimizedBase64;
+                    document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none';
+                });
+            });
+
+            // Archive
+            document.getElementById('open-archive').addEventListener('click', () => {
+                vibrate(30); const list = document.getElementById('archive-list-container'); list.innerHTML = '';
+                const arch = habits.filter(h => h.archived);
+                if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>';
+                arch.forEach(h => {
+                    const el = document.createElement('div'); el.className = 'archive-item';
+                    el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span>
+                        <div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button>
+                        <button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`;
+                    list.appendChild(el);
+                });
+                toggleSettings(); customModalOverlay.classList.add('open'); archiveManagerModal.classList.add('open');
+            });
+
+            // Backup
+            document.getElementById('btn-export').addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify({habits, settings})], { type: 'application/json' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `HabitsBackup-${new Date().toISOString().split('T')[0]}.json`; a.click();
+            });
+            document.getElementById('btn-import-trigger').addEventListener('click', () => document.getElementById('file-import').click());
+            document.getElementById('file-import').addEventListener('change', (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try { const data = JSON.parse(ev.target.result); if(data.habits) habits = data.habits; if(data.settings) settings = data.settings; saveData(); saveSettings(); render(); alert("Import erfolgreich!"); } 
+                    catch(err) { alert("Fehlerhafte Datei."); }
+                };
+                reader.readAsText(file);
             });
         }
 
+        function openNoteDialog(habitId, dateStr) {
+            currentContext = { habitId, dateStr };
+            const habit = habits.find(h => h.id == habitId);
+            document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
+            document.getElementById('note-input').value = habit.notes[dateStr] || "";
+            customModalOverlay.classList.add('open'); noteModal.classList.add('open');
+            setTimeout(() => document.getElementById('note-input').focus(), 100);
+        }
+
+        window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); closeAllModals(); };
+        window.deleteHabit = (id) => { if(confirm("Endgültig löschen?")) { habits = habits.filter(h => h.id != id); saveData(); closeAllModals(); } };
         function escapeHtml(text) { return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]); }
 
-        // --- CONFETTI ---
+        // CONFETTI
         function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         function fireConfetti() {
-            const colors = [settings.primaryColor, '#ef4444', '#10b981', '#f59e0b'];
-            for(let i=0; i<40; i++) {
-                particles.push({
-                    x: window.innerWidth / 2, y: window.innerHeight / 2,
-                    vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 1) * 15,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    size: Math.random() * 8 + 4, life: 100
-                });
-            }
+            const colors = [settings.primaryColor, '#ef4444', '#10b981', '#f59e0b', '#ec4899'];
+            for(let i=0; i<60; i++) particles.push({ x: window.innerWidth / 2, y: window.innerHeight / 2, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 1) * 15, color: colors[Math.floor(Math.random() * colors.length)], size: Math.random() * 8 + 4, life: 100 });
+            if (!animationFrameId) animateConfetti();
         }
         function animateConfetti() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (particles.length === 0) { animationFrameId = null; return; }
             for(let i=0; i<particles.length; i++) {
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= 2; p.size *= 0.96;
                 ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
-                if(p.life <= 0) { particles.splice(i, 1); i--; }
+                if(p.life <= 0 || p.size < 0.5) { particles.splice(i, 1); i--; }
             }
-            requestAnimationFrame(animateConfetti);
+            animationFrameId = requestAnimationFrame(animateConfetti);
         }
 
+        function renderColorGrid() {
+            const grid = document.getElementById('color-grid');
+            COLOR_PALETTE.forEach(color => {
+                const div = document.createElement('div'); div.className = 'color-option'; div.style.backgroundColor = color;
+                if (settings.primaryColor === color) div.classList.add('selected');
+                div.addEventListener('click', () => {
+                    vibrate(20); settings.primaryColor = color;
+                    document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected');
+                    document.documentElement.style.setProperty('--primary', color); document.querySelector('meta[name="theme-color"]').content = color;
+                });
+                grid.appendChild(div);
+            });
+        }
+        
+        // init() call is now asynchronous because of DB loading
+        init();
     </script>
 </body>
 </html>
