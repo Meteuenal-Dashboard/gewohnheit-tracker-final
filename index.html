@@ -115,7 +115,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         /* INDIVIDUAL MONTH NAV & HEADER */
-        .habit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .habit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); gap: 10px; }
         .habit-title-row { flex: 1; padding-right: 10px; }
         .habit-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; word-break: break-word; cursor: pointer; }
         
@@ -132,25 +132,25 @@
         .progress-bar-container { width: 100%; height: 6px; background: var(--bg-body); border-radius: 3px; margin-top: 10px; overflow: hidden; }
         .progress-bar-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
 
-        .habit-actions { display: flex; gap: 5px; }
-        .btn-action { background: transparent; border: 1px solid transparent; color: var(--text-muted); width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .habit-actions { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+        .btn-action { background: transparent; border: 1px solid transparent; color: var(--text-muted); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; user-select: none; }
         .btn-action:active { background-color: var(--bg-body); color: var(--primary); transform: scale(0.9); }
 
         /* CALENDAR GRID */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
         .weekday-label { font-size: 0.7rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 600; user-select: none; }
         
-        /* DIE X-LOGIK (Anpassung) */
+        /* DIE X-LOGIK (Anpassung: Farbe nimmt Hauptfarbe an) */
         .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 500; cursor: pointer; border-radius: 10px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.1s, background-color 0.2s, color 0.2s; }
         .day-cell:active:not(.empty) { transform: scale(0.85); }
         .day-cell.today { border-color: var(--text-muted); font-weight: bold; }
         
-        .day-cell.checked { background: var(--bg-card); border-color: var(--danger); color: var(--danger); }
-        .day-cell.checked::after { content: "✕"; position: absolute; font-size: 1.4rem; font-weight: bold; color: var(--danger); }
+        .day-cell.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); }
+        .day-cell.checked::after { content: "✕"; position: absolute; font-size: 1.4rem; font-weight: bold; color: var(--primary); }
         .day-cell.checked span { opacity: 0.1; } /* Verblasst die Zahl */
         
         .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
-        .day-cell.checked.has-note::before { background-color: var(--warning); }
+        .day-cell.checked.has-note::before { background-color: var(--warning); box-shadow: 0 0 0 2px var(--bg-card); }
 
         .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
         .interaction-hint { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px; font-style: italic; }
@@ -179,7 +179,13 @@
         .circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
         .circle-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
 
-        /* NOTES DIRECTORY (NEU) */
+        /* INDIVIDUAL STATS */
+        .individual-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+        .individual-stat-card { padding: 15px; background: var(--bg-body); border-radius: var(--radius); border: 1px solid var(--border); text-align: center; }
+        .improvement-input { width: 100%; margin-top: 12px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main); font-size: 0.85rem; text-align: center; transition: border-color 0.2s; }
+        .improvement-input:focus { border-color: var(--primary); outline: none; }
+
+        /* NOTES DIRECTORY */
         .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
         .note-summary-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
     </style>
@@ -198,7 +204,7 @@
             </div>
         </div>
         <div class="header-controls">
-            <!-- Notes Directory Button (NEU) -->
+            <!-- Notes Directory Button -->
             <button class="icon-btn" id="notes-overview-toggle" aria-label="Alle Notizen">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             </button>
@@ -278,7 +284,7 @@
         </div>
     </div>
 
-    <!-- ALL NOTES DIRECTORY MODAL (NEU) -->
+    <!-- ALL NOTES DIRECTORY MODAL -->
     <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
         <h3>Meine Notizen</h3>
         <div id="all-notes-list" class="scrollable-list">
@@ -307,36 +313,29 @@
     </div>
 
     <!-- DASHBOARD MODAL -->
-    <div class="custom-modal" id="stats-modal">
+    <div class="custom-modal" id="stats-modal" style="max-height: 90vh; width: 95%; max-width: 600px;">
         <h3>Deine Ziele & Erfolge 🏆</h3>
         <p>So hast du in den letzten 30 Tagen abgeschnitten.</p>
         
-        <div class="dashboard-grid">
-            <div class="stat-card">
-                <h4>Erfolgsquote (30 Tage)</h4>
-                <svg class="circle-chart" viewBox="0 0 100 100">
-                    <circle class="circle-bg" cx="50" cy="50" r="40" />
-                    <circle class="circle-progress" id="stat-circle-progress" cx="50" cy="50" r="40" stroke-dasharray="0, 251.2" transform="rotate(-90 50 50)" />
-                    <text class="circle-text" id="stat-circle-text" x="50" y="55">0%</text>
-                </svg>
-            </div>
-        </div>
-        <div style="display:flex; justify-content:space-between; text-align:center; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; text-align:center; margin-bottom:10px; background: var(--bg-body); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border);">
             <div style="flex:1;">
-                <div style="font-size:1.5rem; font-weight:bold; color:var(--primary);" id="stat-total-habits">0</div>
+                <div style="font-size:1.8rem; font-weight:bold; color:var(--primary);" id="stat-total-habits">0</div>
                 <div style="font-size:0.8rem; color:var(--text-muted);">Aktive Gewohnheiten</div>
             </div>
             <div style="flex:1;">
-                <div style="font-size:1.5rem; font-weight:bold; color:var(--warning);" id="stat-best-streak">0</div>
+                <div style="font-size:1.8rem; font-weight:bold; color:var(--warning);" id="stat-best-streak">0</div>
                 <div style="font-size:0.8rem; color:var(--text-muted);">Bester Streak 🔥</div>
             </div>
+        </div>
+
+        <div id="individual-stats-container" class="individual-stats-grid scrollable-list" style="margin-bottom: 20px; flex-grow: 1; max-height: 50vh; overflow-y: auto;">
+            <!-- Befüllt per JavaScript -->
         </div>
 
         <div class="modal-actions">
             <button class="btn-secondary" id="close-stats">Schließen</button>
         </div>
     </div>
-
 
     <!-- MAIN CONTENT -->
     <div class="container">
@@ -396,7 +395,7 @@
         }
 
         /**
-         * INDEXED-DB PERSISTENCE (Safe from OS Updates)
+         * INDEXED-DB PERSISTENCE
          */
         const DB_NAME = 'HabitTrackerProDB';
         const STORE_NAME = 'appData';
@@ -417,7 +416,7 @@
                     const tx = db.transaction(STORE_NAME, 'readonly');
                     const req = tx.objectStore(STORE_NAME).get(key);
                     req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => resolve(null); // Fallback
+                    req.onerror = () => resolve(null);
                 });
             } catch(e) { return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null; }
         }
@@ -427,7 +426,6 @@
                 const db = await initDB();
                 const tx = db.transaction(STORE_NAME, 'readwrite');
                 tx.objectStore(STORE_NAME).put(val, key);
-                // Dual-Save für ältere Geräte als Fallback
                 localStorage.setItem(key, JSON.stringify(val));
             } catch(e) { localStorage.setItem(key, JSON.stringify(val)); }
         }
@@ -435,7 +433,13 @@
         /**
          * APP LOGIC & STATE
          */
-        const COLOR_PALETTE = ['#2563eb', '#06b6d4', '#10b981', '#84cc16', '#f59e0b', '#ea580c', '#ef4444', '#db2777', '#8b5cf6', '#6366f1'];
+        const COLOR_PALETTE = [
+            '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', 
+            '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', 
+            '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', 
+            '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', 
+            '#6366f1', '#4f46e5', '#64748b', '#334155'
+        ];
         let habits = [];
         let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
         let habitDisplayDates = {}; 
@@ -479,7 +483,7 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             applySettings();
-            setupPWA(); // Starte PWA Generierung erst nach dem Laden der Settings
+            setupPWA(); 
             renderColorGrid();
             render(); 
             setupEventListeners();
@@ -513,7 +517,6 @@
             document.getElementById('header-username').textContent = settings.username;
             document.getElementById('settings-name-input').value = settings.username;
             
-            // App Name anwenden
             const appName = settings.appName || 'Gewohnheit Tracker';
             document.title = appName;
             document.querySelector('.app-title').textContent = appName;
@@ -554,6 +557,32 @@
         }
 
         /**
+         * FUNKTION FÜR REIHENFOLGE (HOCH / RUNTER)
+         */
+        window.moveHabit = function(id, direction) {
+            vibrate(20);
+            const activeHabits = habits.filter(h => !h.archived);
+            const activeIndex = activeHabits.findIndex(h => h.id == id);
+            
+            if (activeIndex < 0) return;
+            const newActiveIndex = activeIndex + direction;
+            if (newActiveIndex < 0 || newActiveIndex >= activeHabits.length) return;
+            
+            const targetId = activeHabits[newActiveIndex].id;
+            
+            const realIndex1 = habits.findIndex(h => h.id == id);
+            const realIndex2 = habits.findIndex(h => h.id == targetId);
+            
+            // Tausche die Positionen im Hauptarray
+            const temp = habits[realIndex1];
+            habits[realIndex1] = habits[realIndex2];
+            habits[realIndex2] = temp;
+            
+            saveData();
+            render();
+        };
+
+        /**
          * RENDER LOGIC (Per Habit Navigation)
          */
         function render() {
@@ -567,7 +596,7 @@
             const todayStr = new Date().toISOString().split('T')[0];
             const fragment = document.createDocumentFragment();
 
-            activeHabits.forEach(habit => {
+            activeHabits.forEach((habit, index) => {
                 if (!habitDisplayDates[habit.id]) habitDisplayDates[habit.id] = new Date();
                 const displayDate = habitDisplayDates[habit.id];
                 
@@ -603,6 +632,9 @@
                     gridHTML += `<div class="day-cell ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''} ${hasNote}" data-habit-id="${habit.id}" data-date="${dateStr}"><span>${d}</span></div>`;
                 }
 
+                const isFirst = index === 0;
+                const isLast = index === activeHabits.length - 1;
+
                 card.innerHTML = `
                     <div class="habit-header">
                         <div class="habit-title-row">
@@ -621,8 +653,10 @@
                             </div>
                         </div>
                         <div class="habit-actions">
-                            <button class="btn-action btn-edit" aria-label="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                            <button class="btn-action btn-delete" aria-label="Archive"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                            <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
+                            <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <button class="btn-action btn-edit" title="Bearbeiten" aria-label="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                            <button class="btn-action btn-delete" title="Archivieren" aria-label="Archive"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                         </div>
                     </div>
                     <div class="calendar-grid">${gridHTML}</div>
@@ -646,31 +680,50 @@
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
             
-            let bestStreak = 0; let totalPossibleChecks = 0; let actualChecks = 0;
-            const today = new Date(); const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
+            let bestStreak = 0; 
+            const today = new Date(); 
+            const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            const container = document.getElementById('individual-stats-container');
+            if (container) container.innerHTML = '';
 
             activeHabits.forEach(h => {
                 const s = calculateStreak(h.history);
                 if (s > bestStreak) bestStreak = s;
-                totalPossibleChecks += 30;
+                
+                let actualChecks = 0;
                 h.history.forEach(d => {
                     const checkDate = new Date(d);
                     if(checkDate >= thirtyDaysAgo && checkDate <= today) actualChecks++;
                 });
+                
+                const pct = Math.round((actualChecks / 30) * 100);
+                const dashArray = 251.2;
+                const dashOffset = dashArray - (dashArray * pct) / 100;
+                
+                if (container) {
+                    const card = document.createElement('div');
+                    card.className = 'individual-stat-card';
+                    card.innerHTML = `
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(h.name)}</div>
+                        <svg class="circle-chart" viewBox="0 0 100 100" style="width: 80px; height: 80px;">
+                            <circle class="circle-bg" cx="50" cy="50" r="40" />
+                            <circle class="circle-progress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s ease-out;" />
+                            <text class="circle-text" x="50" y="55" style="font-size: 18px;">${pct}%</text>
+                        </svg>
+                        <input type="text" class="improvement-input" data-id="${h.id}" placeholder="Fokus-Notiz / Strategie..." value="${escapeHtml(h.improvementNote || '')}">
+                    `;
+                    container.appendChild(card);
+                    
+                    // Animation des Rings verzögert starten
+                    setTimeout(() => {
+                        const circleProgress = card.querySelector('.circle-progress');
+                        if(circleProgress) circleProgress.style.strokeDashoffset = dashOffset;
+                    }, 100);
+                }
             });
 
             document.getElementById('stat-best-streak').textContent = bestStreak;
-
-            const pct = totalPossibleChecks === 0 ? 0 : Math.round((actualChecks / totalPossibleChecks) * 100);
-            const circle = document.getElementById('stat-circle-progress');
-            const text = document.getElementById('stat-circle-text');
-            const dashArray = 251.2;
-            const dashOffset = dashArray - (dashArray * pct) / 100;
-            
-            setTimeout(() => {
-                circle.style.strokeDasharray = `${dashArray - dashOffset}, 251.2`;
-                text.textContent = `${pct}%`;
-            }, 100);
         }
 
         // --- NOTES DIRECTORY ---
@@ -713,17 +766,14 @@
             });
         }
 
-        // --- IMAGE COMPRESSION (OPTIMALE BILDDARSTELLUNG) ---
+        // --- IMAGE COMPRESSION ---
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    // Größere Auflösung (512x512) für scharfe App Icons
                     const MAX = 512; let w = img.width; let h = img.height;
-                    
-                    // Berechne exaktes Quadrat (Cropping) für perfekte Darstellung
                     const minSize = Math.min(w, h);
                     const sourceX = (w - minSize) / 2;
                     const sourceY = (h - minSize) / 2;
@@ -760,6 +810,21 @@
                 customModalOverlay.classList.add('open'); statsModal.classList.add('open');
             });
             document.getElementById('close-stats').addEventListener('click', closeAllModals);
+
+            // Auto-Save für Improvement Notes in den Statistiken
+            const statsContainer = document.getElementById('individual-stats-container');
+            if (statsContainer) {
+                statsContainer.addEventListener('change', (e) => {
+                    if (e.target.classList.contains('improvement-input')) {
+                        const id = e.target.dataset.id;
+                        const habit = habits.find(h => h.id == id);
+                        if (habit) {
+                            habit.improvementNote = e.target.value.trim();
+                            saveData();
+                        }
+                    }
+                });
+            }
 
             // Teilen Button
             document.getElementById('share-toggle').addEventListener('click', async () => {
@@ -841,7 +906,6 @@
                 }, 500); // Nach 500ms gedrückt halten öffnet sich die Notiz
             }, {passive: true});
             listEl.addEventListener('touchmove', (e) => {
-                // Timer abbrechen, wenn man scrollt/wischt (mehr als 10px)
                 if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer);
             }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
@@ -879,7 +943,6 @@
                 toggleSettings(); 
             });
 
-            // Avatar Handling (Hochauflösend zuschneiden)
             document.getElementById('avatar-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0]; if (!file) return;
                 compressImage(file, (optimizedBase64) => {
