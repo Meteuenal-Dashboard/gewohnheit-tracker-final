@@ -75,8 +75,9 @@
         .app-title { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; }
 
         .header-controls { display: flex; gap: 8px; }
-        .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, background-color 0.2s; flex-shrink: 0; user-select: none; }
+        .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, background-color 0.2s; flex-shrink: 0; user-select: none; }
         .icon-btn:active { transform: scale(0.9); background-color: var(--border); }
+        @media(min-width: 380px) { .icon-btn { width: 40px; height: 40px; } }
 
         /* INPUT */
         .input-group { display: flex; gap: 10px; margin-bottom: 2rem; background: var(--bg-card); padding: 10px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); flex-wrap: wrap; }
@@ -177,6 +178,10 @@
         .circle-bg { fill: none; stroke: var(--border); stroke-width: 8; }
         .circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
         .circle-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
+
+        /* NOTES DIRECTORY (NEU) */
+        .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        .note-summary-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -193,6 +198,10 @@
             </div>
         </div>
         <div class="header-controls">
+            <!-- Notes Directory Button (NEU) -->
+            <button class="icon-btn" id="notes-overview-toggle" aria-label="Alle Notizen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </button>
             <!-- Share Button -->
             <button class="icon-btn" id="share-toggle" aria-label="Teilen">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
@@ -230,7 +239,9 @@
                 </div>
                 <input type="file" id="avatar-upload" accept="image/*" style="display:none">
             </div>
-            <input type="text" id="settings-name-input" placeholder="Dein Name" inputmode="text" enterkeyhint="done" style="width:100%; padding:12px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+            <input type="text" id="settings-name-input" placeholder="Dein Name" inputmode="text" enterkeyhint="done" style="width:100%; padding:12px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-bottom: 10px;">
+            <input type="text" id="settings-appname-input" placeholder="App Name (z.B. Habits)" inputmode="text" enterkeyhint="done" style="width:100%; padding:12px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Hinweis: Der App-Name und das Profilbild werden nach dem Speichern für die PWA-Installation übernommen.</p>
         </div>
 
         <div class="settings-section">
@@ -264,6 +275,17 @@
         <div class="modal-actions">
             <button class="btn-secondary" id="cancel-note">Abbrechen</button>
             <button class="btn-primary" id="save-note">Speichern</button>
+        </div>
+    </div>
+
+    <!-- ALL NOTES DIRECTORY MODAL (NEU) -->
+    <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
+        <h3>Meine Notizen</h3>
+        <div id="all-notes-list" class="scrollable-list">
+            <!-- Befüllt per JavaScript -->
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="close-all-notes">Schließen</button>
         </div>
     </div>
 
@@ -335,30 +357,43 @@
             <p style="margin-top: 10px;">Füge oben deine erste Gewohnheit hinzu<br>und beginne deinen Streak.</p>
         </div>
         
-        <p class="interaction-hint">Tipp: Tag gedrückt halten (Handy) oder Doppelklick für Notizen.</p>
+        <p class="interaction-hint">Tipp: Tag gedrückt halten (Handy) oder Doppelklick (PC) für Notizen.</p>
     </div>
 
     <script>
         /**
-         * PWA SETUP
+         * PWA SETUP (DYNAMISCH UMBENENNEN UND ICON SETZEN)
          */
         function setupPWA() {
+            const appName = settings.appName || "Habit Tracker Pro";
+            const shortName = appName.length > 12 ? appName.substring(0, 12) : appName;
+            
+            // Standard-Icon als SVG (Fallback)
+            const defaultIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMwIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
+            const appIcon = settings.avatar ? settings.avatar : defaultIcon;
+            
             const manifestObj = {
-                "name": "Habit Tracker Pro",
-                "short_name": "Habits",
+                "name": appName,
+                "short_name": shortName,
                 "start_url": ".",
                 "display": "standalone",
-                "background_color": "#0f172a",
-                "theme_color": "#2563eb",
-                "icons": [{ "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMwIiBmaWxsPSIjZmZmIi8+PC9zdmc+", "sizes": "192x192", "type": "image/svg+xml" }]
+                "background_color": settings.theme === 'dark' ? "#0f172a" : "#f8fafc",
+                "theme_color": settings.primaryColor,
+                "icons": [{ 
+                    "src": appIcon, 
+                    "sizes": "192x192 512x512", 
+                    "type": settings.avatar ? "image/webp" : "image/svg+xml",
+                    "purpose": "any maskable"
+                }]
             };
+            
             const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
             document.getElementById('dynamic-manifest').setAttribute('href', URL.createObjectURL(manifestBlob));
-            document.getElementById('dynamic-apple-icon').setAttribute('href', manifestObj.icons[0].src);
+            document.getElementById('dynamic-apple-icon').setAttribute('href', appIcon);
+            
             const swCode = `self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('activate', (e) => self.clients.claim()); self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Offline'))); });`;
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(console.log);
         }
-        setupPWA();
 
         /**
          * INDEXED-DB PERSISTENCE (Safe from OS Updates)
@@ -402,8 +437,8 @@
          */
         const COLOR_PALETTE = ['#2563eb', '#06b6d4', '#10b981', '#84cc16', '#f59e0b', '#ea580c', '#ef4444', '#db2777', '#8b5cf6', '#6366f1'];
         let habits = [];
-        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null };
-        let habitDisplayDates = {}; // Speichert den aktuell angezeigten Monat für jede Gewohnheit { habitId: Date }
+        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
+        let habitDisplayDates = {}; 
 
         const listEl = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
@@ -412,6 +447,7 @@
         const editModal = document.getElementById('edit-modal');
         const archiveManagerModal = document.getElementById('archive-manager-modal');
         const statsModal = document.getElementById('stats-modal');
+        const allNotesModal = document.getElementById('all-notes-modal');
 
         let currentContext = { habitId: null, dateStr: null, action: null };
         let animationFrameId = null;
@@ -443,32 +479,28 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             applySettings();
+            setupPWA(); // Starte PWA Generierung erst nach dem Laden der Settings
             renderColorGrid();
             render(); 
             setupEventListeners();
         }
 
         async function loadData() {
-            // Check IndexedDB first, fallback to localStorage (Migration)
             const hData = await dbGet('habit_tracker_pro_habits');
             const sData = await dbGet('habit_tracker_pro_settings');
             
-            // Wenn in IDB nichts ist, schau im alten LocalStorage nach (Migration)
             if(hData) { habits = hData; } 
             else if (localStorage.getItem('habit_tracker_pro_data')) { habits = JSON.parse(localStorage.getItem('habit_tracker_pro_data')); }
 
             if(sData) { settings = { ...settings, ...sData }; }
             else if (localStorage.getItem('habit_tracker_pro_settings')) { settings = { ...settings, ...JSON.parse(localStorage.getItem('habit_tracker_pro_settings')) }; }
 
-            // Clean data
             habits.forEach(h => { if (!h.notes) h.notes = {}; if (h.archived === undefined) h.archived = false; });
-            
-            // Initialisiere Display Dates
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
         }
 
         function saveData() { dbSet('habit_tracker_pro_habits', habits); }
-        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); }
+        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); }
 
         function applySettings() {
             document.body.setAttribute('data-theme', settings.theme);
@@ -480,6 +512,12 @@
 
             document.getElementById('header-username').textContent = settings.username;
             document.getElementById('settings-name-input').value = settings.username;
+            
+            // App Name anwenden
+            const appName = settings.appName || 'Gewohnheit Tracker';
+            document.title = appName;
+            document.querySelector('.app-title').textContent = appName;
+            document.getElementById('settings-appname-input').value = appName;
             
             const avatarEl = document.getElementById('header-avatar');
             const previewEl = document.getElementById('settings-avatar-preview');
@@ -530,7 +568,6 @@
             const fragment = document.createDocumentFragment();
 
             activeHabits.forEach(habit => {
-                // Finde das anzuzeigende Datum für DIESE Gewohnheit
                 if (!habitDisplayDates[habit.id]) habitDisplayDates[habit.id] = new Date();
                 const displayDate = habitDisplayDates[habit.id];
                 
@@ -546,7 +583,6 @@
                 const streak = calculateStreak(habit.history);
                 const notes = habit.notes || {};
 
-                // Progress Berechnung für diesen Monat
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
                 let daysPassed = daysInMonth;
@@ -598,7 +634,6 @@
             listEl.appendChild(fragment);
         }
 
-        // --- GLOBAL HELPER FOR INLINE CLICKS ---
         window.changeHabitMonth = function(habitId, delta) {
             vibrate(20);
             const d = habitDisplayDates[habitId];
@@ -611,19 +646,12 @@
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
             
-            let bestStreak = 0;
-            let totalPossibleChecks = 0;
-            let actualChecks = 0;
-
-            const today = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(today.getDate() - 30);
+            let bestStreak = 0; let totalPossibleChecks = 0; let actualChecks = 0;
+            const today = new Date(); const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
 
             activeHabits.forEach(h => {
                 const s = calculateStreak(h.history);
                 if (s > bestStreak) bestStreak = s;
-                
-                // Kalkuliere 30-Tage Quote
                 totalPossibleChecks += 30;
                 h.history.forEach(d => {
                     const checkDate = new Date(d);
@@ -634,8 +662,6 @@
             document.getElementById('stat-best-streak').textContent = bestStreak;
 
             const pct = totalPossibleChecks === 0 ? 0 : Math.round((actualChecks / totalPossibleChecks) * 100);
-            
-            // Animiertes SVG Update (Umfang ist 251.2 für r=40)
             const circle = document.getElementById('stat-circle-progress');
             const text = document.getElementById('stat-circle-text');
             const dashArray = 251.2;
@@ -647,17 +673,64 @@
             }, 100);
         }
 
-        // --- IMAGE COMPRESSION ---
+        // --- NOTES DIRECTORY ---
+        function renderAllNotes() {
+            const container = document.getElementById('all-notes-list');
+            container.innerHTML = '';
+            let allNotes = [];
+            
+            habits.forEach(h => {
+                if (h.notes) {
+                    Object.entries(h.notes).forEach(([date, text]) => {
+                        allNotes.push({ date, habitName: h.name, text, habitId: h.id });
+                    });
+                }
+            });
+            
+            allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (!allNotes.length) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 20px;">Noch keine Notizen vorhanden.</p>';
+                return;
+            }
+            
+            allNotes.forEach(note => {
+                const el = document.createElement('div');
+                el.className = 'note-summary-item';
+                const dispDate = note.date.split('-').reverse().join('.');
+                
+                el.innerHTML = `
+                    <div class="note-summary-header">
+                        <div>
+                            <div style="font-weight:bold; color:var(--text-main); font-size:0.95rem;">${dispDate}</div>
+                            <div style="font-size:0.8rem; color:var(--primary); font-weight:600;">${escapeHtml(note.habitName)}</div>
+                        </div>
+                        <button class="btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="openNoteDialog('${note.habitId}', '${note.date}')">✏️ Bearbeiten</button>
+                    </div>
+                    <div style="margin-top:10px; font-size:0.95rem; color:var(--text-muted); white-space:pre-wrap; line-height: 1.5;">${escapeHtml(note.text)}</div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // --- IMAGE COMPRESSION (OPTIMALE BILDDARSTELLUNG) ---
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    const MAX = 250; let w = img.width; let h = img.height;
-                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                    callback(canvas.toDataURL('image/webp', 0.7));
+                    // Größere Auflösung (512x512) für scharfe App Icons
+                    const MAX = 512; let w = img.width; let h = img.height;
+                    
+                    // Berechne exaktes Quadrat (Cropping) für perfekte Darstellung
+                    const minSize = Math.min(w, h);
+                    const sourceX = (w - minSize) / 2;
+                    const sourceY = (h - minSize) / 2;
+                    
+                    canvas.width = MAX; canvas.height = MAX;
+                    ctx.drawImage(img, sourceX, sourceY, minSize, minSize, 0, 0, MAX, MAX);
+                    callback(canvas.toDataURL('image/webp', 0.8));
                 };
                 img.src = e.target.result;
             };
@@ -669,21 +742,30 @@
             customModalOverlay.classList.remove('open');
             noteModal.classList.remove('open'); editModal.classList.remove('open');
             archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open');
+            allNotesModal.classList.remove('open');
             currentContext = { habitId: null, dateStr: null, action: null };
         }
 
         function setupEventListeners() {
-            // Header Actions
+            // Notizen-Verzeichnis öffnen
+            document.getElementById('notes-overview-toggle').addEventListener('click', () => {
+                vibrate(30); renderAllNotes();
+                customModalOverlay.classList.add('open'); allNotesModal.classList.add('open');
+            });
+            document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
+
+            // Stats Dashboard
             document.getElementById('stats-toggle').addEventListener('click', () => {
                 vibrate(30); updateStatsDashboard();
                 customModalOverlay.classList.add('open'); statsModal.classList.add('open');
             });
             document.getElementById('close-stats').addEventListener('click', closeAllModals);
 
+            // Teilen Button
             document.getElementById('share-toggle').addEventListener('click', async () => {
                 vibrate(30);
                 if (navigator.share) {
-                    try { await navigator.share({ title: 'Gewohnheit Tracker', text: 'Hier ist meine Habits App!', url: window.location.href }); } 
+                    try { await navigator.share({ title: settings.appName || 'Gewohnheit Tracker', text: 'Hier ist meine Habits App!', url: window.location.href }); } 
                     catch (err) { console.log('Share error', err); }
                 } else {
                     alert('Teilen wird in diesem Browser nicht nativ unterstützt. Kopiere einfach die URL!');
@@ -702,7 +784,7 @@
             document.getElementById('add-btn').addEventListener('click', addFn);
             document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
 
-            // Robust Grid Clicking & Touches
+            // Grid Clicking & Touches
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
                 const dayCell = target.closest('.day-cell:not(.empty)');
@@ -736,33 +818,44 @@
                 }
             });
 
-            // Robust Long Press for Mobile
-            let pressTimer; let startY = 0;
+            // DOPPELKLICK (PC) FÜR NOTIZEN
+            listEl.addEventListener('dblclick', (e) => {
+                const cell = e.target.closest('.day-cell:not(.empty)');
+                if (cell) {
+                    e.preventDefault();
+                    cell.dataset.preventClick = "true";
+                    openNoteDialog(cell.dataset.habitId, cell.dataset.date);
+                }
+            });
+
+            // LANGE GEDRÜCKT HALTEN (MOBILE) FÜR NOTIZEN
+            let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
                 const cell = e.target.closest('.day-cell:not(.empty)');
                 if (!cell) return;
                 startY = e.touches[0].clientY;
+                startX = e.touches[0].clientX;
                 pressTimer = setTimeout(() => {
                     vibrate(80); cell.dataset.preventClick = "true";
                     openNoteDialog(cell.dataset.habitId, cell.dataset.date);
-                }, 500); // 500ms hold
+                }, 500); // Nach 500ms gedrückt halten öffnet sich die Notiz
             }, {passive: true});
             listEl.addEventListener('touchmove', (e) => {
-                // Cancel if moving finger significantly (scrolling)
-                if (Math.abs(e.touches[0].clientY - startY) > 10) clearTimeout(pressTimer);
+                // Timer abbrechen, wenn man scrollt/wischt (mehr als 10px)
+                if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer);
             }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
-            listEl.addEventListener('contextmenu', (e) => { // PC Fallback / Right click
+            listEl.addEventListener('contextmenu', (e) => { 
                 const cell = e.target.closest('.day-cell:not(.empty)');
                 if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openNoteDialog(cell.dataset.habitId, cell.dataset.date); }
             });
 
-            // Modals
+            // Modals Logic
             document.getElementById('save-note').addEventListener('click', () => {
                 const h = habits.find(h => h.id == currentContext.habitId);
                 const text = document.getElementById('note-input').value.trim();
                 if (text === "") delete h.notes[currentContext.dateStr]; else h.notes[currentContext.dateStr] = text;
-                saveData(); render(); closeAllModals();
+                saveData(); render(); renderAllNotes(); closeAllModals();
             });
             document.getElementById('save-edit').addEventListener('click', () => {
                 const h = habits.find(h => h.id == currentContext.habitId);
@@ -773,13 +866,20 @@
             document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive').forEach(b => b.addEventListener('click', closeAllModals));
             customModalOverlay.addEventListener('click', closeAllModals);
 
-            // Settings
+            // Settings Flow
             const toggleSettings = () => { document.getElementById('settings-panel').classList.toggle('open'); document.getElementById('settings-overlay').classList.toggle('open'); };
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => document.getElementById(id).addEventListener('click', toggleSettings));
 
             document.getElementById('theme-toggle').addEventListener('click', () => { vibrate(30); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
-            document.getElementById('save-settings').addEventListener('click', () => { vibrate(30); settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; saveSettings(); toggleSettings(); });
+            document.getElementById('save-settings').addEventListener('click', () => { 
+                vibrate(30); 
+                settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; 
+                settings.appName = document.getElementById('settings-appname-input').value.trim() || 'Habit Tracker'; 
+                saveSettings(); 
+                toggleSettings(); 
+            });
 
+            // Avatar Handling (Hochauflösend zuschneiden)
             document.getElementById('avatar-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0]; if (!file) return;
                 compressImage(file, (optimizedBase64) => {
@@ -822,7 +922,8 @@
             });
         }
 
-        function openNoteDialog(habitId, dateStr) {
+        window.openNoteDialog = function(habitId, dateStr) {
+            closeAllModals(); // Schließt z.B. das Notiz-Verzeichnis, falls man von dort bearbeitet
             currentContext = { habitId, dateStr };
             const habit = habits.find(h => h.id == habitId);
             document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
@@ -867,7 +968,6 @@
             });
         }
         
-        // init() call is now asynchronous because of DB loading
         init();
     </script>
 </body>
