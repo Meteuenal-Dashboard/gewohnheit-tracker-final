@@ -179,10 +179,25 @@
         .circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
         .circle-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
 
-        /* INDIVIDUAL STATS */
-        .individual-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
-        .individual-stat-card { padding: 15px; background: var(--bg-body); border-radius: var(--radius); border: 1px solid var(--border); text-align: center; }
-        .improvement-input { width: 100%; margin-top: 12px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main); font-size: 0.85rem; text-align: center; transition: border-color 0.2s; }
+        /* INDIVIDUAL STATS - OPTIMIZED FOR NOTES */
+        .individual-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .individual-stat-card { padding: 15px; background: var(--bg-body); border-radius: var(--radius); border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; }
+        .improvement-input { 
+            width: 100%; 
+            margin-top: 15px; 
+            padding: 10px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border); 
+            background: var(--bg-card); 
+            color: var(--text-main); 
+            font-size: 0.85rem; 
+            text-align: left; 
+            transition: border-color 0.2s; 
+            resize: none; /* Prevents breaking layout, height is enough */
+            height: 65px; 
+            font-family: inherit; 
+            line-height: 1.4;
+        }
         .improvement-input:focus { border-color: var(--primary); outline: none; }
 
         /* NOTES DIRECTORY */
@@ -711,7 +726,7 @@
                             <circle class="circle-progress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s ease-out;" />
                             <text class="circle-text" x="50" y="55" style="font-size: 18px;">${pct}%</text>
                         </svg>
-                        <input type="text" class="improvement-input" data-id="${h.id}" placeholder="Fokus-Notiz / Strategie..." value="${escapeHtml(h.improvementNote || '')}">
+                        <textarea class="improvement-input" data-id="${h.id}" placeholder="Fokus-Notiz / Strategie...">${escapeHtml(h.improvementNote || '')}</textarea>
                     `;
                     container.appendChild(card);
                     
