@@ -3,8 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Android Support -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+    
     <title>Gewohnheit Tracker Pro</title>
     
     <link id="dynamic-manifest" rel="manifest" href="">
@@ -45,7 +52,20 @@
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        /* Android / iOS Optimierungen für Touch & Markierungen */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent; 
+            -webkit-touch-callout: none; /* Verhindert das Android/iOS Long-Press System-Menü */
+        }
+
+        /* Für Eingabefelder System-Menüs wieder erlauben */
+        input, textarea { 
+            -webkit-touch-callout: default; 
+            user-select: text; 
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -106,7 +126,7 @@
         
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .habit-title-row { flex: 1; }
-        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; word-break: break-word; letter-spacing: -0.3px; }
+        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; word-break: break-word; letter-spacing: -0.3px; user-select: none; }
         
         .expand-btn { background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
@@ -214,6 +234,10 @@
         .milestone-icon { font-size: 1.8rem; margin-bottom: 5px; }
         .milestone-text { font-size: 0.7rem; font-weight: 800; color: var(--text-main); }
 
+        .trend-toggle-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; background: var(--bg-body); padding: 5px; border-radius: 16px; border: 1px solid var(--border); }
+        .trend-toggle { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px 10px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; font-weight: 700; }
+        .trend-toggle.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
         .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
         .interaction-hint { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px; font-style: italic; }
 
@@ -225,8 +249,6 @@
         .btn-qr { background: var(--text-main); color: var(--bg-card); border: none; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; transition: transform 0.1s; }
         .btn-qr:active { transform: scale(0.96); }
 
-        /* Fix für Chrome Mobile Pull-to-refresh */
-        body { overscroll-behavior-y: none; }
     </style>
 </head>
 <body>
@@ -342,34 +364,46 @@
         <h3 style="font-size: 1.6rem; text-align: center; margin-bottom: 5px;">Analytics 🧠</h3>
         <p style="text-align: center; font-size: 0.85rem; margin-bottom: 20px;">Datengetriebene Einblicke in deine Gewohnheiten.</p>
         
-        <div class="stats-top-grid">
-            <div class="stat-box">
-                <div class="stat-box-value" id="stat-total-habits" style="color: var(--primary);">0</div>
-                <div class="stat-box-label">Aktive Ziele</div>
+        <!-- SMART INSIGHTS -->
+        <div class="smart-insights" id="smart-insights-container">
+            <h4><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> KI-Analytik</h4>
+            <p id="insight-best-day">Analysiere Daten...</p>
+            <p id="insight-best-habit"></p>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; text-align:center; margin-bottom:15px; background: var(--bg-body); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border);">
+            <div style="flex:1;">
+                <div style="font-size:1.8rem; font-weight:bold; color:var(--primary);" id="stat-total-habits">0</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Aktive Habits</div>
             </div>
-            <div class="stat-box">
-                <div class="stat-box-value" id="stat-best-streak" style="color: var(--warning);">0</div>
-                <div class="stat-box-label">Bester Streak</div>
+            <div style="flex:1;">
+                <div style="font-size:1.8rem; font-weight:bold; color:var(--warning);" id="stat-best-streak">0</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Bester Streak 🔥</div>
             </div>
         </div>
 
-        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">🏆 Meilensteine</h4>
-        <div class="milestones-container">
-            <div class="milestone-badge" id="badge-7"><div class="milestone-icon">🥉</div><div class="milestone-text">7 TAGE</div></div>
-            <div class="milestone-badge" id="badge-30"><div class="milestone-icon">🥈</div><div class="milestone-text">30 TAGE</div></div>
-            <div class="milestone-badge" id="badge-100"><div class="milestone-icon">🥇</div><div class="milestone-text">100 TAGE</div></div>
-            <div class="milestone-badge" id="badge-365"><div class="milestone-icon">👑</div><div class="milestone-text">1 JAHR</div></div>
+        <div class="trend-toggle-group">
+            <button class="trend-toggle active" data-timeframe="4w">4 Wochen</button>
+            <button class="trend-toggle" data-timeframe="6m">6 Monate</button>
+            <button class="trend-toggle" data-timeframe="1y">1 Jahr</button>
         </div>
 
-        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">🔥 Die Jahres-Heatmap</h4>
-        <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
-        
-        <div class="github-heatmap-wrapper" id="heatmap-scroll-area">
-            <div class="github-heatmap-container">
-                <div class="heatmap-months" id="hm-months"></div>
-                <div class="heatmap-body">
-                    <div class="heatmap-weekdays"><span></span><span>Mo</span><span></span><span>Mi</span><span></span><span>Fr</span><span></span></div>
-                    <div class="heatmap-grid" id="hm-grid"></div>
+        <div id="individual-stats-container" class="individual-stats-grid scrollable-list" style="margin-bottom: 20px; flex-grow: 1; max-height: 40vh; overflow-y: auto;">
+            <!-- Befüllt per JavaScript -->
+        </div>
+
+        <!-- JAHRES-HEATMAP -->
+        <div class="heatmap-container">
+            <h4 style="font-size: 1rem; margin-bottom: 10px; color: var(--text-main);">GitHub Jahres-Ansicht</h4>
+            <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
+            
+            <div class="github-heatmap-wrapper" id="heatmap-scroll-area">
+                <div class="github-heatmap-container">
+                    <div class="heatmap-months" id="hm-months"></div>
+                    <div class="heatmap-body">
+                        <div class="heatmap-weekdays"><span></span><span>Mo</span><span></span><span>Mi</span><span></span><span>Fr</span><span></span></div>
+                        <div class="heatmap-grid" id="hm-grid"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -766,6 +800,41 @@
             document.getElementById('badge-365').className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
 
             if(activeHabits.length > 0) renderHeatmap(select.value || activeHabits[0].id);
+            
+            // Generate Smart Insights
+            generateSmartInsights();
+        }
+        
+        function generateSmartInsights() {
+            const activeHabits = habits.filter(h => !h.archived);
+            const dayCounts = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}; // Sun-Sat
+            let totalChecksAll = 0; let topHabitName = "Keine"; let topHabitChecks = -1;
+            const today = new Date(); const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            activeHabits.forEach(h => {
+                let habitTotal = 0;
+                h.history.forEach(dStr => {
+                    const d = new Date(dStr);
+                    if(d >= thirtyDaysAgo && d <= today) {
+                        dayCounts[d.getDay()]++; totalChecksAll++; habitTotal++;
+                    }
+                });
+                if(habitTotal > topHabitChecks) { topHabitChecks = habitTotal; topHabitName = h.name; }
+            });
+
+            const dayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+            let bestDayIdx = 0; let maxDayCount = -1;
+            for(let i=0; i<7; i++) { if(dayCounts[i] > maxDayCount) { maxDayCount = dayCounts[i]; bestDayIdx = i; } }
+            
+            const insightDay = document.getElementById('insight-best-day');
+            const insightHabit = document.getElementById('insight-best-habit');
+            if(totalChecksAll > 0) {
+                insightDay.innerHTML = `📅 Dein produktivster Tag ist der <b>${dayNames[bestDayIdx]}</b>.`;
+                insightHabit.innerHTML = `🏆 Deine stärkste Gewohnheit (30d) ist <b>"${escapeHtml(topHabitName)}"</b>.`;
+            } else {
+                insightDay.innerHTML = "Sammle ein paar Check-ins, um hier deine Analytik zu sehen.";
+                insightHabit.innerHTML = "";
+            }
         }
 
         function renderHeatmap(habitId) {
@@ -979,7 +1048,17 @@
             }, {passive: true});
             listEl.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer); }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
-            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } });
+            listEl.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+            listEl.addEventListener('contextmenu', (e) => { 
+                const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); 
+                if (cell) { 
+                    e.preventDefault(); 
+                    if (!cell.dataset.preventClick) {
+                        cell.dataset.preventClick = "true"; 
+                        openActionSheet(cell.dataset.habitId, cell.dataset.date); 
+                    }
+                } 
+            });
 
             // Nav & Dialogs
             document.getElementById('stats-toggle').addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); document.getElementById('custom-modal-overlay').classList.add('open'); statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
@@ -1003,7 +1082,6 @@
 
             document.getElementById('open-archive').addEventListener('click', () => { vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; const arch = habits.filter(h => h.archived); if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open'); document.getElementById('custom-modal-overlay').classList.add('open'); archiveManagerModal.classList.add('open'); document.body.classList.add('modal-open'); });
             
-            // Fixes for directory view (re-added securely)
             document.getElementById('notes-overview-toggle').addEventListener('click', () => { vibrate('light'); const c = document.getElementById('all-notes-list'); c.innerHTML=''; let an=[]; habits.forEach(h=>{if(h.notes){Object.entries(h.notes).forEach(([d,t])=>{an.push({date:d,hn:h.name,text:t,id:h.id});});}}); an.sort((a,b)=>new Date(b.date)-new Date(a.date)); if(!an.length){c.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Leer.</p>';}else{an.forEach(n=>{const e=document.createElement('div');e.className='note-summary-item';e.innerHTML=`<div style="font-weight:bold;color:var(--text-main);">${n.date.split('-').reverse().join('.')} - <span style="color:var(--primary);">${escapeHtml(n.hn)}</span></div><div style="margin-top:5px;color:var(--text-muted);">${escapeHtml(n.text)}</div>`;c.appendChild(e);});} document.getElementById('custom-modal-overlay').classList.add('open'); allNotesModal.classList.add('open'); document.body.classList.add('modal-open'); });
             document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
         }
