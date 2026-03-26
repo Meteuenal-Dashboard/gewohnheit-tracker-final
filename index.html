@@ -10,10 +10,17 @@
     <link id="dynamic-manifest" rel="manifest" href="">
     <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
 
+    <!-- Externe Bibliotheken für QR-Code und Datenkomprimierung -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
-        /* DESIGN TOKENS */
+        /* ELITE DESIGN TOKENS */
         :root {
             --primary: #2563eb;
+            --primary-light: rgba(37, 99, 235, 0.2);
+            --primary-med: rgba(37, 99, 235, 0.6);
+            --primary-dark: rgba(37, 99, 235, 1);
             --bg-body: #f8fafc;
             --bg-card: #ffffff;
             --text-main: #1e293b;
@@ -22,9 +29,10 @@
             --danger: #ef4444;
             --success: #10b981;
             --warning: #f59e0b;
+            --freeze: #94a3b8; /* Für Pausierte Tage */
             --radius: 16px;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --header-height: 70px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            --header-height: 75px;
             --safe-area-top: env(safe-area-inset-top, 0px);
         }
 
@@ -34,220 +42,218 @@
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
             --border: #334155;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            padding: 15px;
-            padding-top: calc(var(--header-height) + var(--safe-area-top) + 20px);
+            background-color: var(--bg-body); color: var(--text-main);
+            padding: 15px; padding-top: calc(var(--header-height) + var(--safe-area-top) + 20px);
             min-height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
-            overflow-x: hidden;
-            overscroll-behavior-y: none; 
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden; overscroll-behavior-y: none; 
         }
 
-        /* VERHINDERT BACKGROUND SCROLLING WENN MODAL OFFEN IST */
         body.modal-open { overflow: hidden; }
+        .container { max-width: 800px; margin: 0 auto; padding-bottom: 60px; }
 
-        .container { max-width: 800px; margin: 0 auto; padding-bottom: 40px; }
-
-        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
-
-        /* HEADER */
+        /* HEADER & GLOBAL PROGRESS RING */
         .app-header {
             position: fixed; top: 0; left: 0; right: 0;
             height: calc(var(--header-height) + var(--safe-area-top));
             padding-top: var(--safe-area-top);
             background: rgba(var(--bg-card), 0.85);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
-            padding-left: 15px; padding-right: 15px;
-            z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 0 20px; z-index: 100;
         }
 
-        .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px; border-radius: 8px; user-select: none; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 2px solid var(--border); flex-shrink: 0; }
+        .user-profile { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+        
+        /* Global Progress Ring around Avatar */
+        .avatar-container { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+        .global-progress-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 3; }
+        .global-progress-bar { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); stroke-dasharray: 125.6; stroke-dashoffset: 125.6; }
+        
+        .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid transparent; z-index: 2; }
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-weight: 700; font-size: 0.9rem; line-height: 1.2; }
-        .app-title { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; }
+        .user-name { font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: -0.3px; }
+        .app-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
 
-        .header-controls { display: flex; gap: 8px; }
-        .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, background-color 0.2s; flex-shrink: 0; user-select: none; }
-        .icon-btn:active { transform: scale(0.9); background-color: var(--border); }
-        @media(min-width: 380px) { .icon-btn { width: 40px; height: 40px; } }
+        .header-controls { display: flex; gap: 6px; }
+        .icon-btn { background: transparent; border: none; color: var(--text-main); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .icon-btn:active { transform: scale(0.85); background-color: var(--border); }
+        .icon-btn:hover { background-color: var(--bg-body); }
+
+        /* GREETING */
+        .dynamic-greeting { font-size: 1.5rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px; }
+        .greeting-subtext { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; }
 
         /* INPUT */
-        .input-group { display: flex; gap: 10px; margin-bottom: 2rem; background: var(--bg-card); padding: 10px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); flex-wrap: wrap; }
-        input[type="text"] { flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 16px; outline: none; background: var(--bg-body); color: var(--text-main); min-width: 200px; transition: border-color 0.2s; }
-        input[type="text"]:focus { border-color: var(--primary); }
-        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; flex-grow: 1; transition: transform 0.1s, opacity 0.2s; user-select: none; }
-        @media(min-width: 500px) { .btn-primary { flex-grow: 0; } }
-        .btn-primary:active { opacity: 0.8; transform: scale(0.96); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: var(--bg-card); padding: 8px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        input[type="text"] { flex: 1; padding: 14px 20px; border: none; background: transparent; color: var(--text-main); font-size: 1rem; font-weight: 500; outline: none; width: 100%; }
+        input[type="text"]::placeholder { color: var(--text-muted); font-weight: 400; }
+        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 0 24px; border-radius: 14px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: transform 0.15s, box-shadow 0.2s; box-shadow: 0 4px 10px var(--primary-light); }
+        .btn-primary:active { transform: scale(0.95); box-shadow: none; }
 
-        /* MODALS */
-        .settings-overlay, .custom-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-        .settings-overlay.open, .custom-modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .settings-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 350px; height: 100vh; background: var(--bg-card); z-index: 201; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px; overflow-y: auto; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding-top: calc(20px + var(--safe-area-top)); }
-        .settings-panel.open { right: 0; }
-        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: 90%; max-width: 500px; background: var(--bg-card); z-index: 202; padding: 24px; border-radius: var(--radius); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border); display: none; flex-direction: column; max-height: 85vh; }
-        .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
-        .custom-modal h3 { margin-bottom: 10px; font-size: 1.25rem; color: var(--text-main); flex-shrink: 0; }
-        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; flex-shrink: 0; }
-        .custom-modal textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 12px; background: var(--bg-body); color: var(--text-main); font-family: inherit; font-size: 1rem; resize: none; margin-bottom: 20px; height: 120px; transition: border-color 0.2s; }
-        .custom-modal textarea:focus { border-color: var(--primary); outline: none; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; flex-shrink: 0; }
-
-        /* BUTTONS */
-        .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: background-color 0.2s, transform 0.1s; user-select: none; }
-        .btn-secondary:active { transform: scale(0.96); background-color: var(--border); }
-        .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid transparent; }
-        .btn-danger:active { background: #fecaca; }
-
-        /* LISTS */
-        .scrollable-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding-right: 5px; min-height: 100px; }
+        /* HABIT CARDS */
         #habit-list { display: flex; flex-direction: column; gap: 20px; }
-        
-        /* HABIT CARD & ACCORDION */
-        .habit-card { background: var(--bg-card); border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); border: 1px solid var(--border); animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .habit-card { background: var(--bg-card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.2s ease; }
         
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-        .habit-title-row { flex: 1; padding-right: 10px; }
-        .habit-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; word-break: break-word; }
+        .habit-title-row { flex: 1; }
+        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; word-break: break-word; letter-spacing: -0.3px; }
         
-        /* Expand Button */
-        .expand-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 5px; transition: transform 0.3s ease; display: flex; align-items: center; justify-content: center; }
-        .habit-card.expanded .expand-btn { transform: rotate(180deg); color: var(--primary); }
+        .expand-btn { background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
 
-        .habit-month-nav { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--bg-body); padding: 4px 8px; border-radius: 8px; display: inline-flex; border: 1px solid var(--border); }
-        .habit-month-nav button { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); padding: 2px 8px; }
-        .habit-month-nav button:active { transform: scale(0.9); }
-        .habit-month-nav span { font-size: 0.85rem; font-weight: 600; min-width: 80px; text-align: center; }
+        .habit-month-nav { display: inline-flex; align-items: center; gap: 8px; margin-top: 5px; background: var(--bg-body); padding: 4px 6px; border-radius: 12px; border: 1px solid var(--border); }
+        .habit-month-nav button { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 10px; border-radius: 8px; transition: background 0.2s; }
+        .habit-month-nav button:active { background: var(--border); }
+        .habit-month-nav span { font-size: 0.9rem; font-weight: 700; min-width: 85px; text-align: center; }
 
-        .habit-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-        .habit-stats { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
-        .streak-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--warning); font-weight: 700; background: rgba(245, 158, 11, 0.1); padding: 4px 10px; border-radius: 12px; }
+        .habit-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .habit-stats { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; background: var(--bg-body); padding: 4px 10px; border-radius: 8px; }
+        .streak-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--warning); font-weight: 800; background: rgba(245, 158, 11, 0.15); padding: 4px 10px; border-radius: 8px; }
         
-        /* PROGRESS BAR */
-        .progress-bar-container { width: 100%; height: 6px; background: var(--bg-body); border-radius: 3px; margin-top: 10px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+        .progress-bar-container { width: 100%; height: 8px; background: var(--bg-body); border-radius: 4px; margin-top: 15px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+        .progress-bar-fill { height: 100%; background: var(--primary); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 4px; }
 
-        .habit-actions { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
-        .btn-action { background: transparent; border: 1px solid transparent; color: var(--text-muted); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; user-select: none; }
-        .btn-action:active { background-color: var(--bg-body); color: var(--primary); transform: scale(0.9); }
-
-        /* CALENDAR CONTAINER & FOOTER (NEW) */
-        .calendar-container { display: none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px; }
-        .habit-card.expanded .calendar-container { display: block; animation: fadeIn 0.2s ease-out; }
-        .calendar-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+        .habit-actions { display: flex; gap: 5px; flex-direction: column; align-items: center; }
+        .btn-action { background: transparent; border: none; color: var(--text-muted); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .btn-action:active { background-color: var(--border); transform: scale(0.9); }
 
         /* CALENDAR GRID */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
-        .weekday-label { font-size: 0.7rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 600; user-select: none; }
+        .calendar-container { display: none; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
+        .habit-card.expanded .calendar-container { display: block; animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 500; cursor: pointer; border-radius: 10px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.1s, background-color 0.2s, color 0.2s; }
-        .day-cell:active:not(.empty) { transform: scale(0.85); }
-        .day-cell.today { border-color: var(--text-muted); font-weight: bold; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+        .weekday-label { font-size: 0.75rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .day-cell.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); }
-        .day-cell.checked::after { content: "✕"; position: absolute; font-size: 1.4rem; font-weight: bold; color: var(--primary); }
-        .day-cell.checked span { opacity: 0.1; } /* Verblasst die Zahl */
+        .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 12px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.15s, background-color 0.2s, border-color 0.2s; }
+        .day-cell:active:not(.empty):not(.future) { transform: scale(0.85); }
+        .day-cell.today { border-color: var(--primary); font-weight: 800; }
         
-        .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
+        /* Zukunfts-Sperre */
+        .day-cell.future { opacity: 0.3; pointer-events: none; background: transparent; border: 1px dashed var(--border); }
+        
+        /* Urlaubs/Freeze-Modus */
+        .day-cell.skipped { background: repeating-linear-gradient(45deg, var(--bg-body), var(--bg-body) 5px, var(--border) 5px, var(--border) 10px); color: var(--text-muted); border-color: transparent; }
+        .day-cell.skipped::after { content: "⏸"; position: absolute; font-size: 1.2rem; color: var(--text-muted); }
+        .day-cell.skipped span { opacity: 0.1; }
+
+        /* Erfolgreich Abgehakt */
+        .day-cell.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); box-shadow: 0 2px 8px var(--primary-light); }
+        .day-cell.checked::after { content: "✕"; position: absolute; font-size: 1.5rem; font-weight: 900; color: var(--primary); }
+        .day-cell.checked span { opacity: 0.05; }
+        
+        .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
         .day-cell.checked.has-note::before { background-color: var(--warning); box-shadow: 0 0 0 2px var(--bg-card); }
+        .day-cell.skipped.has-note::before { background-color: var(--warning); }
+
+        /* ACTION SHEET MODAL (Smart Menu für Long Press) */
+        .action-sheet { position: fixed; bottom: -100%; left: 0; right: 0; background: var(--bg-card); border-radius: 24px 24px 0 0; padding: 20px 20px 40px 20px; z-index: 203; transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
+        .action-sheet.open { bottom: 0; }
+        .sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 3px; margin: 0 auto 15px auto; }
+        .sheet-btn { padding: 16px; border-radius: 14px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-align: center; background: var(--bg-body); color: var(--text-main); transition: background 0.2s; }
+        .sheet-btn:active { background: var(--border); }
+        .sheet-btn.primary { background: var(--primary); color: white; }
+        .sheet-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+
+        /* MODALS & SETTINGS (Universell) */
+        .settings-overlay, .custom-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+        .settings-overlay.open, .custom-modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .settings-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: var(--bg-card); z-index: 201; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.1); padding-top: calc(20px + var(--safe-area-top)); }
+        .settings-panel.open { right: 0; }
+        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: 90%; max-width: 500px; background: var(--bg-card); z-index: 202; padding: 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); display: none; flex-direction: column; max-height: 85vh; border: 1px solid var(--border); }
+        .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .custom-modal h3 { margin-bottom: 10px; font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        .custom-modal p { color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+        .custom-modal textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 16px; background: var(--bg-body); color: var(--text-main); font-family: inherit; font-size: 1rem; resize: none; margin-bottom: 20px; height: 140px; transition: border-color 0.2s; }
+        .custom-modal textarea:focus { border-color: var(--primary); outline: none; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+        .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 700; transition: transform 0.1s, background 0.2s; }
+        .btn-secondary:active { transform: scale(0.96); background: var(--border); }
+
+        /* 👑 DIE WAHRE GITHUB HEATMAP */
+        .github-heatmap-wrapper { overflow-x: auto; background: var(--bg-body); padding: 15px; border-radius: 16px; border: 1px solid var(--border); margin-top: 15px; direction: rtl; /* Trick für Right-to-Left Scroll auf Mobile */ }
+        .github-heatmap-container { display: flex; flex-direction: column; direction: ltr; min-width: max-content; }
+        .heatmap-months { display: grid; grid-template-columns: repeat(53, 13px); gap: 3px; margin-bottom: 5px; margin-left: 20px; }
+        .heatmap-month-label { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; }
+        .heatmap-body { display: flex; gap: 5px; }
+        .heatmap-weekdays { display: grid; grid-template-rows: repeat(7, 13px); gap: 3px; font-size: 0.6rem; color: var(--text-muted); font-weight: 600; padding-top: 1px; }
+        .heatmap-grid { display: grid; grid-template-columns: repeat(53, 13px); grid-template-rows: repeat(7, 13px); grid-auto-flow: column; gap: 3px; }
+        .hm-cell { width: 13px; height: 13px; background: var(--border); border-radius: 3px; position: relative; cursor: pointer; transition: transform 0.1s; }
+        .hm-cell:hover { transform: scale(1.2); z-index: 2; border: 1px solid var(--bg-card); }
+        
+        /* Intensity Levels (Streak-based) */
+        .hm-cell.lvl-1 { background: var(--primary-light); }
+        .hm-cell.lvl-2 { background: var(--primary-med); }
+        .hm-cell.lvl-3 { background: var(--primary-dark); }
+        .hm-cell.skipped { background: repeating-linear-gradient(45deg, var(--border), var(--border) 2px, var(--bg-body) 2px, var(--bg-body) 4px); }
+
+        /* Tooltip */
+        .hm-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-5px); background: var(--text-main); color: var(--bg-body); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 10; margin-bottom: 5px; }
+        .hm-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 5px; border-style: solid; border-color: var(--text-main) transparent transparent transparent; }
+        .hm-cell:hover .hm-tooltip { opacity: 1; }
+
+        /* DASHBOARD & STATS */
+        .stats-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: var(--bg-body); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .stat-box-value { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
+        .stat-box-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .milestones-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
+        .milestone-badge { min-width: 80px; padding: 15px 10px; background: var(--bg-body); border-radius: 16px; border: 1px solid var(--border); text-align: center; opacity: 0.4; filter: grayscale(1); transition: all 0.3s; }
+        .milestone-badge.unlocked { opacity: 1; filter: grayscale(0); background: rgba(245, 158, 11, 0.1); border-color: var(--warning); }
+        .milestone-icon { font-size: 1.8rem; margin-bottom: 5px; }
+        .milestone-text { font-size: 0.7rem; font-weight: 800; color: var(--text-main); }
 
         .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
         .interaction-hint { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px; font-style: italic; }
 
-        /* SETTINGS GRID */
         .settings-section { margin-bottom: 30px; }
-        .settings-label { font-weight: 600; margin-bottom: 12px; display: block; color: var(--text-main); }
-        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .settings-label { font-weight: 700; margin-bottom: 12px; display: block; color: var(--text-main); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+        .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
         .color-option { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
-        .color-option.selected { border-color: var(--text-main); transform: scale(1.1); }
-        .backup-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .color-option.selected { border-color: var(--text-main); transform: scale(1.1); box-shadow: 0 0 0 2px var(--bg-card) inset; }
+        .btn-qr { background: var(--text-main); color: var(--bg-card); border: none; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; transition: transform 0.1s; }
+        .btn-qr:active { transform: scale(0.96); }
 
-        /* ARCHIVE ITEM */
-        .archive-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-body); border-radius: 10px; border: 1px solid var(--border); }
-        .archive-item-name { font-weight: 600; font-size: 0.95rem; }
-
-        /* DASHBOARD / STATS */
-        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; text-align: center; margin-bottom: 20px; }
-        .stat-card { background: var(--bg-body); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .stat-card h4 { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; font-weight: 600; }
-        .stat-value { font-size: 2rem; font-weight: 800; color: var(--text-main); }
-        
-        /* SVG Circle & Chart */
-        .circle-chart { width: 120px; height: 120px; margin: 0 auto; }
-        .circle-bg { fill: none; stroke: var(--border); stroke-width: 8; }
-        .circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
-        .circle-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
-
-        .trend-chart { width: 100%; height: 40px; margin-top: 5px; }
-        .trend-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .trend-point { fill: var(--primary); }
-
-        /* INDIVIDUAL STATS - OPTIMIZED FOR NOTES */
-        .individual-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
-        .individual-stat-card { padding: 15px; background: var(--bg-body); border-radius: var(--radius); border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; }
-        .improvement-input { 
-            width: 100%; 
-            margin-top: 15px; 
-            padding: 10px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border); 
-            background: var(--bg-card); 
-            color: var(--text-main); 
-            font-size: 0.85rem; 
-            text-align: left; 
-            transition: border-color 0.2s; 
-            resize: none; 
-            height: 65px; 
-            font-family: inherit; 
-            line-height: 1.4;
-        }
-        .improvement-input:focus { border-color: var(--primary); outline: none; }
-
-        /* NOTES DIRECTORY */
-        .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
-        .note-summary-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        /* Fix für Chrome Mobile Pull-to-refresh */
+        body { overscroll-behavior-y: none; }
     </style>
 </head>
 <body>
 
-    <!-- Confetti-Canvas bleibt aus Architektur-Gründen im HTML, wird aber nicht mehr aktiv bespielt -->
-    <canvas id="confetti-canvas"></canvas>
-
-    <!-- HEADER -->
     <header class="app-header">
         <div class="user-profile" id="profile-trigger">
-            <div class="avatar" id="header-avatar">?</div>
+            <div class="avatar-container">
+                <svg class="global-progress-svg" viewBox="0 0 50 50">
+                    <circle class="global-progress-bg" cx="25" cy="25" r="20" />
+                    <circle class="global-progress-bar" id="global-progress" cx="25" cy="25" r="20" />
+                </svg>
+                <div class="avatar" id="header-avatar">?</div>
+            </div>
             <div class="user-info">
                 <div class="user-name" id="header-username">Gast</div>
-                <div class="app-title">Gewohnheit Tracker</div>
+                <div class="app-title" id="header-appname">Gewohnheit Tracker</div>
             </div>
         </div>
         <div class="header-controls">
-            <button class="icon-btn" id="notes-overview-toggle" aria-label="Alle Notizen">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            </button>
-            <button class="icon-btn" id="share-toggle" aria-label="Teilen">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-            </button>
             <button class="icon-btn" id="stats-toggle" aria-label="Statistiken">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"></rect><rect x="10" y="8" width="4" height="13"></rect><rect x="2" y="13" width="4" height="8"></rect></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
             </button>
             <button class="icon-btn" id="theme-toggle" aria-label="Design ändern">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </button>
             <button class="icon-btn" id="settings-toggle" aria-label="Menü">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
             </button>
         </div>
     </header>
@@ -256,25 +262,33 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2>Einstellungen</h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen</h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
         <div class="settings-section">
             <span class="settings-label">Dein Profil</span>
-            <div style="text-align:center; margin-bottom:15px;">
-                <div style="position:relative; width:80px; height:80px; margin:0 auto;">
-                    <img id="settings-avatar-preview" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:none; border:2px solid var(--primary);">
-                    <div id="settings-avatar-placeholder" style="width:100%; height:100%; border-radius:50%; background:var(--border); display:flex; align-items:center; justify-content:center; font-size:2rem; color:var(--text-muted);">?</div>
-                    <label for="avatar-upload" style="position:absolute; bottom:0; right:0; background:var(--bg-card); width:32px; height:32px; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="position:relative; width:84px; height:84px; margin:0 auto;">
+                    <img id="settings-avatar-preview" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:none; border:3px solid var(--primary);">
+                    <div id="settings-avatar-placeholder" style="width:100%; height:100%; border-radius:50%; background:var(--border); display:flex; align-items:center; justify-content:center; font-size:2.5rem; font-weight:800; color:var(--text-muted);">?</div>
+                    <label for="avatar-upload" style="position:absolute; bottom:0; right:0; background:var(--text-main); color:var(--bg-card); width:32px; height:32px; border-radius:50%; box-shadow:0 4px 10px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                     </label>
                 </div>
                 <input type="file" id="avatar-upload" accept="image/*" style="display:none">
             </div>
-            <input type="text" id="settings-name-input" placeholder="Dein Name" inputmode="text" enterkeyhint="done" style="width:100%; padding:12px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-bottom: 10px;">
-            <input type="text" id="settings-appname-input" placeholder="App Name (z.B. Habits)" inputmode="text" enterkeyhint="done" style="width:100%; padding:12px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main);">
-            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Hinweis: Der App-Name und das Profilbild werden nach dem Speichern für die PWA-Installation übernommen.</p>
+            <input type="text" id="settings-name-input" placeholder="Dein Name" inputmode="text" enterkeyhint="done" style="width:100%; padding:14px; border-radius:14px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-bottom: 12px; font-weight:600;">
+            <input type="text" id="settings-appname-input" placeholder="App Name (z.B. Habits)" inputmode="text" enterkeyhint="done" style="width:100%; padding:14px; border-radius:14px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); font-weight:600;">
+        </div>
+
+        <div class="settings-section">
+            <span class="settings-label">Magic Sync (Gerät wechseln)</span>
+            <button class="btn-qr" id="btn-qr-sync">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4z"></path><path d="M14 4h6v6h-6z"></path><path d="M4 14h6v6H4z"></path><path d="M14 14h6v6h-6z"></path></svg>
+                QR-Code generieren
+            </button>
+            <p style="font-size:0.8rem; color:var(--text-muted); line-height: 1.4;">Scanne den Code mit dem neuen Handy, um alle Gewohnheiten lokal und sicher zu übertragen.</p>
         </div>
 
         <div class="settings-section">
@@ -284,47 +298,97 @@
 
         <div class="settings-section">
             <span class="settings-label">Verwaltung</span>
-            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 20px;">🗄️ Archiv & Mülleimer</button>
-            
-            <span class="settings-label">Datensicherung (Update-Sicher)</span>
-            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">Die App speichert Daten nun sicher lokal im Browser. Exportiere sie trotzdem zur Sicherheit ab und zu.</p>
-            <div class="backup-controls">
-                <button class="btn-secondary" id="btn-export">Export ⬇</button>
-                <button class="btn-secondary" id="btn-import-trigger">Import ⬆</button>
-                <input type="file" id="file-import" accept=".json" style="display:none">
-            </div>
+            <button class="btn-secondary" id="notes-overview-toggle" style="width:100%; margin-bottom: 10px;">📝 Notizen-Verzeichnis</button>
+            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 10px;">🗄️ Archiv & Mülleimer</button>
+            <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-bottom: 10px; color: var(--success); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05);">📊 Daten als Excel (CSV)</button>
         </div>
         
-        <button class="btn-primary" id="save-settings" style="width:100%; margin-top: 10px;">Speichern</button>
+        <button class="btn-primary" id="save-settings" style="width:100%; margin-top: 10px; padding: 16px;">Speichern & Schließen</button>
     </div>
 
-    <!-- MODALS -->
     <div class="custom-modal-overlay" id="custom-modal-overlay"></div>
 
+    <!-- ACTION SHEET (Long Press Menu) -->
+    <div class="action-sheet" id="action-sheet">
+        <div class="sheet-handle"></div>
+        <h3 id="sheet-title" style="text-align: center; margin-bottom: 10px; font-size: 1.1rem; color: var(--text-muted);">Aktion wählen</h3>
+        <button class="sheet-btn primary" id="sheet-btn-note">📝 Notiz schreiben</button>
+        <button class="sheet-btn" id="sheet-btn-freeze">❄️ Tag pausieren (Urlaub)</button>
+        <button class="sheet-btn danger" id="sheet-btn-clear">🧹 Eintrag löschen</button>
+    </div>
+
+    <!-- QR MODAL -->
+    <div class="custom-modal" id="qr-modal" style="text-align: center;">
+        <h3 style="font-size: 1.5rem;">Gerät wechseln</h3>
+        <p style="font-size: 0.95rem;">Scanne diesen Code mit der normalen Kamera-App deines <b>neuen</b> Handys.</p>
+        <div id="qr-code-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 20px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></div>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-secondary" id="close-qr" style="width: 100%;">Schließen</button>
+        </div>
+    </div>
+
     <div class="custom-modal" id="note-modal">
-        <h3>Notiz bearbeiten</h3>
-        <span id="note-date-label" style="display:block; margin-bottom:15px; color:var(--text-muted); font-size:0.9rem;">Datum</span>
-        <textarea id="note-input" placeholder="Schreibe hier deine Notiz... (z.B. '5km gelaufen')"></textarea>
+        <h3>Notiz</h3>
+        <span id="note-date-label" style="display:block; margin-bottom:15px; color:var(--text-muted); font-size:0.9rem; font-weight:600;">Datum</span>
+        <textarea id="note-input" placeholder="Warum war es heute gut oder schlecht?"></textarea>
         <div class="modal-actions">
             <button class="btn-secondary" id="cancel-note">Abbrechen</button>
             <button class="btn-primary" id="save-note">Speichern</button>
         </div>
     </div>
 
-    <!-- ALL NOTES DIRECTORY MODAL -->
+    <!-- STATS DASHBOARD (ULTIMATE EDITION) -->
+    <div class="custom-modal" id="stats-modal" style="max-height: 92vh; width: 95%; max-width: 600px; padding: 20px 15px;">
+        <h3 style="font-size: 1.6rem; text-align: center; margin-bottom: 5px;">Analytics 🧠</h3>
+        <p style="text-align: center; font-size: 0.85rem; margin-bottom: 20px;">Datengetriebene Einblicke in deine Gewohnheiten.</p>
+        
+        <div class="stats-top-grid">
+            <div class="stat-box">
+                <div class="stat-box-value" id="stat-total-habits" style="color: var(--primary);">0</div>
+                <div class="stat-box-label">Aktive Ziele</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-value" id="stat-best-streak" style="color: var(--warning);">0</div>
+                <div class="stat-box-label">Bester Streak</div>
+            </div>
+        </div>
+
+        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">🏆 Meilensteine</h4>
+        <div class="milestones-container">
+            <div class="milestone-badge" id="badge-7"><div class="milestone-icon">🥉</div><div class="milestone-text">7 TAGE</div></div>
+            <div class="milestone-badge" id="badge-30"><div class="milestone-icon">🥈</div><div class="milestone-text">30 TAGE</div></div>
+            <div class="milestone-badge" id="badge-100"><div class="milestone-icon">🥇</div><div class="milestone-text">100 TAGE</div></div>
+            <div class="milestone-badge" id="badge-365"><div class="milestone-icon">👑</div><div class="milestone-text">1 JAHR</div></div>
+        </div>
+
+        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">🔥 Die Jahres-Heatmap</h4>
+        <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
+        
+        <div class="github-heatmap-wrapper" id="heatmap-scroll-area">
+            <div class="github-heatmap-container">
+                <div class="heatmap-months" id="hm-months"></div>
+                <div class="heatmap-body">
+                    <div class="heatmap-weekdays"><span></span><span>Mo</span><span></span><span>Mi</span><span></span><span>Fr</span><span></span></div>
+                    <div class="heatmap-grid" id="hm-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 25px;">
+            <button class="btn-primary" id="close-stats" style="width: 100%; padding: 16px;">Schließen</button>
+        </div>
+    </div>
+
+    <!-- OTHER MODALS -->
     <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
-        <h3>Meine Notizen</h3>
-        <div id="all-notes-list" class="scrollable-list">
-            <!-- Befüllt per JavaScript -->
-        </div>
-        <div class="modal-actions">
-            <button class="btn-secondary" id="close-all-notes">Schließen</button>
-        </div>
+        <h3>Alle Notizen</h3>
+        <div id="all-notes-list" style="overflow-y: auto; flex-grow: 1; display:flex; flex-direction:column; gap:10px;"></div>
+        <div class="modal-actions"><button class="btn-secondary" id="close-all-notes">Schließen</button></div>
     </div>
 
     <div class="custom-modal" id="edit-modal">
         <h3>Gewohnheit umbenennen</h3>
-        <input type="text" id="edit-name-input" inputmode="text" enterkeyhint="done" placeholder="Neuer Name...">
+        <input type="text" id="edit-name-input" inputmode="text" enterkeyhint="done" style="width:100%; padding:15px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); font-size:1.1rem; font-weight:700;">
         <div class="modal-actions">
             <button class="btn-secondary" id="cancel-edit">Abbrechen</button>
             <button class="btn-primary" id="save-edit">Speichern</button>
@@ -332,43 +396,16 @@
     </div>
 
     <div class="custom-modal" id="archive-manager-modal">
-        <h3>Archivierte Gewohnheiten</h3>
-        <div id="archive-list-container" class="scrollable-list"></div>
-        <div class="modal-actions">
-            <button class="btn-secondary" id="close-archive">Schließen</button>
-        </div>
-    </div>
-
-    <!-- DASHBOARD MODAL -->
-    <div class="custom-modal" id="stats-modal" style="max-height: 90vh; width: 95%; max-width: 600px;">
-        <h3>Deine Ziele & Erfolge 🏆</h3>
-        <p>So hast du in den letzten 30 Tagen abgeschnitten.</p>
-        
-        <div style="display:flex; justify-content:space-between; text-align:center; margin-bottom:10px; background: var(--bg-body); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border);">
-            <div style="flex:1;">
-                <div style="font-size:1.8rem; font-weight:bold; color:var(--primary);" id="stat-total-habits">0</div>
-                <div style="font-size:0.8rem; color:var(--text-muted);">Aktive Gewohnheiten</div>
-            </div>
-            <div style="flex:1;">
-                <div style="font-size:1.8rem; font-weight:bold; color:var(--warning);" id="stat-best-streak">0</div>
-                <div style="font-size:0.8rem; color:var(--text-muted);">Bester Streak 🔥</div>
-            </div>
-        </div>
-
-        <div id="individual-stats-container" class="individual-stats-grid scrollable-list" style="margin-bottom: 20px; flex-grow: 1; max-height: 50vh; overflow-y: auto;">
-            <!-- Befüllt per JavaScript -->
-        </div>
-
-        <div class="modal-actions">
-            <button class="btn-secondary" id="close-stats">Schließen</button>
-        </div>
+        <h3>Archiv</h3>
+        <div id="archive-list-container" style="overflow-y: auto; flex-grow: 1; display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
+        <div class="modal-actions"><button class="btn-secondary" id="close-archive" style="width:100%;">Schließen</button></div>
     </div>
 
     <!-- MAIN CONTENT -->
     <div class="container">
-        <!-- Zitat Motivation -->
-        <div id="daily-quote" style="text-align:center; font-style:italic; color:var(--text-muted); font-size:0.85rem; margin-bottom:15px; padding: 0 20px;">
-            "Erfolg ist die Summe kleiner Anstrengungen, die jeden Tag wiederholt werden."
+        <div style="margin-bottom: 25px; padding: 0 10px;">
+            <div class="dynamic-greeting" id="greeting-text">Guten Tag</div>
+            <div class="greeting-subtext" id="greeting-subtext">Lass uns deine Gewohnheiten pflegen.</div>
         </div>
 
         <div class="input-group">
@@ -379,37 +416,26 @@
         <div id="habit-list"></div>
         
         <div id="empty-state" class="empty-state" style="display: none;">
-            <h3>Start deine Reise! 🚀</h3>
-            <p style="margin-top: 10px;">Füge oben deine erste Gewohnheit hinzu<br>und beginne deinen Streak.</p>
+            <div style="font-size: 4rem; margin-bottom: 10px;">🌱</div>
+            <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">Der Startschuss.</h3>
+            <p style="margin-top: 10px; font-size: 1rem;">Eine Gewohnheit beginnt mit dem ersten Tag. Füge oben dein erstes Ziel hinzu.</p>
         </div>
-        
-        <p class="interaction-hint">Tipp: Tag gedrückt halten (Handy) oder Doppelklick (PC) für Notizen.</p>
     </div>
 
     <script>
         /**
-         * PWA SETUP (DYNAMISCH UMBENENNEN UND ICON SETZEN)
+         * ELITE PWA SETUP
          */
         function setupPWA() {
-            const appName = settings.appName || "Habit Tracker Pro";
+            const appName = settings.appName || "Habits Pro";
             const shortName = appName.length > 12 ? appName.substring(0, 12) : appName;
-            
             const defaultIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMwIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
             const appIcon = settings.avatar ? settings.avatar : defaultIcon;
             
             const manifestObj = {
-                "name": appName,
-                "short_name": shortName,
-                "start_url": ".",
-                "display": "standalone",
-                "background_color": settings.theme === 'dark' ? "#0f172a" : "#f8fafc",
-                "theme_color": settings.primaryColor,
-                "icons": [{ 
-                    "src": appIcon, 
-                    "sizes": "192x192 512x512", 
-                    "type": settings.avatar ? "image/webp" : "image/svg+xml",
-                    "purpose": "any maskable"
-                }]
+                "name": appName, "short_name": shortName, "start_url": ".", "display": "standalone",
+                "background_color": settings.theme === 'dark' ? "#0f172a" : "#f8fafc", "theme_color": settings.primaryColor,
+                "icons": [{ "src": appIcon, "sizes": "192x192 512x512", "type": settings.avatar ? "image/webp" : "image/svg+xml", "purpose": "any maskable" }]
             };
             
             const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
@@ -417,172 +443,207 @@
             document.getElementById('dynamic-apple-icon').setAttribute('href', appIcon);
             
             const swCode = `self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('activate', (e) => self.clients.claim()); self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Offline'))); });`;
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(console.log);
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(()=>{});
         }
 
         /**
-         * INDEXED-DB PERSISTENCE
+         * INDEXED-DB PERSISTENCE (Update-resilient)
          */
-        const DB_NAME = 'HabitTrackerProDB';
-        const STORE_NAME = 'appData';
-        
+        const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
         function initDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (e) => { e.target.result.createObjectStore(STORE_NAME); };
-                request.onsuccess = (e) => resolve(e.target.result);
-                request.onerror = (e) => reject('IndexedDB Fehler');
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = (e) => { e.target.result.createObjectStore(STORE_NAME); };
+                req.onsuccess = (e) => resolve(e.target.result); req.onerror = () => reject();
             });
         }
-
         async function dbGet(key) {
             try {
                 const db = await initDB();
-                return new Promise((resolve) => {
-                    const tx = db.transaction(STORE_NAME, 'readonly');
-                    const req = tx.objectStore(STORE_NAME).get(key);
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => resolve(null);
+                return new Promise(resolve => {
+                    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(key);
+                    req.onsuccess = () => resolve(req.result); req.onerror = () => resolve(null);
                 });
             } catch(e) { return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null; }
         }
-
         async function dbSet(key, val) {
             try {
                 const db = await initDB();
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(val, key);
+                db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(val, key);
                 localStorage.setItem(key, JSON.stringify(val));
             } catch(e) { localStorage.setItem(key, JSON.stringify(val)); }
         }
 
         /**
-         * APP LOGIC & STATE
+         * APP STATE
          */
-        const COLOR_PALETTE = [
-            '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', 
-            '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', 
-            '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', 
-            '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', 
-            '#6366f1', '#4f46e5', '#64748b', '#334155'
-        ];
+        const COLOR_PALETTE = ['#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', '#6366f1', '#4f46e5', '#64748b', '#334155'];
         let habits = [];
         let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
         let habitDisplayDates = {}; 
-        let expandedHabits = new Set(); // Speichert, welche Gewohnheiten aufgeklappt sind
+        let expandedHabits = new Set();
 
         const listEl = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
         const customModalOverlay = document.getElementById('custom-modal-overlay');
+        const actionSheet = document.getElementById('action-sheet');
+        
+        // Modal DOM Elements
         const noteModal = document.getElementById('note-modal');
         const editModal = document.getElementById('edit-modal');
         const archiveManagerModal = document.getElementById('archive-manager-modal');
         const statsModal = document.getElementById('stats-modal');
         const allNotesModal = document.getElementById('all-notes-modal');
+        const qrModal = document.getElementById('qr-modal');
 
-        let currentContext = { habitId: null, dateStr: null, action: null };
-        const vibrate = (ms = 50) => { if (navigator.vibrate) navigator.vibrate(ms); };
+        let currentContext = { habitId: null, dateStr: null }; // Global Pointer
+
+        // HAPTIC FEEDBACK
+        const vibrate = (type = 'light') => { 
+            if (!navigator.vibrate) return;
+            if (type === 'light') navigator.vibrate(20);
+            if (type === 'medium') navigator.vibrate(40);
+            if (type === 'heavy') navigator.vibrate([60, 40, 60]);
+            if (type === 'error') navigator.vibrate([30, 50, 30, 50, 30]);
+        };
 
         // INITIALIZATION
         async function init() {
+            await checkImportHash();
             await loadData();
             applySettings();
             setupPWA(); 
             renderColorGrid();
+            setDynamicGreeting();
             render(); 
+            updateGlobalProgress();
             setupEventListeners();
+        }
+
+        function setDynamicGreeting() {
+            const h = new Date().getHours();
+            let g = "Guten Tag"; let sub = "Lass uns deine Gewohnheiten pflegen.";
+            if (h >= 5 && h < 12) { g = "Guten Morgen"; sub = "Ein neuer Tag, ein neuer Streak."; }
+            else if (h >= 18 || h < 5) { g = "Guten Abend"; sub = "Zeit, den Tag erfolgreich abzuschließen."; }
+            document.getElementById('greeting-text').textContent = `${g}, ${settings.username.split(' ')[0]}!`;
+            document.getElementById('greeting-subtext').textContent = sub;
+        }
+
+        async function checkImportHash() {
+            if (window.location.hash.startsWith('#import=')) {
+                try {
+                    const data = JSON.parse(LZString.decompressFromEncodedURIComponent(window.location.hash.substring(8)));
+                    if (data && data.habits) {
+                        if (confirm("🚨 Neues Profil erkannt!\n\nDaten importieren und aktuelle überschreiben?")) {
+                            await dbSet('habit_tracker_pro_habits', data.habits);
+                            if (data.settings) await dbSet('habit_tracker_pro_settings', data.settings);
+                            alert("Erfolgreich übertragen!"); window.location.hash = ''; window.location.reload();
+                        } else { window.location.hash = ''; }
+                    }
+                } catch(e) { alert("Übertragung fehlgeschlagen."); window.location.hash = ''; }
+            }
         }
 
         async function loadData() {
             const hData = await dbGet('habit_tracker_pro_habits');
             const sData = await dbGet('habit_tracker_pro_settings');
-            
-            if(hData) { habits = hData; } 
-            else if (localStorage.getItem('habit_tracker_pro_data')) { habits = JSON.parse(localStorage.getItem('habit_tracker_pro_data')); }
+            if(hData) habits = hData; else if (localStorage.getItem('habit_tracker_pro_data')) habits = JSON.parse(localStorage.getItem('habit_tracker_pro_data'));
+            if(sData) settings = { ...settings, ...sData }; else if (localStorage.getItem('habit_tracker_pro_settings')) settings = { ...settings, ...JSON.parse(localStorage.getItem('habit_tracker_pro_settings')) };
 
-            if(sData) { settings = { ...settings, ...sData }; }
-            else if (localStorage.getItem('habit_tracker_pro_settings')) { settings = { ...settings, ...JSON.parse(localStorage.getItem('habit_tracker_pro_settings')) }; }
-
-            habits.forEach(h => { if (!h.notes) h.notes = {}; if (h.archived === undefined) h.archived = false; });
+            // Data Integrity & Migration
+            habits.forEach(h => { 
+                if (!h.notes) h.notes = {}; 
+                if (!h.skipped) h.skipped = []; // Neue Urlaubstage-Array
+                if (h.archived === undefined) h.archived = false; 
+            });
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
         }
 
         function saveData() { dbSet('habit_tracker_pro_habits', habits); }
-        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); }
+        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); setDynamicGreeting(); }
 
         function applySettings() {
             document.body.setAttribute('data-theme', settings.theme);
             document.documentElement.style.setProperty('--primary', settings.primaryColor);
             
+            // Generate color shades dynamically
+            const hex2rgb = (hex) => { const v = parseInt(hex.replace('#', ''), 16); return `${(v >> 16) & 255}, ${(v >> 8) & 255}, ${v & 255}`; };
+            const rgb = hex2rgb(settings.primaryColor);
+            document.documentElement.style.setProperty('--primary-light', `rgba(${rgb}, 0.2)`);
+            document.documentElement.style.setProperty('--primary-med', `rgba(${rgb}, 0.6)`);
+            document.documentElement.style.setProperty('--primary-dark', `rgba(${rgb}, 1)`);
+
             let metaTheme = document.querySelector('meta[name="theme-color"]');
             if(!metaTheme) { metaTheme = document.createElement('meta'); metaTheme.name = "theme-color"; document.head.appendChild(metaTheme); }
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
-
+            
             document.getElementById('header-username').textContent = settings.username;
             document.getElementById('settings-name-input').value = settings.username;
+            document.getElementById('header-appname').textContent = settings.appName || 'Gewohnheit Tracker';
+            document.getElementById('settings-appname-input').value = settings.appName || '';
+            document.title = settings.appName || 'Habit Tracker';
             
-            const appName = settings.appName || 'Gewohnheit Tracker';
-            document.title = appName;
-            document.querySelector('.app-title').textContent = appName;
-            document.getElementById('settings-appname-input').value = appName;
-            
-            const avatarEl = document.getElementById('header-avatar');
-            const previewEl = document.getElementById('settings-avatar-preview');
-            const placeEl = document.getElementById('settings-avatar-placeholder');
-
             if (settings.avatar) {
-                avatarEl.innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
-                previewEl.src = settings.avatar;
-                previewEl.style.display = 'block'; placeEl.style.display = 'none';
+                document.getElementById('header-avatar').innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
+                document.getElementById('settings-avatar-preview').src = settings.avatar; document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none';
             } else {
-                const initial = settings.username.charAt(0).toUpperCase() || '?';
-                avatarEl.textContent = initial; avatarEl.innerHTML = initial;
-                previewEl.style.display = 'none'; placeEl.style.display = 'flex'; placeEl.textContent = initial;
+                const init = settings.username.charAt(0).toUpperCase() || '?';
+                document.getElementById('header-avatar').textContent = init;
+                document.getElementById('settings-avatar-preview').style.display = 'none'; document.getElementById('settings-avatar-placeholder').style.display = 'flex'; document.getElementById('settings-avatar-placeholder').textContent = init;
             }
         }
 
-        function calculateStreak(history) {
-            const sorted = [...history].sort();
-            if (sorted.length === 0) return 0;
+        // Erweiterte Streak Calculation (ignoriert 'skipped' dates)
+        function calculateStreak(history, skipped = []) {
+            let activeDates = [...history];
             const today = new Date().toISOString().split('T')[0];
             const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
             const yesterday = yesterdayDate.toISOString().split('T')[0];
 
-            let current = sorted.includes(today) ? today : (sorted.includes(yesterday) ? yesterday : null);
-            if (!current) return 0;
+            // If today is skipped, we look at yesterday as the baseline
+            let checkDate = new Date();
+            if (skipped.includes(today) && !activeDates.includes(today)) checkDate = yesterdayDate;
+            else if (!activeDates.includes(today) && !activeDates.includes(yesterday) && !skipped.includes(yesterday)) return 0;
+            else if (!activeDates.includes(today)) checkDate = yesterdayDate;
 
-            let streak = 0; let checkDate = new Date(current);
+            let streak = 0;
             while (true) {
                 const dStr = checkDate.toISOString().split('T')[0];
-                if (sorted.includes(dStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } 
+                if (activeDates.includes(dStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } 
+                else if (skipped.includes(dStr)) { checkDate.setDate(checkDate.getDate() - 1); } // Überspringen
                 else break;
             }
             return streak;
         }
 
-        window.moveHabit = function(id, direction) {
-            vibrate(20);
+        function updateGlobalProgress() {
             const activeHabits = habits.filter(h => !h.archived);
+            if(activeHabits.length === 0) { document.getElementById('global-progress').style.strokeDashoffset = 125.6; return; }
+            const todayStr = new Date().toISOString().split('T')[0];
+            let done = 0; let total = 0;
+            activeHabits.forEach(h => {
+                if(!h.skipped.includes(todayStr)) { total++; if(h.history.includes(todayStr)) done++; }
+            });
+            const pct = total === 0 ? 0 : (done / total);
+            const offset = 125.6 - (125.6 * pct);
+            document.getElementById('global-progress').style.strokeDashoffset = offset;
+        }
+
+        window.moveHabit = function(id, direction) {
+            vibrate('light'); const activeHabits = habits.filter(h => !h.archived);
             const activeIndex = activeHabits.findIndex(h => h.id == id);
-            
             if (activeIndex < 0) return;
             const newActiveIndex = activeIndex + direction;
             if (newActiveIndex < 0 || newActiveIndex >= activeHabits.length) return;
-            
             const targetId = activeHabits[newActiveIndex].id;
-            const realIndex1 = habits.findIndex(h => h.id == id);
-            const realIndex2 = habits.findIndex(h => h.id == targetId);
-            
-            const temp = habits[realIndex1];
-            habits[realIndex1] = habits[realIndex2];
-            habits[realIndex2] = temp;
-            
+            const realIndex1 = habits.findIndex(h => h.id == id); const realIndex2 = habits.findIndex(h => h.id == targetId);
+            const temp = habits[realIndex1]; habits[realIndex1] = habits[realIndex2]; habits[realIndex2] = temp;
             saveData(); render();
         };
 
         window.toggleExpand = function(id) {
-            if (expandedHabits.has(id)) expandedHabits.delete(id);
-            else expandedHabits.add(id);
+            vibrate('light');
+            if (expandedHabits.has(id)) expandedHabits.delete(id); else expandedHabits.add(id);
             render();
         };
 
@@ -590,37 +651,35 @@
          * RENDER LOGIC
          */
         function render() {
-            const formatter = new Intl.DateTimeFormat('de-DE', { month: 'short', year: 'numeric' });
+            const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
             const activeHabits = habits.filter(h => !h.archived);
-            
-            if (activeHabits.length === 0) {
-                listEl.innerHTML = ''; emptyState.style.display = 'block'; return;
-            } else { emptyState.style.display = 'none'; }
+            if (activeHabits.length === 0) { listEl.innerHTML = ''; emptyState.style.display = 'block'; return; } 
+            else { emptyState.style.display = 'none'; }
 
-            const todayStr = new Date().toISOString().split('T')[0];
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
             const fragment = document.createDocumentFragment();
 
             activeHabits.forEach((habit, index) => {
                 if (!habitDisplayDates[habit.id]) habitDisplayDates[habit.id] = new Date();
                 const displayDate = habitDisplayDates[habit.id];
-                
-                const year = displayDate.getFullYear();
-                const month = displayDate.getMonth();
+                const year = displayDate.getFullYear(); const month = displayDate.getMonth();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
                 const firstDayIndex = new Date(year, month, 1).getDay();
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
                 const monthLabel = formatter.format(displayDate);
-                const yearPrefix = `${year}-`;
-                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
-                const streak = calculateStreak(habit.history);
-                const notes = habit.notes || {};
-
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                const streak = calculateStreak(habit.history, habit.skipped);
+                const notes = habit.notes || {};
+
                 let daysPassed = daysInMonth;
-                if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
-                const progressPct = daysPassed > 0 ? Math.min(100, Math.round((monthChecks / daysPassed) * 100)) : 0;
+                if (year === today.getFullYear() && month === today.getMonth()) daysPassed = today.getDate();
+                // Abziehen der übersprungenen Tage im aktuellen Monat
+                const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= todayStr).length;
+                daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
+                const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
 
                 const isExpanded = expandedHabits.has(habit.id) ? 'expanded' : '';
                 const card = document.createElement('div');
@@ -628,453 +687,328 @@
 
                 let gridHTML = `<div class="weekday-label">Mo</div><div class="weekday-label">Di</div><div class="weekday-label">Mi</div><div class="weekday-label">Do</div><div class="weekday-label">Fr</div><div class="weekday-label">Sa</div><div class="weekday-label">So</div>`;
                 for (let i = 0; i < adjustedFirstDay; i++) gridHTML += `<div class="day-cell empty"></div>`;
-
+                
                 for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const isChecked = habit.history.includes(dateStr);
-                    const isToday = (dateStr === todayStr);
-                    const hasNote = notes[dateStr] ? 'has-note' : '';
-                    gridHTML += `<div class="day-cell ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''} ${hasNote}" data-habit-id="${habit.id}" data-date="${dateStr}"><span>${d}</span></div>`;
+                    const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const cellDateObj = new Date(cellDateStr);
+                    const isFuture = cellDateObj > today;
+                    const isChecked = habit.history.includes(cellDateStr);
+                    const isSkipped = habit.skipped.includes(cellDateStr);
+                    const isToday = (cellDateStr === todayStr);
+                    const hasNote = notes[cellDateStr] ? 'has-note' : '';
+                    
+                    let classes = ['day-cell'];
+                    if(isFuture) classes.push('future');
+                    if(isToday) classes.push('today');
+                    if(isChecked && !isFuture) classes.push('checked');
+                    if(isSkipped && !isChecked && !isFuture) classes.push('skipped');
+                    if(hasNote) classes.push(hasNote);
+
+                    gridHTML += `<div class="${classes.join(' ')}" data-habit-id="${habit.id}" data-date="${cellDateStr}"><span>${d}</span></div>`;
                 }
 
-                const isFirst = index === 0;
-                const isLast = index === activeHabits.length - 1;
+                const isFirst = index === 0; const isLast = index === activeHabits.length - 1;
 
                 card.innerHTML = `
                     <div class="habit-header">
                         <div class="habit-title-row">
-                            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                 <div class="habit-title">${escapeHtml(habit.name)}</div>
-                                <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                </button>
-                            </div>
-                            <div class="habit-month-nav">
-                                <button onclick="changeHabitMonth('${habit.id}', -1)">❮</button>
-                                <span>${monthLabel}</span>
-                                <button onclick="changeHabitMonth('${habit.id}', 1)">❯</button>
+                                <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                             </div>
                             <div class="habit-meta">
-                                <span class="habit-stats">${year}: ${yearCount}x</span>
+                                <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)" ${displayDate >= today ? 'style="opacity:0.3; pointer-events:none;"' : ''}>❯</button></div>
                                 ${streak > 0 ? `<span class="streak-badge">🔥 ${streak}</span>` : ''}
                             </div>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill" style="width: ${progressPct}%"></div>
-                            </div>
+                            <div class="progress-bar-container"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
                         </div>
                         <div class="habit-actions">
-                            <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
-                            <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                            <button class="btn-action btn-edit" title="Bearbeiten" aria-label="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                            <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
+                            <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <button class="btn-action btn-edit" title="Bearbeiten" aria-label="Edit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                         </div>
                     </div>
                     <div class="calendar-container">
                         <div class="calendar-grid">${gridHTML}</div>
-                        <div class="calendar-footer">
-                            <button class="btn-action btn-delete" title="Archivieren" aria-label="Archive" style="color: var(--danger);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                        <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
+                            <span style="font-size:0.75rem; color:var(--text-muted);">Lange auf Tag drücken für Optionen.</span>
+                            <button class="btn-action btn-delete" title="Archivieren" aria-label="Archive" style="color: var(--danger);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                         </div>
                     </div>
                 `;
                 fragment.appendChild(card);
             });
-
-            listEl.innerHTML = '';
-            listEl.appendChild(fragment);
+            listEl.innerHTML = ''; listEl.appendChild(fragment);
         }
 
-        window.changeHabitMonth = function(habitId, delta) {
-            vibrate(20);
-            const d = habitDisplayDates[habitId];
-            d.setMonth(d.getMonth() + delta);
-            render();
-        };
+        window.changeHabitMonth = function(habitId, delta) { vibrate('light'); const d = habitDisplayDates[habitId]; d.setMonth(d.getMonth() + delta); render(); };
 
-        // --- STATS DASHBOARD & TREND CHART ---
+        // --- THE TRUE GITHUB HEATMAP & STATS ---
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
             
             let bestStreak = 0; 
-            const today = new Date(); 
-            const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
-            
-            const container = document.getElementById('individual-stats-container');
-            if (container) container.innerHTML = '';
-
-            activeHabits.forEach(h => {
-                const s = calculateStreak(h.history);
-                if (s > bestStreak) bestStreak = s;
-                
-                // Berechnung für das Aktienkurs-Diagramm (letzte 4 Wochen gruppiert)
-                let weekCounts = [0, 0, 0, 0]; // [Woche-4, Woche-3, Woche-2, Woche-1(Aktuell)]
-                for(let i=0; i<28; i++) {
-                    let d = new Date(); d.setDate(d.getDate() - i);
-                    let dStr = d.toISOString().split('T')[0];
-                    if (h.history.includes(dStr)) {
-                        let weekIdx = 3 - Math.floor(i / 7);
-                        weekCounts[weekIdx]++;
-                    }
-                }
-                
-                // Generiere SVG Punkte für das Trenddiagramm
-                let pointsStr = '';
-                weekCounts.forEach((count, idx) => {
-                    let x = 10 + (idx * 26.6); // Auf 100% Breite verteilen
-                    let y = 35 - ((count / 7) * 30); // 35 ist unten (0x), 5 ist oben (7x)
-                    pointsStr += `${x},${y} `;
-                });
-
-                // Berechnung der 30-Tage Erfolgsquote für den Kreis
-                let actualChecks = 0;
-                h.history.forEach(d => {
-                    const checkDate = new Date(d);
-                    if(checkDate >= thirtyDaysAgo && checkDate <= today) actualChecks++;
-                });
-                
-                const pct = Math.round((actualChecks / 30) * 100);
-                const dashArray = 251.2;
-                const dashOffset = dashArray - (dashArray * pct) / 100;
-                
-                if (container) {
-                    const card = document.createElement('div');
-                    card.className = 'individual-stat-card';
-                    card.innerHTML = `
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(h.name)}</div>
-                        <svg class="circle-chart" viewBox="0 0 100 100" style="width: 80px; height: 80px;">
-                            <circle class="circle-bg" cx="50" cy="50" r="40" />
-                            <circle class="circle-progress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s ease-out;" />
-                            <text class="circle-text" x="50" y="55" style="font-size: 18px;">${pct}%</text>
-                        </svg>
-                        
-                        <div style="margin-top:15px; font-size:0.75rem; color:var(--text-muted); text-align: left;">Trend (4 Wochen)</div>
-                        <svg viewBox="0 0 100 40" class="trend-chart">
-                            <polyline points="${pointsStr.trim()}" class="trend-line" />
-                            ${weekCounts.map((count, idx) => `<circle cx="${10 + (idx * 26.6)}" cy="${35 - ((count / 7) * 30)}" r="3" class="trend-point"/>`).join('')}
-                        </svg>
-
-                        <textarea class="improvement-input" data-id="${h.id}" placeholder="Fokus-Notiz / Strategie...">${escapeHtml(h.improvementNote || '')}</textarea>
-                    `;
-                    container.appendChild(card);
-                    
-                    setTimeout(() => {
-                        const circleProgress = card.querySelector('.circle-progress');
-                        if(circleProgress) circleProgress.style.strokeDashoffset = dashOffset;
-                    }, 100);
-                }
-            });
-
+            activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
             document.getElementById('stat-best-streak').textContent = bestStreak;
-        }
 
-        // --- NOTES DIRECTORY ---
-        function renderAllNotes() {
-            const container = document.getElementById('all-notes-list');
-            container.innerHTML = '';
-            let allNotes = [];
-            
-            habits.forEach(h => {
-                if (h.notes) {
-                    Object.entries(h.notes).forEach(([date, text]) => {
-                        allNotes.push({ date, habitName: h.name, text, habitId: h.id });
-                    });
-                }
-            });
-            
-            allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            if (!allNotes.length) {
-                container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 20px;">Noch keine Notizen vorhanden.</p>';
-                return;
+            const select = document.getElementById('heatmap-habit-select');
+            if(select) {
+                const oldVal = select.value;
+                select.innerHTML = activeHabits.map((h, i) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
+                if(activeHabits.find(h=>h.id==oldVal)) select.value = oldVal;
             }
-            
-            allNotes.forEach(note => {
-                const el = document.createElement('div');
-                el.className = 'note-summary-item';
-                const dispDate = note.date.split('-').reverse().join('.');
-                
-                el.innerHTML = `
-                    <div class="note-summary-header">
-                        <div>
-                            <div style="font-weight:bold; color:var(--text-main); font-size:0.95rem;">${dispDate}</div>
-                            <div style="font-size:0.8rem; color:var(--primary); font-weight:600;">${escapeHtml(note.habitName)}</div>
-                        </div>
-                        <button class="btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="openNoteDialog('${note.habitId}', '${note.date}')">✏️ Bearbeiten</button>
-                    </div>
-                    <div style="margin-top:10px; font-size:0.95rem; color:var(--text-muted); white-space:pre-wrap; line-height: 1.5;">${escapeHtml(note.text)}</div>
-                `;
-                container.appendChild(el);
-            });
+
+            // Milestone Engine
+            document.getElementById('badge-7').className = `milestone-badge ${bestStreak>=7 ? 'unlocked' : ''}`;
+            document.getElementById('badge-30').className = `milestone-badge ${bestStreak>=30 ? 'unlocked' : ''}`;
+            document.getElementById('badge-100').className = `milestone-badge ${bestStreak>=100 ? 'unlocked' : ''}`;
+            document.getElementById('badge-365').className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
+
+            if(activeHabits.length > 0) renderHeatmap(select.value || activeHabits[0].id);
         }
 
-        function compressImage(file, callback) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    const MAX = 512; let w = img.width; let h = img.height;
-                    const minSize = Math.min(w, h);
-                    const sourceX = (w - minSize) / 2;
-                    const sourceY = (h - minSize) / 2;
-                    canvas.width = MAX; canvas.height = MAX;
-                    ctx.drawImage(img, sourceX, sourceY, minSize, minSize, 0, 0, MAX, MAX);
-                    callback(canvas.toDataURL('image/webp', 0.8));
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+        function renderHeatmap(habitId) {
+            const h = habits.find(x => x.id == habitId);
+            const grid = document.getElementById('hm-grid');
+            const monthsContainer = document.getElementById('hm-months');
+            if(!h || !grid || !monthsContainer) return;
+            
+            grid.innerHTML = ''; monthsContainer.innerHTML = '';
+            const today = new Date(); today.setHours(0,0,0,0);
+            
+            // 53 Wochen zurück = 371 Tage. Richte auf Sonntag aus.
+            let startDate = new Date(today); startDate.setDate(today.getDate() - 370);
+            startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1)); // Start on Monday
+            
+            let curr = new Date(startDate);
+            let col = 0; let lastMonth = -1;
+            
+            while(curr <= today && col < 53) {
+                // Month Label Logic
+                if (curr.getDate() <= 7 && curr.getMonth() !== lastMonth) {
+                    const monthName = new Intl.DateTimeFormat('de-DE', {month:'short'}).format(curr);
+                    const ml = document.createElement('span'); ml.className = 'heatmap-month-label';
+                    ml.textContent = monthName; ml.style.gridColumn = col + 1;
+                    monthsContainer.appendChild(ml);
+                    lastMonth = curr.getMonth();
+                }
+
+                for(let row=0; row<7; row++) {
+                    const cell = document.createElement('div');
+                    if (curr > today) {
+                        cell.style.background = 'transparent'; cell.className = 'hm-cell';
+                    } else {
+                        const dStr = curr.toISOString().split('T')[0];
+                        const isChecked = h.history.includes(dStr);
+                        const isSkipped = h.skipped.includes(dStr);
+                        
+                        let intensityClass = '';
+                        if (isChecked) {
+                            // Berechne historische Streak an diesem Datum für Intensity
+                            let histStreak = 1; let tempD = new Date(curr);
+                            while(true) { tempD.setDate(tempD.getDate()-1); const sd = tempD.toISOString().split('T')[0]; if(h.history.includes(sd)) histStreak++; else if(h.skipped.includes(sd)) continue; else break; }
+                            
+                            if(histStreak >= 7) intensityClass = 'lvl-3';
+                            else if(histStreak >= 3) intensityClass = 'lvl-2';
+                            else intensityClass = 'lvl-1';
+                        } else if (isSkipped) {
+                            intensityClass = 'skipped';
+                        }
+                        
+                        cell.className = `hm-cell ${intensityClass}`;
+                        
+                        // Tooltip
+                        const tt = document.createElement('div'); tt.className = 'hm-tooltip';
+                        const niceDate = new Intl.DateTimeFormat('de-DE', {dateStyle: 'medium'}).format(curr);
+                        tt.textContent = `${niceDate}: ${isChecked ? 'Erledigt' : (isSkipped ? 'Pausiert' : 'Offen')}`;
+                        cell.appendChild(tt);
+                    }
+                    grid.appendChild(cell);
+                    curr.setDate(curr.getDate() + 1);
+                }
+                col++;
+            }
+
+            // Auto-scroll to end (Today)
+            const wrapper = document.getElementById('heatmap-scroll-area');
+            setTimeout(() => { wrapper.scrollLeft = 0; }, 50); // RTL trick: 0 is right
+        }
+
+        // --- ACTION SHEET LOGIC (Long Press) ---
+        function openActionSheet(habitId, dateStr) {
+            currentContext = { habitId, dateStr };
+            const habit = habits.find(h => h.id == habitId);
+            const isSkipped = habit.skipped.includes(dateStr);
+            const niceDate = dateStr.split('-').reverse().join('.');
+            
+            document.getElementById('sheet-title').textContent = `${habit.name} - ${niceDate}`;
+            
+            const btnFreeze = document.getElementById('sheet-btn-freeze');
+            if (isSkipped) { btnFreeze.textContent = "▶️ Pause aufheben"; btnFreeze.dataset.action = "unfreeze"; }
+            else { btnFreeze.textContent = "❄️ Tag pausieren (Urlaub)"; btnFreeze.dataset.action = "freeze"; }
+            
+            document.getElementById('custom-modal-overlay').classList.add('open');
+            actionSheet.classList.add('open');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeActionSheet() { actionSheet.classList.remove('open'); document.getElementById('custom-modal-overlay').classList.remove('open'); document.body.classList.remove('modal-open'); }
+
+        // --- CSV EXPORT ---
+        function exportCSV() {
+            let csv = "Gewohnheit,Datum,Status,Notiz\n";
+            habits.forEach(h => {
+                // Collect all unique dates from history, skipped and notes
+                let dates = new Set([...h.history, ...h.skipped, ...Object.keys(h.notes||{})]);
+                Array.from(dates).sort().forEach(d => {
+                    let status = "Offen";
+                    if (h.history.includes(d)) status = "Erledigt";
+                    else if (h.skipped.includes(d)) status = "Pausiert";
+                    let note = h.notes[d] ? `"${h.notes[d].replace(/"/g, '""')}"` : "";
+                    csv += `"${h.name.replace(/"/g, '""')}",${d},${status},${note}\n`;
+                });
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `Habits-Export-${new Date().toISOString().split('T')[0]}.csv`; a.click();
         }
 
         // --- EVENTS ---
         function closeAllModals() {
-            customModalOverlay.classList.remove('open');
-            noteModal.classList.remove('open'); editModal.classList.remove('open');
-            archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open');
+            document.getElementById('custom-modal-overlay').classList.remove('open'); 
+            noteModal.classList.remove('open'); 
+            editModal.classList.remove('open');
+            archiveManagerModal.classList.remove('open'); 
+            statsModal.classList.remove('open'); 
             allNotesModal.classList.remove('open');
-            currentContext = { habitId: null, dateStr: null, action: null };
+            qrModal.classList.remove('open'); 
+            actionSheet.classList.remove('open');
+            currentContext = { habitId: null, dateStr: null, action: null }; 
             document.body.classList.remove('modal-open');
         }
 
         function setupEventListeners() {
-            // Trend Zeitraum-Buttons im Dashboard
-            document.querySelectorAll('.trend-toggle').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    vibrate(20);
-                    document.querySelectorAll('.trend-toggle').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    currentTrendTimeframe = e.target.dataset.timeframe;
-                    updateStatsDashboard();
-                });
+            // Action Sheet Bindings
+            document.getElementById('sheet-btn-note').addEventListener('click', () => { closeActionSheet(); setTimeout(()=>{ const habit = habits.find(h => h.id == currentContext.habitId); document.getElementById('note-date-label').textContent = `Notiz für den ${currentContext.dateStr.split('-').reverse().join('.')}`; document.getElementById('note-input').value = habit.notes[currentContext.dateStr] || ""; document.getElementById('custom-modal-overlay').classList.add('open'); noteModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => document.getElementById('note-input').focus(), 100); }, 300); });
+            document.getElementById('sheet-btn-freeze').addEventListener('click', (e) => {
+                vibrate('medium'); const habit = habits.find(h => h.id == currentContext.habitId);
+                const action = e.target.dataset.action;
+                if(action === 'freeze') { habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped.push(currentContext.dateStr); }
+                else { habit.skipped = habit.skipped.filter(d => d !== currentContext.dateStr); }
+                saveData(); render(); updateGlobalProgress(); closeActionSheet();
+            });
+            document.getElementById('sheet-btn-clear').addEventListener('click', () => {
+                vibrate('heavy'); const habit = habits.find(h => h.id == currentContext.habitId);
+                habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped = habit.skipped.filter(d => d !== currentContext.dateStr); delete habit.notes[currentContext.dateStr];
+                saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
 
-            // Notizen-Verzeichnis öffnen
-            document.getElementById('notes-overview-toggle').addEventListener('click', () => {
-                vibrate(30); renderAllNotes();
-                customModalOverlay.classList.add('open'); allNotesModal.classList.add('open');
-                document.body.classList.add('modal-open');
+            // QR & CSV Sync
+            document.getElementById('btn-qr-sync').addEventListener('click', () => {
+                if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
+                const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ habits, settings }));
+                if (url.length > 2500) { alert("Datenmenge zu groß für QR. Nutze Export/Import."); return; }
+                document.getElementById('qr-code-container').innerHTML = ''; new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff" });
+                document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open');
+                document.getElementById('custom-modal-overlay').classList.add('open'); document.getElementById('qr-modal').classList.add('open'); document.body.classList.add('modal-open');
             });
-            document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
+            document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
 
-            document.getElementById('stats-toggle').addEventListener('click', () => {
-                vibrate(30); updateStatsDashboard();
-                customModalOverlay.classList.add('open'); statsModal.classList.add('open');
-                document.body.classList.add('modal-open');
-            });
-            document.getElementById('close-stats').addEventListener('click', closeAllModals);
+            document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { renderHeatmap(e.target.value); });
 
-            const statsContainer = document.getElementById('individual-stats-container');
-            if (statsContainer) {
-                statsContainer.addEventListener('change', (e) => {
-                    if (e.target.classList.contains('improvement-input')) {
-                        const id = e.target.dataset.id;
-                        const habit = habits.find(h => h.id == id);
-                        if (habit) { habit.improvementNote = e.target.value.trim(); saveData(); }
-                    }
-                });
-            }
-
-            document.getElementById('share-toggle').addEventListener('click', async () => {
-                vibrate(30);
-                if (navigator.share) {
-                    try { await navigator.share({ title: settings.appName || 'Gewohnheit Tracker', text: 'Hier ist meine Habits App!', url: window.location.href }); } 
-                    catch (err) { console.log('Share error', err); }
-                } else { alert('Teilen wird in diesem Browser nicht nativ unterstützt. Kopiere einfach die URL!'); }
-            });
-
+            // Core UI Listeners
             const addFn = () => {
-                const input = document.getElementById('new-habit-input'); const name = input.value.trim();
-                if (!name) return;
+                const input = document.getElementById('new-habit-input'); const name = input.value.trim(); if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-                habits.unshift({ id: newId, name: name, history: [], notes: {}, archived: false });
-                habitDisplayDates[newId] = new Date();
-                saveData(); input.value = ''; vibrate(30); render(); input.blur();
+                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false });
+                habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
             document.getElementById('add-btn').addEventListener('click', addFn);
             document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
 
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
-                
-                // Tagesauswahl X Setzen
-                const dayCell = target.closest('.day-cell:not(.empty)');
+                const dayCell = target.closest('.day-cell:not(.empty):not(.future)');
                 if (dayCell) {
                     if (dayCell.dataset.preventClick === "true") { delete dayCell.dataset.preventClick; return; }
                     const id = dayCell.dataset.habitId; const date = dayCell.dataset.date;
-                    const habit = habits.find(h => h.id == id);
-                    if (!habit) return;
+                    const habit = habits.find(h => h.id == id); if (!habit) return;
+                    
+                    // Ein Klick auf ein "Skipped" Kästchen macht es normal (Clear)
+                    if(habit.skipped.includes(date)) { habit.skipped = habit.skipped.filter(d => d !== date); vibrate('light'); dayCell.classList.remove('skipped'); saveData(); render(); updateGlobalProgress(); return; }
 
                     const idx = habit.history.indexOf(date);
-                    if (idx > -1) { 
-                        habit.history.splice(idx, 1); 
-                        vibrate(20); 
-                        dayCell.classList.remove('checked'); 
-                    } else { 
-                        habit.history.push(date); 
-                        vibrate(20); 
-                        dayCell.classList.add('checked'); 
-                    } 
-                    saveData(); 
+                    if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); } 
+                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); } 
+                    saveData(); updateGlobalProgress();
                     
-                    // Lokales Update der UI (Kein render() nötig -> kein Flackern/Foto-Effekt)
-                    const card = dayCell.closest('.habit-card');
-                    const d = habitDisplayDates[id] || new Date();
-                    const year = d.getFullYear();
-                    const month = d.getMonth();
-                    
-                    const yearPrefix = `${year}-`;
-                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+                    // DOM Updates ohne Re-render
+                    const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
+                    const year = d.getFullYear(); const month = d.getMonth();
+                    const yearPrefix = `${year}-`; const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                     const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                     const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                    const streak = calculateStreak(habit.history);
+                    const streak = calculateStreak(habit.history, habit.skipped);
                     
                     let daysPassed = new Date(year, month + 1, 0).getDate();
                     if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
-                    const progressPct = daysPassed > 0 ? Math.min(100, Math.round((monthChecks / daysPassed) * 100)) : 0;
+                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= new Date().toISOString().split('T')[0]).length;
+                    daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
+                    const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
                     
                     if (card.querySelector('.habit-stats')) card.querySelector('.habit-stats').textContent = `${year}: ${yearCount}x`;
                     if (card.querySelector('.progress-bar-fill')) card.querySelector('.progress-bar-fill').style.width = `${progressPct}%`;
                     
                     let badge = card.querySelector('.streak-badge');
-                    if (streak > 0) {
-                        if (!badge) {
-                            badge = document.createElement('span'); badge.className = 'streak-badge';
-                            card.querySelector('.habit-meta').appendChild(badge);
-                        }
-                        badge.textContent = `🔥 ${streak}`;
-                    } else if (badge) { badge.remove(); }
-                    
+                    if (streak > 0) { if (!badge) { badge = document.createElement('span'); badge.className = 'streak-badge'; card.querySelector('.habit-meta').appendChild(badge); } badge.textContent = `🔥 ${streak}`; } 
+                    else if (badge) { badge.remove(); }
                     return;
                 }
                 
-                if (target.closest('.btn-edit')) {
-                    vibrate(30); const id = target.closest('.habit-card').dataset.id;
-                    const habit = habits.find(h => h.id == id);
-                    currentContext = { habitId: id, action: 'edit' };
-                    document.getElementById('edit-name-input').value = habit.name;
-                    customModalOverlay.classList.add('open'); editModal.classList.add('open');
-                    document.body.classList.add('modal-open');
-                    setTimeout(() => document.getElementById('edit-name-input').focus(), 100); return;
-                }
-
-                if (target.closest('.btn-delete')) {
-                    vibrate([50, 100, 50]);
-                    if(confirm("Gewohnheit ins Archiv verschieben?")) {
-                        const id = target.closest('.habit-card').dataset.id;
-                        habits.find(h => h.id == id).archived = true; saveData(); render();
-                    }
-                }
+                if (target.closest('.btn-edit')) { vibrate('light'); const id = target.closest('.habit-card').dataset.id; const habit = habits.find(h => h.id == id); currentContext = { habitId: id, action: 'edit' }; document.getElementById('edit-name-input').value = habit.name; document.getElementById('custom-modal-overlay').classList.add('open'); editModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => document.getElementById('edit-name-input').focus(), 100); return; }
+                if (target.closest('.btn-delete')) { vibrate('heavy'); if(confirm("Gewohnheit ins Archiv verschieben?")) { const id = target.closest('.habit-card').dataset.id; habits.find(h => h.id == id).archived = true; saveData(); render(); updateGlobalProgress(); } }
             });
 
-            listEl.addEventListener('dblclick', (e) => {
-                const cell = e.target.closest('.day-cell:not(.empty)');
-                if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openNoteDialog(cell.dataset.habitId, cell.dataset.date); }
-            });
-
+            // Long Press Logic -> Action Sheet
             let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
-                const cell = e.target.closest('.day-cell:not(.empty)');
-                if (!cell) return;
+                const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (!cell) return;
                 startY = e.touches[0].clientY; startX = e.touches[0].clientX;
-                pressTimer = setTimeout(() => {
-                    vibrate(80); cell.dataset.preventClick = "true";
-                    openNoteDialog(cell.dataset.habitId, cell.dataset.date);
-                }, 500); 
+                pressTimer = setTimeout(() => { vibrate('medium'); cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); }, 500); 
             }, {passive: true});
-            listEl.addEventListener('touchmove', (e) => {
-                if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer);
-            }, {passive: true});
+            listEl.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer); }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
-            listEl.addEventListener('contextmenu', (e) => { 
-                const cell = e.target.closest('.day-cell:not(.empty)');
-                if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openNoteDialog(cell.dataset.habitId, cell.dataset.date); }
-            });
+            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } });
 
-            document.getElementById('save-note').addEventListener('click', () => {
-                const h = habits.find(h => h.id == currentContext.habitId);
-                const text = document.getElementById('note-input').value.trim();
-                if (text === "") delete h.notes[currentContext.dateStr]; else h.notes[currentContext.dateStr] = text;
-                saveData(); render(); renderAllNotes(); closeAllModals();
-            });
-            document.getElementById('save-edit').addEventListener('click', () => {
-                const h = habits.find(h => h.id == currentContext.habitId);
-                const newName = document.getElementById('edit-name-input').value.trim();
-                if (newName) { h.name = newName; saveData(); render(); }
-                closeAllModals();
-            });
-            document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive').forEach(b => b.addEventListener('click', closeAllModals));
-            customModalOverlay.addEventListener('click', closeAllModals);
+            // Nav & Dialogs
+            document.getElementById('stats-toggle').addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); document.getElementById('custom-modal-overlay').classList.add('open'); statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            
+            document.getElementById('save-note').addEventListener('click', () => { const h = habits.find(h => h.id == currentContext.habitId); const text = document.getElementById('note-input').value.trim(); if (text === "") delete h.notes[currentContext.dateStr]; else h.notes[currentContext.dateStr] = text; saveData(); render(); closeAllModals(); });
+            document.getElementById('save-edit').addEventListener('click', () => { const h = habits.find(h => h.id == currentContext.habitId); const newName = document.getElementById('edit-name-input').value.trim(); if (newName) { h.name = newName; saveData(); render(); } closeAllModals(); });
+            
+            document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive', '#close-qr', '#close-stats').forEach(b => b.addEventListener('click', closeAllModals));
+            document.getElementById('custom-modal-overlay').addEventListener('click', closeAllModals);
 
-            const toggleSettings = () => { 
-                document.getElementById('settings-panel').classList.toggle('open'); 
-                document.getElementById('settings-overlay').classList.toggle('open'); 
-                document.body.classList.toggle('modal-open');
-            };
+            const toggleSettings = () => { document.getElementById('settings-panel').classList.toggle('open'); document.getElementById('settings-overlay').classList.toggle('open'); document.body.classList.toggle('modal-open'); };
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => document.getElementById(id).addEventListener('click', toggleSettings));
 
-            document.getElementById('theme-toggle').addEventListener('click', () => { vibrate(30); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
-            document.getElementById('save-settings').addEventListener('click', () => { 
-                vibrate(30); 
-                settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; 
-                settings.appName = document.getElementById('settings-appname-input').value.trim() || 'Habit Tracker'; 
-                saveSettings(); toggleSettings(); 
-            });
+            document.getElementById('theme-toggle').addEventListener('click', () => { vibrate('light'); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
+            document.getElementById('save-settings').addEventListener('click', () => { vibrate('light'); settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; settings.appName = document.getElementById('settings-appname-input').value.trim() || 'Habit Tracker'; saveSettings(); toggleSettings(); });
 
             document.getElementById('avatar-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0]; if (!file) return;
-                compressImage(file, (optimizedBase64) => {
-                    settings.avatar = optimizedBase64;
-                    document.getElementById('settings-avatar-preview').src = optimizedBase64;
-                    document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none';
-                });
+                const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d'); const M=512; let w=img.width,h=img.height; const ms=Math.min(w,h); cvs.width=M; cvs.height=M; ctx.drawImage(img,(w-ms)/2,(h-ms)/2,ms,ms,0,0,M,M); settings.avatar = cvs.toDataURL('image/webp',0.8); document.getElementById('settings-avatar-preview').src = settings.avatar; document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none'; }; img.src = ev.target.result; }; r.readAsDataURL(file);
             });
 
-            document.getElementById('open-archive').addEventListener('click', () => {
-                vibrate(30); const list = document.getElementById('archive-list-container'); list.innerHTML = '';
-                const arch = habits.filter(h => h.archived);
-                if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>';
-                arch.forEach(h => {
-                    const el = document.createElement('div'); el.className = 'archive-item';
-                    el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span>
-                        <div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button>
-                        <button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`;
-                    list.appendChild(el);
-                });
-                // Einstellungen schließen, Archiv öffnen
-                document.getElementById('settings-panel').classList.remove('open'); 
-                document.getElementById('settings-overlay').classList.remove('open');
-                customModalOverlay.classList.add('open'); archiveManagerModal.classList.add('open');
-                document.body.classList.add('modal-open');
-            });
-
-            document.getElementById('btn-export').addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify({habits, settings})], { type: 'application/json' });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                a.download = `HabitsBackup-${new Date().toISOString().split('T')[0]}.json`; a.click();
-            });
-            document.getElementById('btn-import-trigger').addEventListener('click', () => document.getElementById('file-import').click());
-            document.getElementById('file-import').addEventListener('change', (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try { const data = JSON.parse(ev.target.result); if(data.habits) habits = data.habits; if(data.settings) settings = data.settings; saveData(); saveSettings(); render(); alert("Import erfolgreich!"); } 
-                    catch(err) { alert("Fehlerhafte Datei."); }
-                };
-                reader.readAsText(file);
-            });
+            document.getElementById('open-archive').addEventListener('click', () => { vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; const arch = habits.filter(h => h.archived); if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open'); document.getElementById('custom-modal-overlay').classList.add('open'); archiveManagerModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            
+            // Fixes for directory view (re-added securely)
+            document.getElementById('notes-overview-toggle').addEventListener('click', () => { vibrate('light'); const c = document.getElementById('all-notes-list'); c.innerHTML=''; let an=[]; habits.forEach(h=>{if(h.notes){Object.entries(h.notes).forEach(([d,t])=>{an.push({date:d,hn:h.name,text:t,id:h.id});});}}); an.sort((a,b)=>new Date(b.date)-new Date(a.date)); if(!an.length){c.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Leer.</p>';}else{an.forEach(n=>{const e=document.createElement('div');e.className='note-summary-item';e.innerHTML=`<div style="font-weight:bold;color:var(--text-main);">${n.date.split('-').reverse().join('.')} - <span style="color:var(--primary);">${escapeHtml(n.hn)}</span></div><div style="margin-top:5px;color:var(--text-muted);">${escapeHtml(n.text)}</div>`;c.appendChild(e);});} document.getElementById('custom-modal-overlay').classList.add('open'); allNotesModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
         }
 
-        window.openNoteDialog = function(habitId, dateStr) {
-            closeAllModals();
-            currentContext = { habitId, dateStr };
-            const habit = habits.find(h => h.id == habitId);
-            document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
-            document.getElementById('note-input').value = habit.notes[dateStr] || "";
-            customModalOverlay.classList.add('open'); noteModal.classList.add('open');
-            document.body.classList.add('modal-open');
-            setTimeout(() => document.getElementById('note-input').focus(), 100);
-        }
-
-        window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); closeAllModals(); };
+        window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); updateGlobalProgress(); closeAllModals(); };
         window.deleteHabit = (id) => { if(confirm("Endgültig löschen?")) { habits = habits.filter(h => h.id != id); saveData(); closeAllModals(); } };
         function escapeHtml(text) { return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]); }
 
@@ -1083,11 +1017,7 @@
             COLOR_PALETTE.forEach(color => {
                 const div = document.createElement('div'); div.className = 'color-option'; div.style.backgroundColor = color;
                 if (settings.primaryColor === color) div.classList.add('selected');
-                div.addEventListener('click', () => {
-                    vibrate(20); settings.primaryColor = color;
-                    document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected');
-                    document.documentElement.style.setProperty('--primary', color); document.querySelector('meta[name="theme-color"]').content = color;
-                });
+                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgb = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},1)`); document.querySelector('meta[name="theme-color"]').content = color; });
                 grid.appendChild(div);
             });
         }
