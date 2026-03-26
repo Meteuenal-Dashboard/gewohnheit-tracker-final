@@ -103,7 +103,7 @@
 
         /* HABIT CARDS */
         #habit-list { display: flex; flex-direction: column; gap: 20px; }
-        .habit-card { background: var(--bg-card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.2s ease; }
+        .habit-card { background: var(--bg-card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--primary); transition: transform 0.2s ease; }
         .habit-header { display: flex; flex-direction: column; gap: 10px; }
         .habit-title-row { width: 100%; }
         .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; flex: 1; }
@@ -189,7 +189,7 @@
         /* KOMPAKTER JAHRESPLAN (12-Month-Grid) */
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
-        .mini-month { background: var(--bg-body); padding: 10px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: border-color 0.2s; }
+        .mini-month { background: var(--bg-body); padding: 10px; border-radius: 12px; border: 1px solid var(--primary); cursor: pointer; transition: border-color 0.2s; }
         .mini-month:active { border-color: var(--primary); }
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; }
         .mini-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -758,7 +758,9 @@
                     <div class="habit-header">
                         <div class="habit-title-row">
                             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 10px;">
-                                <div class="habit-title">${escapeHtml(habit.name)}</div>
+                                <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <div class="habit-title" style="margin-bottom: 0;">${escapeHtml(habit.name)}</div>
+                                </div>
                                 <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
                                     <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
                                     <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
@@ -998,7 +1000,7 @@
             // CALENDAR CLICKS
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
-                const dayCell = target.closest('.day-cell:not(.empty)');
+                const dayCell = target.closest('.day-cell:not(.empty):not(.future)');
                 if (dayCell) {
                     if (dayCell.dataset.preventClick === "true") { delete dayCell.dataset.preventClick; return; }
                     const id = dayCell.dataset.habitId; const date = dayCell.dataset.date;
@@ -1035,14 +1037,14 @@
             // TOUCH & LONG PRESS
             let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
-                const cell = e.target.closest('.day-cell:not(.empty)'); if (!cell) return;
+                const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (!cell) return;
                 startY = e.touches[0].clientY; startX = e.touches[0].clientX;
                 pressTimer = setTimeout(() => { vibrate('medium'); cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); }, 500); 
             }, {passive: true});
             listEl.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer); }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
             listEl.addEventListener('touchcancel', () => clearTimeout(pressTimer));
-            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty)'); if (cell) { e.preventDefault(); if (!cell.dataset.preventClick) { cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } } });
+            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (cell) { e.preventDefault(); if (!cell.dataset.preventClick) { cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } } });
 
             // MOOD SELECTOR
             document.querySelectorAll('.mood-btn').forEach(btn => {
