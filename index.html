@@ -134,9 +134,12 @@
         .day-cell:active:not(.empty):not(.future) { transform: scale(0.85); }
         .day-cell.today { border-color: var(--primary); font-weight: 800; }
         .day-cell.future { opacity: 0.3; pointer-events: none; background: transparent; border: 1px dashed var(--border); }
-        .day-cell.skipped { background: repeating-linear-gradient(45deg, var(--bg-body), var(--bg-body) 5px, var(--border) 5px, var(--border) 10px); color: var(--text-muted); border-color: transparent; }
-        .day-cell.skipped::after { content: "⏸"; position: absolute; font-size: 1.2rem; color: var(--text-muted); }
-        .day-cell.skipped span { opacity: 0.1; }
+        
+        /* Modernes Pause-Design (Schlichtes Dashboard) */
+        .day-cell.skipped { background: transparent; border-color: var(--border); color: transparent; }
+        .day-cell.skipped::after { content: ""; position: absolute; width: 40%; height: 3px; background-color: var(--text-muted); border-radius: 2px; }
+        .day-cell.skipped span { opacity: 0; }
+
         .day-cell.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); box-shadow: 0 2px 8px var(--primary-light); }
         .day-cell.checked::after { content: "✕"; position: absolute; font-size: 1.5rem; font-weight: 900; color: var(--primary); }
         .day-cell.checked span { opacity: 0.05; }
@@ -161,21 +164,8 @@
         .custom-modal h3 { margin-bottom: 10px; font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
         .custom-modal textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 16px; background: var(--bg-body); color: var(--text-main); font-family: inherit; font-size: 1rem; resize: none; margin-bottom: 20px; height: 140px; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-        .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 700; }
-
-        /* 👑 VERTIKALE JAHRES-HEATMAP */
-        .github-heatmap-wrapper { display: flex; justify-content: center; background: var(--bg-body); padding: 15px; border-radius: 16px; border: 1px solid var(--border); margin-top: 15px; overflow-y: auto; max-height: 350px; }
-        .heatmap-months-vertical { display: flex; flex-direction: column; position: relative; min-width: 35px; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; margin-top: 24px; margin-right: 5px;}
-        .heatmap-weekdays-horizontal { display: grid; grid-template-columns: repeat(7, 16px); gap: 4px; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-align: center; margin-bottom: 5px; }
-        .heatmap-grid-vertical { display: grid; grid-template-columns: repeat(7, 16px); grid-auto-flow: row; gap: 4px; }
-        .hm-cell { width: 16px; height: 16px; background: var(--border); border-radius: 3px; position: relative; cursor: pointer; transition: transform 0.1s; }
-        .hm-cell.lvl-1 { background: var(--primary-light); }
-        .hm-cell.lvl-2 { background: var(--primary-med); }
-        .hm-cell.lvl-3 { background: var(--primary-dark); }
-        .hm-cell.skipped { background: repeating-linear-gradient(45deg, var(--border), var(--border) 2px, var(--bg-body) 2px, var(--bg-body) 4px); }
-
-        .hm-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-5px); background: var(--text-main); color: var(--bg-body); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 10; margin-bottom: 5px; }
-        .hm-cell:hover .hm-tooltip { opacity: 1; }
+        .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 700; transition: transform 0.1s, background 0.2s; }
+        .btn-secondary:active { transform: scale(0.96); background: var(--border); }
 
         /* DASHBOARD & STATS */
         .stats-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
@@ -183,15 +173,27 @@
         .stat-box-value { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
         .stat-box-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
         
-        .milestones-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
-        .milestone-badge { min-width: 80px; padding: 15px 10px; background: var(--bg-body); border-radius: 16px; border: 1px solid var(--border); text-align: center; opacity: 0.4; filter: grayscale(1); }
+        /* Milestones - Kompakt als 2x2 Grid */
+        .milestones-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .milestone-badge { padding: 15px 10px; background: var(--bg-body); border-radius: 16px; border: 1px solid var(--border); text-align: center; opacity: 0.4; filter: grayscale(1); }
         .milestone-badge.unlocked { opacity: 1; filter: grayscale(0); background: rgba(245, 158, 11, 0.1); border-color: var(--warning); }
         .milestone-icon { font-size: 1.8rem; margin-bottom: 5px; }
-        .milestone-text { font-size: 0.7rem; font-weight: 800; color: var(--text-main); }
+        .milestone-text { font-size: 0.75rem; font-weight: 800; color: var(--text-main); }
 
         .trend-toggle-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; background: var(--bg-body); padding: 5px; border-radius: 16px; border: 1px solid var(--border); }
         .trend-toggle { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px 10px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; font-weight: 700; }
         .trend-toggle.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* KOMPAKTER JAHRESPLAN (12-Month-Grid) */
+        .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
+        @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
+        .mini-month { background: var(--bg-body); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+        .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; }
+        .mini-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .mini-day { aspect-ratio: 1; border-radius: 2px; background: var(--border); opacity: 0.3; }
+        .mini-day.empty { background: transparent; }
+        .mini-day.checked { background: var(--primary); opacity: 1; }
+        .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
 
         .settings-label { font-weight: 700; margin-bottom: 12px; display: block; color: var(--text-main); text-transform: uppercase; font-size: 0.8rem; }
         .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
@@ -294,7 +296,7 @@
     <!-- QR MODAL -->
     <div class="custom-modal" id="qr-modal" style="text-align: center;">
         <h3 style="font-size: 1.5rem;">Gerät wechseln</h3>
-        <p style="font-size: 0.95rem;">Scanne diesen Code mit der normalen Kamera-App deines <b>neuen</b> Handys.</p>
+        <p style="font-size: 0.95rem;">Scanne diesen Code mit der Kamera-App deines <b>neuen</b> Handys.</p>
         <div id="qr-code-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 20px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></div>
         <p style="font-size: 0.75rem; color: var(--text-muted);">Hinweis: Bilder und Notizen werden beim QR-Sync übersprungen, um die Datenmenge klein zu halten.</p>
         <div class="modal-actions" style="justify-content: center; margin-top:15px;">
@@ -317,11 +319,10 @@
         <h3 style="font-size: 1.6rem; text-align: center; margin-bottom: 5px;">Analytics 🧠</h3>
         <p style="text-align: center; font-size: 0.85rem; margin-bottom: 20px;">Datengetriebene Einblicke in deine Gewohnheiten.</p>
         
-        <!-- SMART INSIGHTS -->
-        <div class="smart-insights" id="smart-insights-container" style="background: rgba(37, 99, 235, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: var(--radius); margin-bottom: 20px; text-align: left;">
-            <h4 style="color: var(--primary); margin-bottom: 8px; font-size: 1rem; display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> KI-Analytik</h4>
+        <!-- SMART INSIGHTS (ohne "KI-Analytik" Überschrift) -->
+        <div style="background: rgba(37, 99, 235, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: var(--radius); margin-bottom: 20px; text-align: left;">
             <p id="insight-best-day" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4;">Analysiere Daten...</p>
-            <p id="insight-best-habit" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4;"></p>
+            <p id="insight-best-habit" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0; line-height: 1.4;"></p>
         </div>
 
         <div class="stats-top-grid">
@@ -343,17 +344,11 @@
             <div class="milestone-badge" id="badge-365"><div class="milestone-icon">👑</div><div class="milestone-text">1 JAHR</div></div>
         </div>
 
-        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">🔥 Die Jahres-Heatmap</h4>
-        <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none;"></select>
+        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">📅 Kompakter Jahresplan</h4>
+        <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
         
-        <div class="github-heatmap-wrapper" id="heatmap-scroll-area">
-            <div style="display: flex; gap: 10px;">
-                <div class="heatmap-months-vertical" id="hm-months"></div>
-                <div style="flex-grow: 1;">
-                    <div class="heatmap-weekdays-horizontal"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
-                    <div class="heatmap-grid-vertical" id="hm-grid"></div>
-                </div>
-            </div>
+        <div class="yearly-grid" id="yearly-calendar-area">
+            <!-- Befüllt per JavaScript -->
         </div>
 
         <div class="modal-actions" style="margin-top: 25px;">
@@ -511,10 +506,32 @@
             document.getElementById('greeting-subtext').textContent = sub;
         }
 
-        // DATEN DEKODIEREN / ENKODIEREN (Für optimierten QR Sync)
-        const baseSyncDate = new Date('2020-01-01');
-        const dateToInt = (d) => Math.floor((new Date(d) - baseSyncDate) / 86400000).toString(36);
-        const intToDate = (i) => { let d = new Date(baseSyncDate); d.setDate(d.getDate() + parseInt(i, 36)); return d.toISOString().split('T')[0]; };
+        // EXTREM-KOMPRESSION FÜR QR CODE
+        const packDates = (dates) => {
+            if (!dates || !dates.length) return "";
+            let ints = [...new Set(dates)].map(d => Math.floor((new Date(d) - new Date('2020-01-01')) / 86400000)).sort((a,b)=>a-b);
+            let packed = []; let start = ints[0]; let len = 1;
+            for(let i=1; i<ints.length; i++) {
+                if (ints[i] === ints[i-1] + 1) len++;
+                else { packed.push(len > 1 ? `${start.toString(36)}-${len.toString(36)}` : start.toString(36)); start = ints[i]; len = 1; }
+            }
+            packed.push(len > 1 ? `${start.toString(36)}-${len.toString(36)}` : start.toString(36));
+            return packed.join('.');
+        };
+
+        const unpackDates = (str) => {
+            if (!str) return [];
+            let dates = [];
+            str.split('.').forEach(p => {
+                if (p.includes('-')) {
+                    let [s, l] = p.split('-'); let start = parseInt(s, 36); let len = parseInt(l, 36);
+                    for(let i=0; i<len; i++) { let d = new Date('2020-01-01'); d.setDate(d.getDate() + start + i); dates.push(d.toISOString().split('T')[0]); }
+                } else {
+                    let d = new Date('2020-01-01'); d.setDate(d.getDate() + parseInt(p, 36)); dates.push(d.toISOString().split('T')[0]);
+                }
+            });
+            return dates;
+        };
 
         async function checkImportHash() {
             if (window.location.hash.startsWith('#import=')) {
@@ -524,13 +541,13 @@
                         if (confirm("🚨 Neues Profil erkannt!\n\nDaten importieren und aktuelle überschreiben?")) {
                             const restoredHabits = data.h.map(opt => ({
                                 id: opt.i, name: opt.n, archived: opt.a === 1,
-                                history: opt.h ? opt.h.split('.').map(intToDate) : [],
-                                skipped: opt.s ? opt.s.split('.').map(intToDate) : [],
-                                notes: {} // Notizen werden vom QR ignoriert um Platz zu sparen
+                                history: unpackDates(opt.h),
+                                skipped: unpackDates(opt.s),
+                                notes: {} // Notizen werden vom QR ignoriert
                             }));
                             const restoredSettings = {
                                 theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an, 
-                                avatar: settings.avatar // Altes Profilbild beibehalten, da Bild nicht in QR passt
+                                avatar: settings.avatar 
                             };
                             await dbSet('habit_tracker_pro_habits', restoredHabits);
                             await dbSet('habit_tracker_pro_settings', restoredSettings);
@@ -735,7 +752,7 @@
 
         window.changeHabitMonth = function(habitId, delta) { vibrate('light'); const d = habitDisplayDates[habitId]; d.setMonth(d.getMonth() + delta); render(); };
 
-        // --- STATS DASHBOARD & VERTIKALE HEATMAP ---
+        // --- STATS DASHBOARD ---
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
@@ -756,7 +773,7 @@
             document.getElementById('badge-100').className = `milestone-badge ${bestStreak>=100 ? 'unlocked' : ''}`;
             document.getElementById('badge-365').className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
 
-            if(activeHabits.length > 0) renderHeatmap(select.value || activeHabits[0].id);
+            if(activeHabits.length > 0) renderYearlyCalendar(select.value || activeHabits[0].id);
             generateSmartInsights();
         }
         
@@ -792,71 +809,54 @@
             }
         }
 
-        // NEU: Vertikale Heatmap (Montag -> Sonntag, Jan -> Dez abwärts)
-        function renderHeatmap(habitId) {
+        // KOMPAKTER JAHRESPLAN (12-Month-Grid)
+        function renderYearlyCalendar(habitId) {
             const h = habits.find(x => x.id == habitId);
-            const grid = document.getElementById('hm-grid');
-            const monthsContainer = document.getElementById('hm-months');
-            if(!h || !grid || !monthsContainer) return;
+            const container = document.getElementById('yearly-calendar-area');
+            if(!h || !container) return;
             
-            grid.innerHTML = ''; monthsContainer.innerHTML = '';
-            const today = new Date(); today.setHours(0,0,0,0);
+            container.innerHTML = '';
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
             
-            // 370 Tage zurück, starte am nächsten Montag
-            let startDate = new Date(today); startDate.setDate(today.getDate() - 370);
-            let dayOffset = startDate.getDay() === 0 ? 6 : startDate.getDay() - 1; // 0 = Montag für den Offset
-            startDate.setDate(startDate.getDate() - dayOffset); 
-            
-            let curr = new Date(startDate);
-            let lastMonth = -1;
-            let weekRow = 0;
-            
-            while(curr <= today || curr.getDay() !== 1) { // Fülle die letzte Woche bis Sonntag auf
-                if(curr > today && curr.getDay() === 1) break;
-
-                if (curr.getDay() === 1) weekRow++;
-
-                // Setze Monats-Label immer, wenn es der erste einer Woche in einem neuen Monat ist
-                if (curr.getDate() <= 7 && curr.getMonth() !== lastMonth && curr.getDay() === 1) {
-                    const monthName = new Intl.DateTimeFormat('de-DE', {month:'short'}).format(curr);
-                    const ml = document.createElement('div'); 
-                    ml.style.position = 'absolute';
-                    ml.style.top = `${(weekRow - 1) * 20}px`; // 16px cell + 4px gap = 20px
-                    ml.textContent = monthName;
-                    monthsContainer.appendChild(ml);
-                    lastMonth = curr.getMonth();
+            for (let m = 0; m < 12; m++) {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'mini-month';
+                
+                const title = document.createElement('div');
+                title.className = 'mini-month-title';
+                title.textContent = monthNames[m];
+                monthDiv.appendChild(title);
+                
+                const grid = document.createElement('div');
+                grid.className = 'mini-month-grid';
+                
+                const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+                const firstDayIndex = new Date(currentYear, m, 1).getDay();
+                const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+                
+                for (let i = 0; i < adjustedFirstDay; i++) {
+                    const empty = document.createElement('div');
+                    empty.className = 'mini-day empty';
+                    grid.appendChild(empty);
                 }
-
-                const cell = document.createElement('div');
-                if (curr > today) {
-                    cell.style.background = 'transparent'; cell.className = 'hm-cell';
-                } else {
-                    const dStr = curr.toISOString().split('T')[0];
-                    const isChecked = h.history.includes(dStr);
-                    const isSkipped = h.skipped.includes(dStr);
+                
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${currentYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const isChecked = h.history.includes(dateStr);
+                    const isSkipped = h.skipped.includes(dateStr);
                     
-                    let intensityClass = '';
-                    if (isChecked) {
-                        let histStreak = 1; let tempD = new Date(curr);
-                        while(true) { tempD.setDate(tempD.getDate()-1); const sd = tempD.toISOString().split('T')[0]; if(h.history.includes(sd)) histStreak++; else if(h.skipped.includes(sd)) continue; else break; }
-                        if(histStreak >= 7) intensityClass = 'lvl-3';
-                        else if(histStreak >= 3) intensityClass = 'lvl-2';
-                        else intensityClass = 'lvl-1';
-                    } else if (isSkipped) { intensityClass = 'skipped'; }
+                    const cell = document.createElement('div');
+                    cell.className = 'mini-day';
+                    if (isChecked) cell.classList.add('checked');
+                    else if (isSkipped) cell.classList.add('skipped');
                     
-                    cell.className = `hm-cell ${intensityClass}`;
-                    
-                    const tt = document.createElement('div'); tt.className = 'hm-tooltip';
-                    const niceDate = new Intl.DateTimeFormat('de-DE', {dateStyle: 'medium'}).format(curr);
-                    tt.textContent = `${niceDate}: ${isChecked ? 'Erledigt' : (isSkipped ? 'Pausiert' : 'Offen')}`;
-                    cell.appendChild(tt);
+                    grid.appendChild(cell);
                 }
-                grid.appendChild(cell);
-                curr.setDate(curr.getDate() + 1);
+                monthDiv.appendChild(grid);
+                container.appendChild(monthDiv);
             }
-
-            const wrapper = document.getElementById('heatmap-scroll-area');
-            setTimeout(() => { wrapper.scrollTop = wrapper.scrollHeight; }, 50); 
         }
 
         // --- ACTION SHEET LOGIC (Long Press) ---
@@ -920,7 +920,6 @@
                         </div>
                     </div>`;
                 
-                // Klick auf das Item öffnet das Notiz-Fenster
                 el.addEventListener('click', () => { vibrate('light'); openNoteDialog(note.habitId, note.date); });
                 container.appendChild(el);
             });
@@ -948,29 +947,30 @@
                 saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
 
-            // QR & CSV Sync - OPTIMIERT (Kompaktere Daten für QR)
+            // QR & CSV Sync - EXTREM-KOMPRIMIERUNG
             document.getElementById('btn-qr-sync').addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
                 
-                // Optimiere die Daten um Platz zu sparen
                 let optHabits = habits.map(h => ({
                     i: h.id, n: h.name, a: h.archived ? 1 : 0,
-                    h: h.history.map(dateToInt).join('.'),
-                    s: h.skipped.map(dateToInt).join('.')
+                    h: packDates(h.history),
+                    s: packDates(h.skipped)
                 }));
                 let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName };
                 
                 const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ h: optHabits, s: optSettings }));
                 
-                if (url.length > 2500) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
+                if (url.length > 2800) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
                 
                 document.getElementById('qr-code-container').innerHTML = ''; 
-                new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff" });
+                // Error Correction Level L für maximale Datenkapazität im QR Code
+                new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
                 document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open');
                 document.getElementById('custom-modal-overlay').classList.add('open'); document.getElementById('qr-modal').classList.add('open'); document.body.classList.add('modal-open');
             });
             document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
-            document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { renderHeatmap(e.target.value); });
+
+            document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { renderYearlyCalendar(e.target.value); });
 
             const addFn = () => {
                 const input = document.getElementById('new-habit-input'); const name = input.value.trim(); if (!name) return;
