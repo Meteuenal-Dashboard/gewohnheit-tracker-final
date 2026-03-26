@@ -35,7 +35,7 @@
             --freeze: #94a3b8;
             --radius: 16px;
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-            --header-height: 85px; /* Leicht vergrößert für XP-Bar */
+            --header-height: 75px;
             --safe-area-top: env(safe-area-inset-top, 0px);
         }
 
@@ -64,7 +64,7 @@
 
         #confetti-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
 
-        /* HEADER & RPG SYSTEM */
+        /* HEADER & GLOBAL PROGRESS RING */
         .app-header {
             position: fixed; top: 0; left: 0; right: 0;
             height: calc(var(--header-height) + var(--safe-area-top));
@@ -85,10 +85,7 @@
         
         .user-info { display: flex; flex-direction: column; width: 100%; max-width: 150px; }
         .user-name { font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: -0.3px; display: flex; align-items: center; gap: 5px; }
-        .level-badge { font-size: 0.6rem; background: var(--primary); color: white; padding: 2px 6px; border-radius: 8px; font-weight: 800; }
-        .xp-container { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; }
-        .xp-fill { height: 100%; background: var(--warning); width: 0%; transition: width 0.3s ease; }
-        .xp-text { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+        .app-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
 
         .header-controls { display: flex; gap: 6px; flex-shrink: 0; }
         .icon-btn { background: transparent; border: none; color: var(--text-main); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s, background-color 0.2s; user-select: none; }
@@ -97,11 +94,10 @@
         .dynamic-greeting { font-size: 1.5rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px; }
         .greeting-subtext { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; }
 
-        /* INPUT AREA WITH CATEGORY */
+        /* INPUT AREA */
         .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: var(--bg-card); padding: 8px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
         .input-wrapper { display: flex; flex: 1; min-width: 200px; position: relative; }
         input[type="text"].habit-input { flex: 1; padding: 14px 15px; border: none; background: transparent; color: var(--text-main); font-size: 1rem; font-weight: 500; outline: none; width: 100%; }
-        select.category-select { appearance: none; background: var(--bg-body); border: 1px solid var(--border); padding: 8px 15px; border-radius: 12px; color: var(--text-main); font-weight: 600; font-size: 0.85rem; outline: none; cursor: pointer; }
         .btn-primary { background: var(--primary); color: #fff; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 10px var(--primary-light); white-space: nowrap; }
         .btn-primary:active { transform: scale(0.95); box-shadow: none; }
 
@@ -111,7 +107,6 @@
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .habit-title-row { flex: 1; }
         .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 2px; word-break: break-word; letter-spacing: -0.3px; user-select: none; }
-        .category-tag { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 8px; background: var(--border); color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
         
         .expand-btn { background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
@@ -205,22 +200,6 @@
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
 
-        /* POMODORO FAB */
-        .fab-timer { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px var(--primary-light); cursor: pointer; z-index: 99; transition: transform 0.2s; font-weight: bold; font-size: 1.2rem; }
-        .fab-timer:active { transform: scale(0.9); }
-        .fab-timer.running { animation: pulse 2s infinite; background: var(--warning); }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
-
-        /* POMODORO MODAL */
-        .timer-circle { width: 200px; height: 200px; margin: 20px auto; position: relative; display: flex; align-items: center; justify-content: center; }
-        .timer-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-        .timer-bg { fill: none; stroke: var(--border); stroke-width: 8; }
-        .timer-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear; stroke-dasharray: 565.48; stroke-dashoffset: 0; }
-        .timer-text { font-size: 3rem; font-weight: 900; color: var(--text-main); font-variant-numeric: tabular-nums; z-index: 2; }
-        
-        .timer-controls { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
-        .timer-btn { padding: 12px 25px; border-radius: 16px; font-weight: 700; border: none; cursor: pointer; font-size: 1rem; }
-        
         .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
         .settings-label { font-weight: 700; margin-bottom: 12px; display: block; color: var(--text-main); text-transform: uppercase; font-size: 0.8rem; }
         .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
@@ -244,9 +223,8 @@
                 <div class="avatar" id="header-avatar">?</div>
             </div>
             <div class="user-info">
-                <div class="user-name" id="header-username">Gast <span class="level-badge" id="header-level">Lvl 1</span></div>
-                <div class="xp-container"><div class="xp-fill" id="header-xp-fill"></div></div>
-                <div class="xp-text" id="header-xp-text">0 / 100 XP</div>
+                <div class="user-name" id="header-username">Gast</div>
+                <div class="app-title" id="header-appname">Gewohnheit Tracker</div>
             </div>
         </div>
         <div class="header-controls">
@@ -387,28 +365,6 @@
         </div>
     </div>
 
-    <!-- POMODORO TIMER MODAL -->
-    <div class="custom-modal" id="timer-modal" style="text-align: center;">
-        <h3 style="font-size: 1.5rem;">Fokus Modus</h3>
-        <p style="font-size: 0.9rem;">25 Minuten tiefe Konzentration.</p>
-        
-        <div class="timer-circle">
-            <svg class="timer-svg" viewBox="0 0 200 200">
-                <circle class="timer-bg" cx="100" cy="100" r="90" />
-                <circle class="timer-progress" id="timer-progress" cx="100" cy="100" r="90" />
-            </svg>
-            <div class="timer-text" id="timer-display">25:00</div>
-        </div>
-
-        <div class="timer-controls">
-            <button class="timer-btn" id="btn-timer-reset" style="background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main);">Reset</button>
-            <button class="timer-btn" id="btn-timer-start" style="background: var(--primary); color: white;">Start</button>
-        </div>
-        <div class="modal-actions" style="justify-content: center; margin-top:20px;">
-            <button class="btn-secondary" id="close-timer" style="width: 100%;">Schließen</button>
-        </div>
-    </div>
-
     <!-- OTHER MODALS -->
     <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
         <h3>Journal & Notizen</h3>
@@ -442,12 +398,6 @@
             <div class="input-wrapper">
                 <input type="text" id="new-habit-input" class="habit-input" inputmode="text" enterkeyhint="done" placeholder="Neue Gewohnheit..." autocomplete="off">
             </div>
-            <select id="new-habit-category" class="category-select">
-                <option value="🏋️ Gesundheit">🏋️ Gesundheit</option>
-                <option value="🧠 Geist">🧠 Geist</option>
-                <option value="💼 Arbeit">💼 Arbeit</option>
-                <option value="🎨 Hobby">🎨 Hobby</option>
-            </select>
             <button id="add-btn" class="btn-primary">Hinzufügen</button>
         </div>
 
@@ -459,9 +409,6 @@
             <p style="margin-top: 10px; font-size: 1rem;">Eine Gewohnheit beginnt mit dem ersten Tag. Füge oben dein erstes Ziel hinzu.</p>
         </div>
     </div>
-
-    <!-- FAB TIMER BUTTON -->
-    <div class="fab-timer" id="fab-timer">⏱️</div>
 
     <canvas id="confetti-canvas"></canvas>
 
@@ -527,7 +474,7 @@
          */
         const COLOR_PALETTE = ['#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', '#6366f1', '#4f46e5', '#64748b', '#334155'];
         let habits = [];
-        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker', xp: 0 };
+        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
         let habitDisplayDates = {}; 
         let expandedHabits = new Set();
 
@@ -542,8 +489,6 @@
         const statsModal = document.getElementById('stats-modal');
         const allNotesModal = document.getElementById('all-notes-modal');
         const qrModal = document.getElementById('qr-modal');
-        const timerModal = document.getElementById('timer-modal');
-
 
         // HAPTIC FEEDBACK & SOUND
         const vibrate = (type = 'light') => { 
@@ -552,22 +497,6 @@
             if (type === 'medium') navigator.vibrate(40);
             if (type === 'heavy') navigator.vibrate([60, 40, 60]);
             if (type === 'success') navigator.vibrate([30, 50, 30]);
-        };
-        const playLevelUpSound = () => {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if(!AudioContext) return;
-                const actx = new AudioContext();
-                const osc1 = actx.createOscillator(); const osc2 = actx.createOscillator();
-                const gain = actx.createGain();
-                osc1.connect(gain); osc2.connect(gain); gain.connect(actx.destination);
-                osc1.type = 'triangle'; osc2.type = 'sine';
-                osc1.frequency.setValueAtTime(440, actx.currentTime); osc1.frequency.exponentialRampToValueAtTime(880, actx.currentTime + 0.3);
-                osc2.frequency.setValueAtTime(554, actx.currentTime); osc2.frequency.exponentialRampToValueAtTime(1108, actx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.2, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.5);
-                osc1.start(actx.currentTime); osc2.start(actx.currentTime);
-                osc1.stop(actx.currentTime + 0.5); osc2.stop(actx.currentTime + 0.5);
-            } catch(e){}
         };
 
         // INITIALIZATION
@@ -582,7 +511,6 @@
             setupPWA(); 
             renderColorGrid();
             setDynamicGreeting();
-            updateXP();
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             render(); 
@@ -597,40 +525,6 @@
             else if (h >= 18 || h < 5) { g = "Guten Abend"; sub = "Zeit, den Tag erfolgreich abzuschließen."; }
             document.getElementById('greeting-text').textContent = `${g}, ${settings.username.split(' ')[0]}!`;
             document.getElementById('greeting-subtext').textContent = sub;
-        }
-
-        // RPG SYSTEM (XP & LEVELS)
-        function updateXP() {
-            if (!settings.xp) settings.xp = 0;
-            const level = Math.floor(Math.sqrt(settings.xp / 10)) + 1;
-            const xpForCurrentLevel = 10 * Math.pow(level - 1, 2);
-            const xpForNextLevel = 10 * Math.pow(level, 2);
-            const progressInLevel = settings.xp - xpForCurrentLevel;
-            const levelSize = xpForNextLevel - xpForCurrentLevel;
-            const pct = Math.max(0, Math.min(100, (progressInLevel / levelSize) * 100));
-
-            const headerLevel = document.getElementById('header-level');
-            if (headerLevel) headerLevel.textContent = `Lvl ${level}`;
-            const headerXpFill = document.getElementById('header-xp-fill');
-            if (headerXpFill) headerXpFill.style.width = `${pct}%`;
-            const headerXpText = document.getElementById('header-xp-text');
-            if (headerXpText) headerXpText.textContent = `${settings.xp} / ${xpForNextLevel} XP`;
-        }
-
-        function addXP(amount) {
-            const oldLevel = Math.floor(Math.sqrt((settings.xp || 0) / 10)) + 1;
-            settings.xp = Math.max(0, (settings.xp || 0) + amount);
-            const newLevel = Math.floor(Math.sqrt(settings.xp / 10)) + 1;
-            
-            updateXP();
-            saveSettings();
-
-            if (newLevel > oldLevel) {
-                vibrate('success');
-                playLevelUpSound();
-                fireConfetti(true); 
-                setTimeout(() => alert(`🎉 LEVEL UP! Du bist jetzt Level ${newLevel}!`), 500);
-            }
         }
 
         // COMPRESSION FOR QR
@@ -667,11 +561,11 @@
                     if (data && data.h) {
                         if (confirm("🚨 Neues Profil erkannt!\n\nDaten importieren und aktuelle überschreiben?")) {
                             const restoredHabits = data.h.map(opt => ({
-                                id: opt.i, name: opt.n, category: opt.c || '🏋️ Gesundheit', archived: opt.a === 1,
+                                id: opt.i, name: opt.n, archived: opt.a === 1,
                                 history: unpackDates(opt.h), skipped: unpackDates(opt.s), notes: {}
                             }));
                             const restoredSettings = {
-                                theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an, xp: data.s.x || 0,
+                                theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an,
                                 avatar: settings.avatar 
                             };
                             await dbSet('habit_tracker_pro_habits', restoredHabits);
@@ -692,14 +586,13 @@
             habits.forEach(h => { 
                 if (!h.notes) h.notes = {}; 
                 if (!h.skipped) h.skipped = []; 
-                if (!h.category) h.category = '🏋️ Gesundheit'; 
                 if (h.archived === undefined) h.archived = false; 
             });
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
         }
 
         function saveData() { dbSet('habit_tracker_pro_habits', habits); }
-        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); setDynamicGreeting(); updateXP(); }
+        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); setDynamicGreeting(); }
 
         function applySettings() {
             document.body.setAttribute('data-theme', settings.theme);
@@ -715,7 +608,7 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
             
             const headerUsername = document.getElementById('header-username');
-            if (headerUsername) headerUsername.innerHTML = `${settings.username.split(' ')[0]} <span class="level-badge" id="header-level">Lvl 1</span>`;
+            if (headerUsername) headerUsername.textContent = `${settings.username.split(' ')[0]}`;
             
             const nameInput = document.getElementById('settings-name-input');
             if (nameInput) nameInput.value = settings.username;
@@ -867,7 +760,6 @@
                         <div class="habit-title-row">
                             <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
                                 <div>
-                                    <div class="category-tag">${habit.category || 'Ziel'}</div>
                                     <div class="habit-title">${escapeHtml(habit.name)}</div>
                                 </div>
                                 <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
@@ -971,7 +863,7 @@
 
         // --- CSV EXPORT ---
         function exportCSV() {
-            let csv = "Kategorie,Gewohnheit,Datum,Status,Stimmung,Notiz\n";
+            let csv = "Gewohnheit,Datum,Status,Stimmung,Notiz\n";
             habits.forEach(h => {
                 let dates = new Set([...h.history, ...h.skipped, ...Object.keys(h.notes||{})]);
                 Array.from(dates).sort().forEach(d => {
@@ -983,7 +875,7 @@
                     let noteText = typeof noteData === 'object' ? noteData.text : (noteData || "");
                     let noteMood = typeof noteData === 'object' ? (noteData.mood || "") : "";
                     
-                    csv += `"${(h.category||'').replace(/"/g, '""')}","${h.name.replace(/"/g, '""')}",${d},${status},${noteMood},"${noteText.replace(/"/g, '""')}"\n`;
+                    csv += `"${h.name.replace(/"/g, '""')}",${d},${status},${noteMood},"${noteText.replace(/"/g, '""')}"\n`;
                 });
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -998,7 +890,7 @@
             habits.forEach(h => { if (h.notes) { Object.entries(h.notes).forEach(([date, data]) => { 
                 let text = typeof data === 'object' ? data.text : data;
                 let mood = typeof data === 'object' ? data.mood : null;
-                if(text || mood) allNotes.push({ date, habitName: h.name, text, mood, habitId: h.id, category: h.category }); 
+                if(text || mood) allNotes.push({ date, habitName: h.name, text, mood, habitId: h.id }); 
             }); } });
             allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
             
@@ -1012,7 +904,6 @@
                 el.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">${note.category || 'Ziel'}</div>
                             <div style="font-weight:bold; color:var(--text-main); font-size:0.95rem;">${dispDate} - <span style="color:var(--primary);">${escapeHtml(note.habitName)}</span></div>
                         </div>
                         ${note.mood ? `<div style="font-size: 1.5rem;">${note.mood}</div>` : ''}
@@ -1024,65 +915,11 @@
             });
         }
 
-        // --- POMODORO TIMER LOGIC ---
-        let timerInterval;
-        let timerTimeLeft = 25 * 60;
-        let isTimerRunning = false;
-
-        function updateTimerDisplay() {
-            const m = Math.floor(timerTimeLeft / 60).toString().padStart(2, '0');
-            const s = (timerTimeLeft % 60).toString().padStart(2, '0');
-            const timerDisplay = document.getElementById('timer-display');
-            if (timerDisplay) timerDisplay.textContent = `${m}:${s}`;
-            
-            const pct = timerTimeLeft / (25 * 60);
-            const offset = 565.48 - (565.48 * pct);
-            const timerProgress = document.getElementById('timer-progress');
-            if (timerProgress) timerProgress.style.strokeDashoffset = offset;
-        }
-
-        function toggleTimer() {
-            const btn = document.getElementById('btn-timer-start');
-            const fab = document.getElementById('fab-timer');
-            if (isTimerRunning) {
-                clearInterval(timerInterval);
-                isTimerRunning = false;
-                btn.textContent = "Start";
-                fab.classList.remove('running');
-            } else {
-                isTimerRunning = true;
-                btn.textContent = "Pause";
-                fab.classList.add('running');
-                timerInterval = setInterval(() => {
-                    timerTimeLeft--;
-                    updateTimerDisplay();
-                    if (timerTimeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        isTimerRunning = false;
-                        btn.textContent = "Start";
-                        fab.classList.remove('running');
-                        vibrate('heavy'); playLevelUpSound();
-                        alert("Pomodoro beendet! Zeit für eine Pause.");
-                        timerTimeLeft = 25 * 60; updateTimerDisplay();
-                    }
-                }, 1000);
-            }
-        }
-
-        function resetTimer() {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            timerTimeLeft = 25 * 60;
-            document.getElementById('btn-timer-start').textContent = "Start";
-            document.getElementById('fab-timer').classList.remove('running');
-            updateTimerDisplay();
-        }
-
         // --- EVENTS ---
         function closeAllModals() {
             document.getElementById('custom-modal-overlay').classList.remove('open'); noteModal.classList.remove('open'); editModal.classList.remove('open');
             archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open'); allNotesModal.classList.remove('open');
-            document.getElementById('qr-modal').classList.remove('open'); actionSheet.classList.remove('open'); timerModal.classList.remove('open');
+            document.getElementById('qr-modal').classList.remove('open'); actionSheet.classList.remove('open');
             currentContext = { habitId: null, dateStr: null, selectedMood: null }; document.body.classList.remove('modal-open');
         }
 
@@ -1100,19 +937,11 @@
                 saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
 
-            // POMODORO EVENTS
-            document.getElementById('fab-timer').addEventListener('click', () => {
-                vibrate('light'); document.getElementById('custom-modal-overlay').classList.add('open'); timerModal.classList.add('open'); document.body.classList.add('modal-open'); updateTimerDisplay();
-            });
-            document.getElementById('btn-timer-start').addEventListener('click', toggleTimer);
-            document.getElementById('btn-timer-reset').addEventListener('click', resetTimer);
-            document.getElementById('close-timer').addEventListener('click', closeAllModals);
-
             // QR & CSV Sync
             document.getElementById('btn-qr-sync').addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
-                let optHabits = habits.map(h => ({ i: h.id, n: h.name, c: h.category, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
-                let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName, x: settings.xp };
+                let optHabits = habits.map(h => ({ i: h.id, n: h.name, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
+                let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName };
                 const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ h: optHabits, s: optSettings }));
                 if (url.length > 2800) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
                 document.getElementById('qr-code-container').innerHTML = ''; new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
@@ -1126,10 +955,9 @@
             // ADD HABIT
             const addFn = () => {
                 const input = document.getElementById('new-habit-input'); const name = input.value.trim(); 
-                const cat = document.getElementById('new-habit-category').value;
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-                habits.unshift({ id: newId, name: name, category: cat, history: [], skipped: [], notes: {}, archived: false });
+                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false });
                 habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
             document.getElementById('add-btn').addEventListener('click', addFn);
@@ -1147,8 +975,8 @@
                     if(habit.skipped.includes(date)) { habit.skipped = habit.skipped.filter(d => d !== date); vibrate('light'); dayCell.classList.remove('skipped'); saveData(); render(); updateGlobalProgress(); return; }
 
                     const idx = habit.history.indexOf(date);
-                    if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); addXP(-10); } 
-                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); addXP(10); } 
+                    if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); } 
+                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
                     
                     saveData(); updateGlobalProgress();
                     
