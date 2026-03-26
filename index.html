@@ -51,6 +51,9 @@
             overscroll-behavior-y: none; 
         }
 
+        /* VERHINDERT BACKGROUND SCROLLING WENN MODAL OFFEN IST */
+        body.modal-open { overflow: hidden; }
+
         .container { max-width: 800px; margin: 0 auto; padding-bottom: 40px; }
 
         #confetti-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
@@ -110,15 +113,18 @@
         .scrollable-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding-right: 5px; min-height: 100px; }
         #habit-list { display: flex; flex-direction: column; gap: 20px; }
         
-        /* HABIT CARD */
+        /* HABIT CARD & ACCORDION */
         .habit-card { background: var(--bg-card); border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); border: 1px solid var(--border); animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* INDIVIDUAL MONTH NAV & HEADER */
-        .habit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); gap: 10px; }
+        .habit-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .habit-title-row { flex: 1; padding-right: 10px; }
-        .habit-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; word-break: break-word; cursor: pointer; }
+        .habit-title { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; word-break: break-word; }
         
+        /* Expand Button */
+        .expand-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 5px; transition: transform 0.3s ease; display: flex; align-items: center; justify-content: center; }
+        .habit-card.expanded .expand-btn { transform: rotate(180deg); color: var(--primary); }
+
         .habit-month-nav { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--bg-body); padding: 4px 8px; border-radius: 8px; display: inline-flex; border: 1px solid var(--border); }
         .habit-month-nav button { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); padding: 2px 8px; }
         .habit-month-nav button:active { transform: scale(0.9); }
@@ -136,11 +142,15 @@
         .btn-action { background: transparent; border: 1px solid transparent; color: var(--text-muted); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; user-select: none; }
         .btn-action:active { background-color: var(--bg-body); color: var(--primary); transform: scale(0.9); }
 
+        /* CALENDAR CONTAINER & FOOTER (NEW) */
+        .calendar-container { display: none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px; }
+        .habit-card.expanded .calendar-container { display: block; animation: fadeIn 0.2s ease-out; }
+        .calendar-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+
         /* CALENDAR GRID */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
         .weekday-label { font-size: 0.7rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 600; user-select: none; }
         
-        /* DIE X-LOGIK (Anpassung: Farbe nimmt Hauptfarbe an) */
         .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 500; cursor: pointer; border-radius: 10px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.1s, background-color 0.2s, color 0.2s; }
         .day-cell:active:not(.empty) { transform: scale(0.85); }
         .day-cell.today { border-color: var(--text-muted); font-weight: bold; }
@@ -173,11 +183,15 @@
         .stat-card h4 { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; font-weight: 600; }
         .stat-value { font-size: 2rem; font-weight: 800; color: var(--text-main); }
         
-        /* SVG Circle */
+        /* SVG Circle & Chart */
         .circle-chart { width: 120px; height: 120px; margin: 0 auto; }
         .circle-bg { fill: none; stroke: var(--border); stroke-width: 8; }
         .circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
         .circle-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
+
+        .trend-chart { width: 100%; height: 40px; margin-top: 5px; }
+        .trend-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .trend-point { fill: var(--primary); }
 
         /* INDIVIDUAL STATS - OPTIMIZED FOR NOTES */
         .individual-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
@@ -193,7 +207,7 @@
             font-size: 0.85rem; 
             text-align: left; 
             transition: border-color 0.2s; 
-            resize: none; /* Prevents breaking layout, height is enough */
+            resize: none; 
             height: 65px; 
             font-family: inherit; 
             line-height: 1.4;
@@ -207,6 +221,7 @@
 </head>
 <body>
 
+    <!-- Confetti-Canvas bleibt aus Architektur-Gründen im HTML, wird aber nicht mehr aktiv bespielt -->
     <canvas id="confetti-canvas"></canvas>
 
     <!-- HEADER -->
@@ -219,15 +234,12 @@
             </div>
         </div>
         <div class="header-controls">
-            <!-- Notes Directory Button -->
             <button class="icon-btn" id="notes-overview-toggle" aria-label="Alle Notizen">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             </button>
-            <!-- Share Button -->
             <button class="icon-btn" id="share-toggle" aria-label="Teilen">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
             </button>
-            <!-- Stats Button -->
             <button class="icon-btn" id="stats-toggle" aria-label="Statistiken">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"></rect><rect x="10" y="8" width="4" height="13"></rect><rect x="2" y="13" width="4" height="8"></rect></svg>
             </button>
@@ -382,7 +394,6 @@
             const appName = settings.appName || "Habit Tracker Pro";
             const shortName = appName.length > 12 ? appName.substring(0, 12) : appName;
             
-            // Standard-Icon als SVG (Fallback)
             const defaultIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMwIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
             const appIcon = settings.avatar ? settings.avatar : defaultIcon;
             
@@ -458,6 +469,7 @@
         let habits = [];
         let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
         let habitDisplayDates = {}; 
+        let expandedHabits = new Set(); // Speichert, welche Gewohnheiten aufgeklappt sind
 
         const listEl = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
@@ -469,34 +481,11 @@
         const allNotesModal = document.getElementById('all-notes-modal');
 
         let currentContext = { habitId: null, dateStr: null, action: null };
-        let animationFrameId = null;
-        const canvas = document.getElementById('confetti-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-
-        // HAPTIC & SOUND FEEDBACK
         const vibrate = (ms = 50) => { if (navigator.vibrate) navigator.vibrate(ms); };
-        const playSound = () => {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if(!AudioContext) return;
-                const actx = new AudioContext();
-                const osc = actx.createOscillator();
-                const gain = actx.createGain();
-                osc.connect(gain); gain.connect(actx.destination);
-                osc.type = 'sine'; osc.frequency.setValueAtTime(800, actx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1200, actx.currentTime + 0.05);
-                gain.gain.setValueAtTime(0.1, actx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.1);
-                osc.start(actx.currentTime); osc.stop(actx.currentTime + 0.1);
-            } catch(e){}
-        };
 
         // INITIALIZATION
         async function init() {
             await loadData();
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
             applySettings();
             setupPWA(); 
             renderColorGrid();
@@ -571,9 +560,6 @@
             return streak;
         }
 
-        /**
-         * FUNKTION FÜR REIHENFOLGE (HOCH / RUNTER)
-         */
         window.moveHabit = function(id, direction) {
             vibrate(20);
             const activeHabits = habits.filter(h => !h.archived);
@@ -584,21 +570,24 @@
             if (newActiveIndex < 0 || newActiveIndex >= activeHabits.length) return;
             
             const targetId = activeHabits[newActiveIndex].id;
-            
             const realIndex1 = habits.findIndex(h => h.id == id);
             const realIndex2 = habits.findIndex(h => h.id == targetId);
             
-            // Tausche die Positionen im Hauptarray
             const temp = habits[realIndex1];
             habits[realIndex1] = habits[realIndex2];
             habits[realIndex2] = temp;
             
-            saveData();
+            saveData(); render();
+        };
+
+        window.toggleExpand = function(id) {
+            if (expandedHabits.has(id)) expandedHabits.delete(id);
+            else expandedHabits.add(id);
             render();
         };
 
         /**
-         * RENDER LOGIC (Per Habit Navigation)
+         * RENDER LOGIC
          */
         function render() {
             const formatter = new Intl.DateTimeFormat('de-DE', { month: 'short', year: 'numeric' });
@@ -633,8 +622,9 @@
                 if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
                 const progressPct = daysPassed > 0 ? Math.min(100, Math.round((monthChecks / daysPassed) * 100)) : 0;
 
+                const isExpanded = expandedHabits.has(habit.id) ? 'expanded' : '';
                 const card = document.createElement('div');
-                card.className = 'habit-card'; card.dataset.id = habit.id;
+                card.className = `habit-card ${isExpanded}`; card.dataset.id = habit.id;
 
                 let gridHTML = `<div class="weekday-label">Mo</div><div class="weekday-label">Di</div><div class="weekday-label">Mi</div><div class="weekday-label">Do</div><div class="weekday-label">Fr</div><div class="weekday-label">Sa</div><div class="weekday-label">So</div>`;
                 for (let i = 0; i < adjustedFirstDay; i++) gridHTML += `<div class="day-cell empty"></div>`;
@@ -653,7 +643,12 @@
                 card.innerHTML = `
                     <div class="habit-header">
                         <div class="habit-title-row">
-                            <div class="habit-title">${escapeHtml(habit.name)}</div>
+                            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <div class="habit-title">${escapeHtml(habit.name)}</div>
+                                <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </button>
+                            </div>
                             <div class="habit-month-nav">
                                 <button onclick="changeHabitMonth('${habit.id}', -1)">❮</button>
                                 <span>${monthLabel}</span>
@@ -671,10 +666,14 @@
                             <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
                             <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                             <button class="btn-action btn-edit" title="Bearbeiten" aria-label="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                            <button class="btn-action btn-delete" title="Archivieren" aria-label="Archive"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                         </div>
                     </div>
-                    <div class="calendar-grid">${gridHTML}</div>
+                    <div class="calendar-container">
+                        <div class="calendar-grid">${gridHTML}</div>
+                        <div class="calendar-footer">
+                            <button class="btn-action btn-delete" title="Archivieren" aria-label="Archive" style="color: var(--danger);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                        </div>
+                    </div>
                 `;
                 fragment.appendChild(card);
             });
@@ -690,7 +689,7 @@
             render();
         };
 
-        // --- STATS DASHBOARD ---
+        // --- STATS DASHBOARD & TREND CHART ---
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
@@ -706,6 +705,26 @@
                 const s = calculateStreak(h.history);
                 if (s > bestStreak) bestStreak = s;
                 
+                // Berechnung für das Aktienkurs-Diagramm (letzte 4 Wochen gruppiert)
+                let weekCounts = [0, 0, 0, 0]; // [Woche-4, Woche-3, Woche-2, Woche-1(Aktuell)]
+                for(let i=0; i<28; i++) {
+                    let d = new Date(); d.setDate(d.getDate() - i);
+                    let dStr = d.toISOString().split('T')[0];
+                    if (h.history.includes(dStr)) {
+                        let weekIdx = 3 - Math.floor(i / 7);
+                        weekCounts[weekIdx]++;
+                    }
+                }
+                
+                // Generiere SVG Punkte für das Trenddiagramm
+                let pointsStr = '';
+                weekCounts.forEach((count, idx) => {
+                    let x = 10 + (idx * 26.6); // Auf 100% Breite verteilen
+                    let y = 35 - ((count / 7) * 30); // 35 ist unten (0x), 5 ist oben (7x)
+                    pointsStr += `${x},${y} `;
+                });
+
+                // Berechnung der 30-Tage Erfolgsquote für den Kreis
                 let actualChecks = 0;
                 h.history.forEach(d => {
                     const checkDate = new Date(d);
@@ -726,11 +745,17 @@
                             <circle class="circle-progress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s ease-out;" />
                             <text class="circle-text" x="50" y="55" style="font-size: 18px;">${pct}%</text>
                         </svg>
+                        
+                        <div style="margin-top:15px; font-size:0.75rem; color:var(--text-muted); text-align: left;">Trend (4 Wochen)</div>
+                        <svg viewBox="0 0 100 40" class="trend-chart">
+                            <polyline points="${pointsStr.trim()}" class="trend-line" />
+                            ${weekCounts.map((count, idx) => `<circle cx="${10 + (idx * 26.6)}" cy="${35 - ((count / 7) * 30)}" r="3" class="trend-point"/>`).join('')}
+                        </svg>
+
                         <textarea class="improvement-input" data-id="${h.id}" placeholder="Fokus-Notiz / Strategie...">${escapeHtml(h.improvementNote || '')}</textarea>
                     `;
                     container.appendChild(card);
                     
-                    // Animation des Rings verzögert starten
                     setTimeout(() => {
                         const circleProgress = card.querySelector('.circle-progress');
                         if(circleProgress) circleProgress.style.strokeDashoffset = dashOffset;
@@ -781,7 +806,6 @@
             });
         }
 
-        // --- IMAGE COMPRESSION ---
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -792,7 +816,6 @@
                     const minSize = Math.min(w, h);
                     const sourceX = (w - minSize) / 2;
                     const sourceY = (h - minSize) / 2;
-                    
                     canvas.width = MAX; canvas.height = MAX;
                     ctx.drawImage(img, sourceX, sourceY, minSize, minSize, 0, 0, MAX, MAX);
                     callback(canvas.toDataURL('image/webp', 0.8));
@@ -809,64 +832,70 @@
             archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open');
             allNotesModal.classList.remove('open');
             currentContext = { habitId: null, dateStr: null, action: null };
+            document.body.classList.remove('modal-open');
         }
 
         function setupEventListeners() {
+            // Trend Zeitraum-Buttons im Dashboard
+            document.querySelectorAll('.trend-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    vibrate(20);
+                    document.querySelectorAll('.trend-toggle').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentTrendTimeframe = e.target.dataset.timeframe;
+                    updateStatsDashboard();
+                });
+            });
+
             // Notizen-Verzeichnis öffnen
             document.getElementById('notes-overview-toggle').addEventListener('click', () => {
                 vibrate(30); renderAllNotes();
                 customModalOverlay.classList.add('open'); allNotesModal.classList.add('open');
+                document.body.classList.add('modal-open');
             });
             document.getElementById('close-all-notes').addEventListener('click', closeAllModals);
 
-            // Stats Dashboard
             document.getElementById('stats-toggle').addEventListener('click', () => {
                 vibrate(30); updateStatsDashboard();
                 customModalOverlay.classList.add('open'); statsModal.classList.add('open');
+                document.body.classList.add('modal-open');
             });
             document.getElementById('close-stats').addEventListener('click', closeAllModals);
 
-            // Auto-Save für Improvement Notes in den Statistiken
             const statsContainer = document.getElementById('individual-stats-container');
             if (statsContainer) {
                 statsContainer.addEventListener('change', (e) => {
                     if (e.target.classList.contains('improvement-input')) {
                         const id = e.target.dataset.id;
                         const habit = habits.find(h => h.id == id);
-                        if (habit) {
-                            habit.improvementNote = e.target.value.trim();
-                            saveData();
-                        }
+                        if (habit) { habit.improvementNote = e.target.value.trim(); saveData(); }
                     }
                 });
             }
 
-            // Teilen Button
             document.getElementById('share-toggle').addEventListener('click', async () => {
                 vibrate(30);
                 if (navigator.share) {
                     try { await navigator.share({ title: settings.appName || 'Gewohnheit Tracker', text: 'Hier ist meine Habits App!', url: window.location.href }); } 
                     catch (err) { console.log('Share error', err); }
-                } else {
-                    alert('Teilen wird in diesem Browser nicht nativ unterstützt. Kopiere einfach die URL!');
-                }
+                } else { alert('Teilen wird in diesem Browser nicht nativ unterstützt. Kopiere einfach die URL!'); }
             });
 
-            // Add Habit
             const addFn = () => {
                 const input = document.getElementById('new-habit-input'); const name = input.value.trim();
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
                 habits.unshift({ id: newId, name: name, history: [], notes: {}, archived: false });
                 habitDisplayDates[newId] = new Date();
-                saveData(); input.value = ''; vibrate([30, 50, 30]); render(); input.blur();
+                saveData(); input.value = ''; vibrate(30); render(); input.blur();
             };
             document.getElementById('add-btn').addEventListener('click', addFn);
             document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
 
-            // Grid Clicking & Touches
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
+                
+                // Tagesauswahl X Setzen
                 const dayCell = target.closest('.day-cell:not(.empty)');
                 if (dayCell) {
                     if (dayCell.dataset.preventClick === "true") { delete dayCell.dataset.preventClick; return; }
@@ -875,17 +904,55 @@
                     if (!habit) return;
 
                     const idx = habit.history.indexOf(date);
-                    if (idx > -1) { habit.history.splice(idx, 1); vibrate(20); } 
-                    else { habit.history.push(date); vibrate([30, 50, 30]); playSound(); fireConfetti(); }
-                    saveData(); render(); return;
+                    if (idx > -1) { 
+                        habit.history.splice(idx, 1); 
+                        vibrate(20); 
+                        dayCell.classList.remove('checked'); 
+                    } else { 
+                        habit.history.push(date); 
+                        vibrate(20); 
+                        dayCell.classList.add('checked'); 
+                    } 
+                    saveData(); 
+                    
+                    // Lokales Update der UI (Kein render() nötig -> kein Flackern/Foto-Effekt)
+                    const card = dayCell.closest('.habit-card');
+                    const d = habitDisplayDates[id] || new Date();
+                    const year = d.getFullYear();
+                    const month = d.getMonth();
+                    
+                    const yearPrefix = `${year}-`;
+                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+                    const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
+                    const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                    const streak = calculateStreak(habit.history);
+                    
+                    let daysPassed = new Date(year, month + 1, 0).getDate();
+                    if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
+                    const progressPct = daysPassed > 0 ? Math.min(100, Math.round((monthChecks / daysPassed) * 100)) : 0;
+                    
+                    if (card.querySelector('.habit-stats')) card.querySelector('.habit-stats').textContent = `${year}: ${yearCount}x`;
+                    if (card.querySelector('.progress-bar-fill')) card.querySelector('.progress-bar-fill').style.width = `${progressPct}%`;
+                    
+                    let badge = card.querySelector('.streak-badge');
+                    if (streak > 0) {
+                        if (!badge) {
+                            badge = document.createElement('span'); badge.className = 'streak-badge';
+                            card.querySelector('.habit-meta').appendChild(badge);
+                        }
+                        badge.textContent = `🔥 ${streak}`;
+                    } else if (badge) { badge.remove(); }
+                    
+                    return;
                 }
                 
-                if (target.closest('.btn-edit') || target.classList.contains('habit-title')) {
+                if (target.closest('.btn-edit')) {
                     vibrate(30); const id = target.closest('.habit-card').dataset.id;
                     const habit = habits.find(h => h.id == id);
                     currentContext = { habitId: id, action: 'edit' };
                     document.getElementById('edit-name-input').value = habit.name;
                     customModalOverlay.classList.add('open'); editModal.classList.add('open');
+                    document.body.classList.add('modal-open');
                     setTimeout(() => document.getElementById('edit-name-input').focus(), 100); return;
                 }
 
@@ -898,27 +965,20 @@
                 }
             });
 
-            // DOPPELKLICK (PC) FÜR NOTIZEN
             listEl.addEventListener('dblclick', (e) => {
                 const cell = e.target.closest('.day-cell:not(.empty)');
-                if (cell) {
-                    e.preventDefault();
-                    cell.dataset.preventClick = "true";
-                    openNoteDialog(cell.dataset.habitId, cell.dataset.date);
-                }
+                if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openNoteDialog(cell.dataset.habitId, cell.dataset.date); }
             });
 
-            // LANGE GEDRÜCKT HALTEN (MOBILE) FÜR NOTIZEN
             let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
                 const cell = e.target.closest('.day-cell:not(.empty)');
                 if (!cell) return;
-                startY = e.touches[0].clientY;
-                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY; startX = e.touches[0].clientX;
                 pressTimer = setTimeout(() => {
                     vibrate(80); cell.dataset.preventClick = "true";
                     openNoteDialog(cell.dataset.habitId, cell.dataset.date);
-                }, 500); // Nach 500ms gedrückt halten öffnet sich die Notiz
+                }, 500); 
             }, {passive: true});
             listEl.addEventListener('touchmove', (e) => {
                 if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer);
@@ -929,7 +989,6 @@
                 if (cell) { e.preventDefault(); cell.dataset.preventClick = "true"; openNoteDialog(cell.dataset.habitId, cell.dataset.date); }
             });
 
-            // Modals Logic
             document.getElementById('save-note').addEventListener('click', () => {
                 const h = habits.find(h => h.id == currentContext.habitId);
                 const text = document.getElementById('note-input').value.trim();
@@ -945,8 +1004,11 @@
             document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive').forEach(b => b.addEventListener('click', closeAllModals));
             customModalOverlay.addEventListener('click', closeAllModals);
 
-            // Settings Flow
-            const toggleSettings = () => { document.getElementById('settings-panel').classList.toggle('open'); document.getElementById('settings-overlay').classList.toggle('open'); };
+            const toggleSettings = () => { 
+                document.getElementById('settings-panel').classList.toggle('open'); 
+                document.getElementById('settings-overlay').classList.toggle('open'); 
+                document.body.classList.toggle('modal-open');
+            };
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => document.getElementById(id).addEventListener('click', toggleSettings));
 
             document.getElementById('theme-toggle').addEventListener('click', () => { vibrate(30); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
@@ -954,8 +1016,7 @@
                 vibrate(30); 
                 settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; 
                 settings.appName = document.getElementById('settings-appname-input').value.trim() || 'Habit Tracker'; 
-                saveSettings(); 
-                toggleSettings(); 
+                saveSettings(); toggleSettings(); 
             });
 
             document.getElementById('avatar-upload').addEventListener('change', function(e) {
@@ -967,7 +1028,6 @@
                 });
             });
 
-            // Archive
             document.getElementById('open-archive').addEventListener('click', () => {
                 vibrate(30); const list = document.getElementById('archive-list-container'); list.innerHTML = '';
                 const arch = habits.filter(h => h.archived);
@@ -979,10 +1039,13 @@
                         <button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`;
                     list.appendChild(el);
                 });
-                toggleSettings(); customModalOverlay.classList.add('open'); archiveManagerModal.classList.add('open');
+                // Einstellungen schließen, Archiv öffnen
+                document.getElementById('settings-panel').classList.remove('open'); 
+                document.getElementById('settings-overlay').classList.remove('open');
+                customModalOverlay.classList.add('open'); archiveManagerModal.classList.add('open');
+                document.body.classList.add('modal-open');
             });
 
-            // Backup
             document.getElementById('btn-export').addEventListener('click', () => {
                 const blob = new Blob([JSON.stringify({habits, settings})], { type: 'application/json' });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -1001,36 +1064,19 @@
         }
 
         window.openNoteDialog = function(habitId, dateStr) {
-            closeAllModals(); // Schließt z.B. das Notiz-Verzeichnis, falls man von dort bearbeitet
+            closeAllModals();
             currentContext = { habitId, dateStr };
             const habit = habits.find(h => h.id == habitId);
             document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
             document.getElementById('note-input').value = habit.notes[dateStr] || "";
             customModalOverlay.classList.add('open'); noteModal.classList.add('open');
+            document.body.classList.add('modal-open');
             setTimeout(() => document.getElementById('note-input').focus(), 100);
         }
 
         window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); closeAllModals(); };
         window.deleteHabit = (id) => { if(confirm("Endgültig löschen?")) { habits = habits.filter(h => h.id != id); saveData(); closeAllModals(); } };
         function escapeHtml(text) { return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]); }
-
-        // CONFETTI
-        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        function fireConfetti() {
-            const colors = [settings.primaryColor, '#ef4444', '#10b981', '#f59e0b', '#ec4899'];
-            for(let i=0; i<60; i++) particles.push({ x: window.innerWidth / 2, y: window.innerHeight / 2, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 1) * 15, color: colors[Math.floor(Math.random() * colors.length)], size: Math.random() * 8 + 4, life: 100 });
-            if (!animationFrameId) animateConfetti();
-        }
-        function animateConfetti() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (particles.length === 0) { animationFrameId = null; return; }
-            for(let i=0; i<particles.length; i++) {
-                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= 2; p.size *= 0.96;
-                ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
-                if(p.life <= 0 || p.size < 0.5) { particles.splice(i, 1); i--; }
-            }
-            animationFrameId = requestAnimationFrame(animateConfetti);
-        }
 
         function renderColorGrid() {
             const grid = document.getElementById('color-grid');
