@@ -13,7 +13,7 @@
     <link id="dynamic-manifest" rel="manifest" href="">
     <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
 
-    <!-- Externe Bibliotheken für QR-Code und Datenkomprimierung -->
+    <!-- Externe Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -35,7 +35,7 @@
             --freeze: #94a3b8;
             --radius: 16px;
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-            --header-height: 75px;
+            --header-height: 85px; /* Leicht vergrößert für XP-Bar */
             --safe-area-top: env(safe-area-inset-top, 0px);
         }
 
@@ -49,7 +49,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
-        input, textarea { -webkit-touch-callout: default; user-select: text; }
+        input, textarea, select { -webkit-touch-callout: default; user-select: text; font-family: inherit; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -60,9 +60,11 @@
         }
 
         body.modal-open { overflow: hidden; }
-        .container { max-width: 800px; margin: 0 auto; padding-bottom: 60px; }
+        .container { max-width: 800px; margin: 0 auto; padding-bottom: 80px; }
 
-        /* HEADER & GLOBAL PROGRESS RING */
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
+
+        /* HEADER & RPG SYSTEM */
         .app-header {
             position: fixed; top: 0; left: 0; right: 0;
             height: calc(var(--header-height) + var(--safe-area-top));
@@ -71,30 +73,36 @@
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; z-index: 100;
+            padding: 0 20px; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .user-profile { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+        .user-profile { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; flex: 1; }
         .avatar-container { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
         .global-progress-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
         .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 3; }
         .global-progress-bar { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); stroke-dasharray: 125.6; stroke-dashoffset: 125.6; }
         .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid transparent; z-index: 2; }
-        .user-info { display: flex; flex-direction: column; }
-        .user-name { font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: -0.3px; }
-        .app-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+        
+        .user-info { display: flex; flex-direction: column; width: 100%; max-width: 150px; }
+        .user-name { font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: -0.3px; display: flex; align-items: center; gap: 5px; }
+        .level-badge { font-size: 0.6rem; background: var(--primary); color: white; padding: 2px 6px; border-radius: 8px; font-weight: 800; }
+        .xp-container { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+        .xp-fill { height: 100%; background: var(--warning); width: 0%; transition: width 0.3s ease; }
+        .xp-text { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
 
-        .header-controls { display: flex; gap: 6px; }
-        .icon-btn { background: transparent; border: none; color: var(--text-main); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .header-controls { display: flex; gap: 6px; flex-shrink: 0; }
+        .icon-btn { background: transparent; border: none; color: var(--text-main); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s, background-color 0.2s; user-select: none; }
         .icon-btn:active { transform: scale(0.85); background-color: var(--border); }
 
         .dynamic-greeting { font-size: 1.5rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px; }
         .greeting-subtext { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; }
 
-        /* INPUT */
-        .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: var(--bg-card); padding: 8px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
-        input[type="text"] { flex: 1; padding: 14px 20px; border: none; background: transparent; color: var(--text-main); font-size: 1rem; font-weight: 500; outline: none; width: 100%; }
-        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 0 24px; border-radius: 14px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: transform 0.15s, box-shadow 0.2s; box-shadow: 0 4px 10px var(--primary-light); }
+        /* INPUT AREA WITH CATEGORY */
+        .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: var(--bg-card); padding: 8px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+        .input-wrapper { display: flex; flex: 1; min-width: 200px; position: relative; }
+        input[type="text"].habit-input { flex: 1; padding: 14px 15px; border: none; background: transparent; color: var(--text-main); font-size: 1rem; font-weight: 500; outline: none; width: 100%; }
+        select.category-select { appearance: none; background: var(--bg-body); border: 1px solid var(--border); padding: 8px 15px; border-radius: 12px; color: var(--text-main); font-weight: 600; font-size: 0.85rem; outline: none; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 10px var(--primary-light); white-space: nowrap; }
         .btn-primary:active { transform: scale(0.95); box-shadow: none; }
 
         /* HABIT CARDS */
@@ -102,7 +110,8 @@
         .habit-card { background: var(--bg-card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.2s ease; }
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .habit-title-row { flex: 1; }
-        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px; word-break: break-word; letter-spacing: -0.3px; user-select: none; }
+        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 2px; word-break: break-word; letter-spacing: -0.3px; user-select: none; }
+        .category-tag { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 8px; background: var(--border); color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
         
         .expand-btn { background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
@@ -124,20 +133,19 @@
 
         /* CALENDAR GRID */
         .calendar-container { display: none; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
-        .habit-card.expanded .calendar-container { display: block; animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .habit-card.expanded .calendar-container { display: block; animation: slideDown 0.3s ease; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
         .weekday-label { font-size: 0.75rem; color: var(--text-muted); padding-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 12px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.15s, background-color 0.2s, border-color 0.2s; }
+        .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 12px; background: var(--bg-body); color: var(--text-main); position: relative; border: 2px solid transparent; user-select: none; touch-action: manipulation; transition: transform 0.1s, background-color 0.2s, border-color 0.2s; }
         .day-cell:active:not(.empty):not(.future) { transform: scale(0.85); }
         .day-cell.today { border-color: var(--primary); font-weight: 800; }
         .day-cell.future { opacity: 0.3; pointer-events: none; background: transparent; border: 1px dashed var(--border); }
         
-        /* Modernes Pause-Design (Schlichtes Dashboard) */
         .day-cell.skipped { background: transparent; border-color: var(--border); color: transparent; }
-        .day-cell.skipped::after { content: ""; position: absolute; width: 40%; height: 3px; background-color: var(--text-muted); border-radius: 2px; }
+        .day-cell.skipped::after { content: ""; position: absolute; width: 40%; height: 3px; background-color: var(--primary); border-radius: 2px; }
         .day-cell.skipped span { opacity: 0; }
 
         .day-cell.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); box-shadow: 0 2px 8px var(--primary-light); }
@@ -154,12 +162,13 @@
         .sheet-btn.primary { background: var(--primary); color: white; }
         .sheet-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
 
-        /* MODALS */
+        /* MODALS (Allgemein) */
         .settings-overlay, .custom-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
         .settings-overlay.open, .custom-modal-overlay.open { opacity: 1; pointer-events: auto; }
         .settings-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: var(--bg-card); z-index: 201; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.1); padding-top: calc(20px + var(--safe-area-top)); }
         .settings-panel.open { right: 0; }
-        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: 90%; max-width: 500px; background: var(--bg-card); z-index: 202; padding: 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); display: none; flex-direction: column; max-height: 85vh; border: 1px solid var(--border); }
+        
+        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: 90%; max-width: 500px; background: var(--bg-card); z-index: 202; padding: 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); display: none; flex-direction: column; max-height: 85vh; border: 1px solid var(--border); overflow-y: auto; }
         .custom-modal.open { display: flex; opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
         .custom-modal h3 { margin-bottom: 10px; font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
         .custom-modal textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 16px; background: var(--bg-body); color: var(--text-main); font-family: inherit; font-size: 1rem; resize: none; margin-bottom: 20px; height: 140px; }
@@ -167,22 +176,23 @@
         .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 700; transition: transform 0.1s, background 0.2s; }
         .btn-secondary:active { transform: scale(0.96); background: var(--border); }
 
-        /* DASHBOARD & STATS */
+        /* MOOD TRACKER IN NOTE MODAL */
+        .mood-selector { display: flex; justify-content: space-between; margin-bottom: 15px; background: var(--bg-body); padding: 10px; border-radius: 16px; border: 1px solid var(--border); }
+        .mood-btn { font-size: 1.5rem; background: none; border: 2px solid transparent; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; opacity: 0.5; filter: grayscale(1); }
+        .mood-btn.active { opacity: 1; filter: grayscale(0); transform: scale(1.1); border-color: var(--primary); background: var(--bg-card); }
+
+        /* SCROLLABLE STATS DASHBOARD */
+        #stats-modal { max-height: 92vh; width: 95%; max-width: 600px; padding: 20px 15px; overflow-y: auto; }
         .stats-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .stat-box { background: var(--bg-body); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid var(--border); }
         .stat-box-value { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
         .stat-box-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
         
-        /* Milestones - Kompakt als 2x2 Grid */
         .milestones-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .milestone-badge { padding: 15px 10px; background: var(--bg-body); border-radius: 16px; border: 1px solid var(--border); text-align: center; opacity: 0.4; filter: grayscale(1); }
         .milestone-badge.unlocked { opacity: 1; filter: grayscale(0); background: rgba(245, 158, 11, 0.1); border-color: var(--warning); }
         .milestone-icon { font-size: 1.8rem; margin-bottom: 5px; }
         .milestone-text { font-size: 0.75rem; font-weight: 800; color: var(--text-main); }
-
-        .trend-toggle-group { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; background: var(--bg-body); padding: 5px; border-radius: 16px; border: 1px solid var(--border); }
-        .trend-toggle { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px 10px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; font-weight: 700; }
-        .trend-toggle.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
         /* KOMPAKTER JAHRESPLAN (12-Month-Grid) */
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
@@ -195,13 +205,30 @@
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
 
+        /* POMODORO FAB */
+        .fab-timer { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px var(--primary-light); cursor: pointer; z-index: 99; transition: transform 0.2s; font-weight: bold; font-size: 1.2rem; }
+        .fab-timer:active { transform: scale(0.9); }
+        .fab-timer.running { animation: pulse 2s infinite; background: var(--warning); }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
+
+        /* POMODORO MODAL */
+        .timer-circle { width: 200px; height: 200px; margin: 20px auto; position: relative; display: flex; align-items: center; justify-content: center; }
+        .timer-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .timer-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+        .timer-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear; stroke-dasharray: 565.48; stroke-dashoffset: 0; }
+        .timer-text { font-size: 3rem; font-weight: 900; color: var(--text-main); font-variant-numeric: tabular-nums; z-index: 2; }
+        
+        .timer-controls { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+        .timer-btn { padding: 12px 25px; border-radius: 16px; font-weight: 700; border: none; cursor: pointer; font-size: 1rem; }
+        
+        .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
         .settings-label { font-weight: 700; margin-bottom: 12px; display: block; color: var(--text-main); text-transform: uppercase; font-size: 0.8rem; }
         .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
         .color-option { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-option.selected { border-color: var(--text-main); transform: scale(1.1); box-shadow: 0 0 0 2px var(--bg-card) inset; }
         .btn-qr { background: var(--text-main); color: var(--bg-card); border: none; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
         
-        .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.1s; }
+        .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.1s; display: flex; flex-direction: column; }
         .note-summary-item:active { transform: scale(0.98); border-color: var(--primary); }
     </style>
 </head>
@@ -217,8 +244,9 @@
                 <div class="avatar" id="header-avatar">?</div>
             </div>
             <div class="user-info">
-                <div class="user-name" id="header-username">Gast</div>
-                <div class="app-title" id="header-appname">Gewohnheit Tracker</div>
+                <div class="user-name" id="header-username">Gast <span class="level-badge" id="header-level">Lvl 1</span></div>
+                <div class="xp-container"><div class="xp-fill" id="header-xp-fill"></div></div>
+                <div class="xp-text" id="header-xp-text">0 / 100 XP</div>
             </div>
         </div>
         <div class="header-controls">
@@ -264,7 +292,6 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4z"></path><path d="M14 4h6v6h-6z"></path><path d="M4 14h6v6H4z"></path><path d="M14 14h6v6h-6z"></path></svg>
                 QR-Code generieren
             </button>
-            <p style="font-size:0.8rem; color:var(--text-muted); line-height: 1.4;">Scanne den Code mit dem neuen Handy, um alle Gewohnheiten lokal und sicher zu übertragen.</p>
         </div>
 
         <div class="settings-section">
@@ -288,7 +315,7 @@
     <div class="action-sheet" id="action-sheet">
         <div class="sheet-handle"></div>
         <h3 id="sheet-title" style="text-align: center; margin-bottom: 10px; font-size: 1.1rem; color: var(--text-muted);">Aktion wählen</h3>
-        <button class="sheet-btn primary" id="sheet-btn-note">📝 Notiz schreiben</button>
+        <button class="sheet-btn primary" id="sheet-btn-note">📝 Notiz & Mood schreiben</button>
         <button class="sheet-btn" id="sheet-btn-freeze">❄️ Tag pausieren (Urlaub)</button>
         <button class="sheet-btn danger" id="sheet-btn-clear">🧹 Eintrag löschen</button>
     </div>
@@ -298,33 +325,37 @@
         <h3 style="font-size: 1.5rem;">Gerät wechseln</h3>
         <p style="font-size: 0.95rem;">Scanne diesen Code mit der Kamera-App deines <b>neuen</b> Handys.</p>
         <div id="qr-code-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 20px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></div>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">Hinweis: Bilder und Notizen werden beim QR-Sync übersprungen, um die Datenmenge klein zu halten.</p>
         <div class="modal-actions" style="justify-content: center; margin-top:15px;">
             <button class="btn-secondary" id="close-qr" style="width: 100%;">Schließen</button>
         </div>
     </div>
 
+    <!-- NOTE & MOOD MODAL -->
     <div class="custom-modal" id="note-modal">
-        <h3>Notiz</h3>
+        <h3>Journal</h3>
         <span id="note-date-label" style="display:block; margin-bottom:15px; color:var(--text-muted); font-size:0.9rem; font-weight:600;">Datum</span>
-        <textarea id="note-input" placeholder="Warum war es heute gut oder schlecht?"></textarea>
+        
+        <span class="settings-label" style="font-size: 0.75rem;">Stimmung (Mood)</span>
+        <div class="mood-selector" id="mood-selector">
+            <button class="mood-btn" data-mood="😭">😭</button>
+            <button class="mood-btn" data-mood="😕">😕</button>
+            <button class="mood-btn" data-mood="😐">😐</button>
+            <button class="mood-btn" data-mood="🙂">🙂</button>
+            <button class="mood-btn" data-mood="🤩">🤩</button>
+        </div>
+
+        <textarea id="note-input" placeholder="Reflektiere deinen Tag..."></textarea>
         <div class="modal-actions">
             <button class="btn-secondary" id="cancel-note">Abbrechen</button>
             <button class="btn-primary" id="save-note">Speichern</button>
         </div>
     </div>
 
-    <!-- STATS DASHBOARD (ULTIMATE EDITION) -->
-    <div class="custom-modal" id="stats-modal" style="max-height: 92vh; width: 95%; max-width: 600px; padding: 20px 15px;">
+    <!-- STATS DASHBOARD -->
+    <div class="custom-modal" id="stats-modal">
         <h3 style="font-size: 1.6rem; text-align: center; margin-bottom: 5px;">Analytics 🧠</h3>
         <p style="text-align: center; font-size: 0.85rem; margin-bottom: 20px;">Datengetriebene Einblicke in deine Gewohnheiten.</p>
         
-        <!-- SMART INSIGHTS (ohne "KI-Analytik" Überschrift) -->
-        <div style="background: rgba(37, 99, 235, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: var(--radius); margin-bottom: 20px; text-align: left;">
-            <p id="insight-best-day" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4;">Analysiere Daten...</p>
-            <p id="insight-best-habit" style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0; line-height: 1.4;"></p>
-        </div>
-
         <div class="stats-top-grid">
             <div class="stat-box">
                 <div class="stat-box-value" id="stat-total-habits" style="color: var(--primary);">0</div>
@@ -356,10 +387,31 @@
         </div>
     </div>
 
+    <!-- POMODORO TIMER MODAL -->
+    <div class="custom-modal" id="timer-modal" style="text-align: center;">
+        <h3 style="font-size: 1.5rem;">Fokus Modus</h3>
+        <p style="font-size: 0.9rem;">25 Minuten tiefe Konzentration.</p>
+        
+        <div class="timer-circle">
+            <svg class="timer-svg" viewBox="0 0 200 200">
+                <circle class="timer-bg" cx="100" cy="100" r="90" />
+                <circle class="timer-progress" id="timer-progress" cx="100" cy="100" r="90" />
+            </svg>
+            <div class="timer-text" id="timer-display">25:00</div>
+        </div>
+
+        <div class="timer-controls">
+            <button class="timer-btn" id="btn-timer-reset" style="background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main);">Reset</button>
+            <button class="timer-btn" id="btn-timer-start" style="background: var(--primary); color: white;">Start</button>
+        </div>
+        <div class="modal-actions" style="justify-content: center; margin-top:20px;">
+            <button class="btn-secondary" id="close-timer" style="width: 100%;">Schließen</button>
+        </div>
+    </div>
+
     <!-- OTHER MODALS -->
     <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
-        <h3>Alle Notizen</h3>
-        <p style="font-size: 0.85rem;">Klicke auf eine Notiz, um sie im Detail-Fenster zu öffnen.</p>
+        <h3>Journal & Notizen</h3>
         <div id="all-notes-list" style="overflow-y: auto; flex-grow: 1; display:flex; flex-direction:column; gap:10px;"></div>
         <div class="modal-actions"><button class="btn-secondary" id="close-all-notes" style="width: 100%;">Schließen</button></div>
     </div>
@@ -387,7 +439,15 @@
         </div>
 
         <div class="input-group">
-            <input type="text" id="new-habit-input" inputmode="text" enterkeyhint="done" placeholder="Neue Gewohnheit aufbauen..." autocomplete="off">
+            <div class="input-wrapper">
+                <input type="text" id="new-habit-input" class="habit-input" inputmode="text" enterkeyhint="done" placeholder="Neue Gewohnheit..." autocomplete="off">
+            </div>
+            <select id="new-habit-category" class="category-select">
+                <option value="🏋️ Gesundheit">🏋️ Gesundheit</option>
+                <option value="🧠 Geist">🧠 Geist</option>
+                <option value="💼 Arbeit">💼 Arbeit</option>
+                <option value="🎨 Hobby">🎨 Hobby</option>
+            </select>
             <button id="add-btn" class="btn-primary">Hinzufügen</button>
         </div>
 
@@ -400,7 +460,17 @@
         </div>
     </div>
 
+    <!-- FAB TIMER BUTTON -->
+    <div class="fab-timer" id="fab-timer">⏱️</div>
+
+    <canvas id="confetti-canvas"></canvas>
+
     <script>
+        let currentContext = { habitId: null, dateStr: null, selectedMood: null }; 
+        let animationFrameId = null;
+        let particles = [];
+        let canvas, ctx;
+
         /**
          * ELITE PWA SETUP
          */
@@ -453,11 +523,11 @@
         }
 
         /**
-         * APP STATE
+         * APP STATE & VARIABLES
          */
         const COLOR_PALETTE = ['#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', '#6366f1', '#4f46e5', '#64748b', '#334155'];
         let habits = [];
-        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
+        let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker', xp: 0 };
         let habitDisplayDates = {}; 
         let expandedHabits = new Set();
 
@@ -466,32 +536,55 @@
         const customModalOverlay = document.getElementById('custom-modal-overlay');
         const actionSheet = document.getElementById('action-sheet');
         
-        // Modal DOM Elements
         const noteModal = document.getElementById('note-modal');
         const editModal = document.getElementById('edit-modal');
         const archiveManagerModal = document.getElementById('archive-manager-modal');
         const statsModal = document.getElementById('stats-modal');
         const allNotesModal = document.getElementById('all-notes-modal');
         const qrModal = document.getElementById('qr-modal');
+        const timerModal = document.getElementById('timer-modal');
 
-        let currentContext = { habitId: null, dateStr: null }; 
 
-        // HAPTIC FEEDBACK
+        // HAPTIC FEEDBACK & SOUND
         const vibrate = (type = 'light') => { 
             if (!navigator.vibrate) return;
             if (type === 'light') navigator.vibrate(20);
             if (type === 'medium') navigator.vibrate(40);
             if (type === 'heavy') navigator.vibrate([60, 40, 60]);
+            if (type === 'success') navigator.vibrate([30, 50, 30]);
+        };
+        const playLevelUpSound = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if(!AudioContext) return;
+                const actx = new AudioContext();
+                const osc1 = actx.createOscillator(); const osc2 = actx.createOscillator();
+                const gain = actx.createGain();
+                osc1.connect(gain); osc2.connect(gain); gain.connect(actx.destination);
+                osc1.type = 'triangle'; osc2.type = 'sine';
+                osc1.frequency.setValueAtTime(440, actx.currentTime); osc1.frequency.exponentialRampToValueAtTime(880, actx.currentTime + 0.3);
+                osc2.frequency.setValueAtTime(554, actx.currentTime); osc2.frequency.exponentialRampToValueAtTime(1108, actx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.5);
+                osc1.start(actx.currentTime); osc2.start(actx.currentTime);
+                osc1.stop(actx.currentTime + 0.5); osc2.stop(actx.currentTime + 0.5);
+            } catch(e){}
         };
 
         // INITIALIZATION
         async function init() {
+            canvas = document.getElementById('confetti-canvas');
+            if (canvas) {
+                ctx = canvas.getContext('2d');
+            }
             await checkImportHash();
             await loadData();
             applySettings();
             setupPWA(); 
             renderColorGrid();
             setDynamicGreeting();
+            updateXP();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
             render(); 
             updateGlobalProgress();
             setupEventListeners();
@@ -506,7 +599,41 @@
             document.getElementById('greeting-subtext').textContent = sub;
         }
 
-        // EXTREM-KOMPRESSION FÜR QR CODE
+        // RPG SYSTEM (XP & LEVELS)
+        function updateXP() {
+            if (!settings.xp) settings.xp = 0;
+            const level = Math.floor(Math.sqrt(settings.xp / 10)) + 1;
+            const xpForCurrentLevel = 10 * Math.pow(level - 1, 2);
+            const xpForNextLevel = 10 * Math.pow(level, 2);
+            const progressInLevel = settings.xp - xpForCurrentLevel;
+            const levelSize = xpForNextLevel - xpForCurrentLevel;
+            const pct = Math.max(0, Math.min(100, (progressInLevel / levelSize) * 100));
+
+            const headerLevel = document.getElementById('header-level');
+            if (headerLevel) headerLevel.textContent = `Lvl ${level}`;
+            const headerXpFill = document.getElementById('header-xp-fill');
+            if (headerXpFill) headerXpFill.style.width = `${pct}%`;
+            const headerXpText = document.getElementById('header-xp-text');
+            if (headerXpText) headerXpText.textContent = `${settings.xp} / ${xpForNextLevel} XP`;
+        }
+
+        function addXP(amount) {
+            const oldLevel = Math.floor(Math.sqrt((settings.xp || 0) / 10)) + 1;
+            settings.xp = Math.max(0, (settings.xp || 0) + amount);
+            const newLevel = Math.floor(Math.sqrt(settings.xp / 10)) + 1;
+            
+            updateXP();
+            saveSettings();
+
+            if (newLevel > oldLevel) {
+                vibrate('success');
+                playLevelUpSound();
+                fireConfetti(true); 
+                setTimeout(() => alert(`🎉 LEVEL UP! Du bist jetzt Level ${newLevel}!`), 500);
+            }
+        }
+
+        // COMPRESSION FOR QR
         const packDates = (dates) => {
             if (!dates || !dates.length) return "";
             let ints = [...new Set(dates)].map(d => Math.floor((new Date(d) - new Date('2020-01-01')) / 86400000)).sort((a,b)=>a-b);
@@ -540,13 +667,11 @@
                     if (data && data.h) {
                         if (confirm("🚨 Neues Profil erkannt!\n\nDaten importieren und aktuelle überschreiben?")) {
                             const restoredHabits = data.h.map(opt => ({
-                                id: opt.i, name: opt.n, archived: opt.a === 1,
-                                history: unpackDates(opt.h),
-                                skipped: unpackDates(opt.s),
-                                notes: {} // Notizen werden vom QR ignoriert
+                                id: opt.i, name: opt.n, category: opt.c || '🏋️ Gesundheit', archived: opt.a === 1,
+                                history: unpackDates(opt.h), skipped: unpackDates(opt.s), notes: {}
                             }));
                             const restoredSettings = {
-                                theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an, 
+                                theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an, xp: data.s.x || 0,
                                 avatar: settings.avatar 
                             };
                             await dbSet('habit_tracker_pro_habits', restoredHabits);
@@ -554,7 +679,7 @@
                             alert("Erfolgreich übertragen!"); window.location.hash = ''; window.location.reload();
                         } else { window.location.hash = ''; }
                     }
-                } catch(e) { alert("Übertragung fehlgeschlagen. QR-Code fehlerhaft."); window.location.hash = ''; }
+                } catch(e) { alert("Übertragung fehlgeschlagen."); window.location.hash = ''; }
             }
         }
 
@@ -567,18 +692,18 @@
             habits.forEach(h => { 
                 if (!h.notes) h.notes = {}; 
                 if (!h.skipped) h.skipped = []; 
+                if (!h.category) h.category = '🏋️ Gesundheit'; 
                 if (h.archived === undefined) h.archived = false; 
             });
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
         }
 
         function saveData() { dbSet('habit_tracker_pro_habits', habits); }
-        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); setDynamicGreeting(); }
+        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); setDynamicGreeting(); updateXP(); }
 
         function applySettings() {
             document.body.setAttribute('data-theme', settings.theme);
             document.documentElement.style.setProperty('--primary', settings.primaryColor);
-            
             const hex2rgb = (hex) => { const v = parseInt(hex.replace('#', ''), 16); return `${(v >> 16) & 255}, ${(v >> 8) & 255}, ${v & 255}`; };
             const rgb = hex2rgb(settings.primaryColor);
             document.documentElement.style.setProperty('--primary-light', `rgba(${rgb}, 0.2)`);
@@ -589,19 +714,33 @@
             if(!metaTheme) { metaTheme = document.createElement('meta'); metaTheme.name = "theme-color"; document.head.appendChild(metaTheme); }
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
             
-            document.getElementById('header-username').textContent = settings.username;
-            document.getElementById('settings-name-input').value = settings.username;
-            document.getElementById('header-appname').textContent = settings.appName || 'Gewohnheit Tracker';
-            document.getElementById('settings-appname-input').value = settings.appName || '';
+            const headerUsername = document.getElementById('header-username');
+            if (headerUsername) headerUsername.innerHTML = `${settings.username.split(' ')[0]} <span class="level-badge" id="header-level">Lvl 1</span>`;
+            
+            const nameInput = document.getElementById('settings-name-input');
+            if (nameInput) nameInput.value = settings.username;
+            
+            const headerAppname = document.getElementById('header-appname');
+            if (headerAppname) headerAppname.textContent = settings.appName || 'Gewohnheit Tracker';
+            
+            const appNameInput = document.getElementById('settings-appname-input');
+            if (appNameInput) appNameInput.value = settings.appName || '';
+            
             document.title = settings.appName || 'Habit Tracker';
             
+            const avatarEl = document.getElementById('header-avatar');
+            const previewEl = document.getElementById('settings-avatar-preview');
+            const placeEl = document.getElementById('settings-avatar-placeholder');
+
             if (settings.avatar) {
-                document.getElementById('header-avatar').innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
-                document.getElementById('settings-avatar-preview').src = settings.avatar; document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none';
+                if (avatarEl) avatarEl.innerHTML = `<img src="${settings.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%">`;
+                if (previewEl) { previewEl.src = settings.avatar; previewEl.style.display = 'block'; }
+                if (placeEl) placeEl.style.display = 'none';
             } else {
                 const init = settings.username.charAt(0).toUpperCase() || '?';
-                document.getElementById('header-avatar').textContent = init;
-                document.getElementById('settings-avatar-preview').style.display = 'none'; document.getElementById('settings-avatar-placeholder').style.display = 'flex'; document.getElementById('settings-avatar-placeholder').textContent = init;
+                if (avatarEl) avatarEl.textContent = init;
+                if (previewEl) previewEl.style.display = 'none'; 
+                if (placeEl) { placeEl.style.display = 'flex'; placeEl.textContent = init; }
             }
         }
 
@@ -628,7 +767,11 @@
 
         function updateGlobalProgress() {
             const activeHabits = habits.filter(h => !h.archived);
-            if(activeHabits.length === 0) { document.getElementById('global-progress').style.strokeDashoffset = 125.6; return; }
+            if(activeHabits.length === 0) { 
+                const p = document.getElementById('global-progress');
+                if (p) p.style.strokeDashoffset = 125.6; 
+                return; 
+            }
             const todayStr = new Date().toISOString().split('T')[0];
             let done = 0; let total = 0;
             activeHabits.forEach(h => {
@@ -636,7 +779,8 @@
             });
             const pct = total === 0 ? 0 : (done / total);
             const offset = 125.6 - (125.6 * pct);
-            document.getElementById('global-progress').style.strokeDashoffset = offset;
+            const p = document.getElementById('global-progress');
+            if (p) p.style.strokeDashoffset = offset;
         }
 
         window.moveHabit = function(id, direction) {
@@ -721,8 +865,11 @@
                 card.innerHTML = `
                     <div class="habit-header">
                         <div class="habit-title-row">
-                            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                                <div class="habit-title">${escapeHtml(habit.name)}</div>
+                            <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
+                                <div>
+                                    <div class="category-tag">${habit.category || 'Ziel'}</div>
+                                    <div class="habit-title">${escapeHtml(habit.name)}</div>
+                                </div>
                                 <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                             </div>
                             <div class="habit-meta">
@@ -731,7 +878,7 @@
                             </div>
                             <div class="progress-bar-container"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
                         </div>
-                        <div class="habit-actions">
+                        <div class="habit-actions" style="padding-top:20px;">
                             <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
                             <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                             <button class="btn-action btn-edit" title="Bearbeiten" aria-label="Edit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
@@ -756,15 +903,13 @@
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
-            
-            let bestStreak = 0; 
-            activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
+            let bestStreak = 0; activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
             document.getElementById('stat-best-streak').textContent = bestStreak;
 
             const select = document.getElementById('heatmap-habit-select');
             if(select) {
                 const oldVal = select.value;
-                select.innerHTML = activeHabits.map((h, i) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
+                select.innerHTML = activeHabits.map((h) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
                 if(activeHabits.find(h=>h.id==oldVal)) select.value = oldVal;
             }
 
@@ -774,100 +919,45 @@
             document.getElementById('badge-365').className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
 
             if(activeHabits.length > 0) renderYearlyCalendar(select.value || activeHabits[0].id);
-            generateSmartInsights();
-        }
-        
-        function generateSmartInsights() {
-            const activeHabits = habits.filter(h => !h.archived);
-            const dayCounts = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}; // Sun-Sat
-            let totalChecksAll = 0; let topHabitName = "Keine"; let topHabitChecks = -1;
-            const today = new Date(); const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
-
-            activeHabits.forEach(h => {
-                let habitTotal = 0;
-                h.history.forEach(dStr => {
-                    const d = new Date(dStr);
-                    if(d >= thirtyDaysAgo && d <= today) {
-                        dayCounts[d.getDay()]++; totalChecksAll++; habitTotal++;
-                    }
-                });
-                if(habitTotal > topHabitChecks) { topHabitChecks = habitTotal; topHabitName = h.name; }
-            });
-
-            const dayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-            let bestDayIdx = 0; let maxDayCount = -1;
-            for(let i=0; i<7; i++) { if(dayCounts[i] > maxDayCount) { maxDayCount = dayCounts[i]; bestDayIdx = i; } }
-            
-            const insightDay = document.getElementById('insight-best-day');
-            const insightHabit = document.getElementById('insight-best-habit');
-            if(totalChecksAll > 0) {
-                insightDay.innerHTML = `📅 Dein produktivster Tag ist der <b>${dayNames[bestDayIdx]}</b>.`;
-                insightHabit.innerHTML = `🏆 Deine stärkste Gewohnheit (30d) ist <b>"${escapeHtml(topHabitName)}"</b>.`;
-            } else {
-                insightDay.innerHTML = "Sammle ein paar Check-ins, um hier deine Analytik zu sehen.";
-                insightHabit.innerHTML = "";
-            }
         }
 
-        // KOMPAKTER JAHRESPLAN (12-Month-Grid)
         function renderYearlyCalendar(habitId) {
             const h = habits.find(x => x.id == habitId);
             const container = document.getElementById('yearly-calendar-area');
             if(!h || !container) return;
-            
             container.innerHTML = '';
-            const today = new Date();
-            const currentYear = today.getFullYear();
+            const currentYear = new Date().getFullYear();
             const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
             
             for (let m = 0; m < 12; m++) {
-                const monthDiv = document.createElement('div');
-                monthDiv.className = 'mini-month';
-                
-                const title = document.createElement('div');
-                title.className = 'mini-month-title';
-                title.textContent = monthNames[m];
-                monthDiv.appendChild(title);
-                
-                const grid = document.createElement('div');
-                grid.className = 'mini-month-grid';
+                const monthDiv = document.createElement('div'); monthDiv.className = 'mini-month';
+                const title = document.createElement('div'); title.className = 'mini-month-title'; title.textContent = monthNames[m]; monthDiv.appendChild(title);
+                const grid = document.createElement('div'); grid.className = 'mini-month-grid';
                 
                 const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
                 const firstDayIndex = new Date(currentYear, m, 1).getDay();
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
-                for (let i = 0; i < adjustedFirstDay; i++) {
-                    const empty = document.createElement('div');
-                    empty.className = 'mini-day empty';
-                    grid.appendChild(empty);
-                }
-                
+                for (let i = 0; i < adjustedFirstDay; i++) { const empty = document.createElement('div'); empty.className = 'mini-day empty'; grid.appendChild(empty); }
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateStr = `${currentYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const isChecked = h.history.includes(dateStr);
-                    const isSkipped = h.skipped.includes(dateStr);
-                    
-                    const cell = document.createElement('div');
-                    cell.className = 'mini-day';
-                    if (isChecked) cell.classList.add('checked');
-                    else if (isSkipped) cell.classList.add('skipped');
-                    
+                    const cell = document.createElement('div'); cell.className = 'mini-day';
+                    if (h.history.includes(dateStr)) cell.classList.add('checked');
+                    else if (h.skipped.includes(dateStr)) cell.classList.add('skipped');
                     grid.appendChild(cell);
                 }
-                monthDiv.appendChild(grid);
-                container.appendChild(monthDiv);
+                monthDiv.appendChild(grid); container.appendChild(monthDiv);
             }
         }
 
-        // --- ACTION SHEET LOGIC (Long Press) ---
+        // --- ACTION SHEET LOGIC ---
         function openActionSheet(habitId, dateStr) {
-            currentContext = { habitId, dateStr };
+            currentContext = { habitId, dateStr, selectedMood: null };
             const habit = habits.find(h => h.id == habitId);
             const isSkipped = habit.skipped.includes(dateStr);
             const niceDate = dateStr.split('-').reverse().join('.');
             
             document.getElementById('sheet-title').textContent = `${habit.name} - ${niceDate}`;
-            
             const btnFreeze = document.getElementById('sheet-btn-freeze');
             if (isSkipped) { btnFreeze.textContent = "▶️ Pause aufheben"; btnFreeze.dataset.action = "unfreeze"; }
             else { btnFreeze.textContent = "❄️ Tag pausieren (Urlaub)"; btnFreeze.dataset.action = "freeze"; }
@@ -881,15 +971,19 @@
 
         // --- CSV EXPORT ---
         function exportCSV() {
-            let csv = "Gewohnheit,Datum,Status,Notiz\n";
+            let csv = "Kategorie,Gewohnheit,Datum,Status,Stimmung,Notiz\n";
             habits.forEach(h => {
                 let dates = new Set([...h.history, ...h.skipped, ...Object.keys(h.notes||{})]);
                 Array.from(dates).sort().forEach(d => {
                     let status = "Offen";
                     if (h.history.includes(d)) status = "Erledigt";
                     else if (h.skipped.includes(d)) status = "Pausiert";
-                    let note = h.notes[d] ? `"${h.notes[d].replace(/"/g, '""')}"` : "";
-                    csv += `"${h.name.replace(/"/g, '""')}",${d},${status},${note}\n`;
+                    
+                    let noteData = h.notes[d];
+                    let noteText = typeof noteData === 'object' ? noteData.text : (noteData || "");
+                    let noteMood = typeof noteData === 'object' ? (noteData.mood || "") : "";
+                    
+                    csv += `"${(h.category||'').replace(/"/g, '""')}","${h.name.replace(/"/g, '""')}",${d},${status},${noteMood},"${noteText.replace(/"/g, '""')}"\n`;
                 });
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -897,44 +991,103 @@
             a.download = `Habits-Export-${new Date().toISOString().split('T')[0]}.csv`; a.click();
         }
 
-        // --- NOTES DIRECTORY (EIGENES FENSTER PRO NOTIZ) ---
+        // --- NOTES DIRECTORY (WITH MOOD) ---
         function renderAllNotes() {
             const container = document.getElementById('all-notes-list'); container.innerHTML = '';
             let allNotes = [];
-            habits.forEach(h => { if (h.notes) { Object.entries(h.notes).forEach(([date, text]) => { allNotes.push({ date, habitName: h.name, text, habitId: h.id }); }); } });
+            habits.forEach(h => { if (h.notes) { Object.entries(h.notes).forEach(([date, data]) => { 
+                let text = typeof data === 'object' ? data.text : data;
+                let mood = typeof data === 'object' ? data.mood : null;
+                if(text || mood) allNotes.push({ date, habitName: h.name, text, mood, habitId: h.id, category: h.category }); 
+            }); } });
             allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (!allNotes.length) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 20px;">Noch keine Notizen vorhanden.</p>'; return; }
             
             allNotes.forEach(note => {
-                const el = document.createElement('div'); 
-                el.className = 'note-summary-item'; 
+                const el = document.createElement('div'); el.className = 'note-summary-item'; 
                 const dispDate = note.date.split('-').reverse().join('.');
-                const preview = note.text.length > 50 ? note.text.substring(0, 50) + "..." : note.text;
+                const preview = note.text.length > 60 ? note.text.substring(0, 60) + "..." : note.text;
                 
                 el.innerHTML = `
-                    <div class="note-summary-header" style="margin-bottom:0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">${note.category || 'Ziel'}</div>
                             <div style="font-weight:bold; color:var(--text-main); font-size:0.95rem;">${dispDate} - <span style="color:var(--primary);">${escapeHtml(note.habitName)}</span></div>
-                            <div style="margin-top:5px; font-size:0.85rem; color:var(--text-muted);">${escapeHtml(preview)}</div>
                         </div>
-                    </div>`;
-                
+                        ${note.mood ? `<div style="font-size: 1.5rem;">${note.mood}</div>` : ''}
+                    </div>
+                    ${preview ? `<div style="color:var(--text-muted); font-size: 0.9rem; line-height: 1.4;">${escapeHtml(preview)}</div>` : ''}
+                `;
                 el.addEventListener('click', () => { vibrate('light'); openNoteDialog(note.habitId, note.date); });
                 container.appendChild(el);
             });
+        }
+
+        // --- POMODORO TIMER LOGIC ---
+        let timerInterval;
+        let timerTimeLeft = 25 * 60;
+        let isTimerRunning = false;
+
+        function updateTimerDisplay() {
+            const m = Math.floor(timerTimeLeft / 60).toString().padStart(2, '0');
+            const s = (timerTimeLeft % 60).toString().padStart(2, '0');
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay) timerDisplay.textContent = `${m}:${s}`;
+            
+            const pct = timerTimeLeft / (25 * 60);
+            const offset = 565.48 - (565.48 * pct);
+            const timerProgress = document.getElementById('timer-progress');
+            if (timerProgress) timerProgress.style.strokeDashoffset = offset;
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-start');
+            const fab = document.getElementById('fab-timer');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                btn.textContent = "Start";
+                fab.classList.remove('running');
+            } else {
+                isTimerRunning = true;
+                btn.textContent = "Pause";
+                fab.classList.add('running');
+                timerInterval = setInterval(() => {
+                    timerTimeLeft--;
+                    updateTimerDisplay();
+                    if (timerTimeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        btn.textContent = "Start";
+                        fab.classList.remove('running');
+                        vibrate('heavy'); playLevelUpSound();
+                        alert("Pomodoro beendet! Zeit für eine Pause.");
+                        timerTimeLeft = 25 * 60; updateTimerDisplay();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerTimeLeft = 25 * 60;
+            document.getElementById('btn-timer-start').textContent = "Start";
+            document.getElementById('fab-timer').classList.remove('running');
+            updateTimerDisplay();
         }
 
         // --- EVENTS ---
         function closeAllModals() {
             document.getElementById('custom-modal-overlay').classList.remove('open'); noteModal.classList.remove('open'); editModal.classList.remove('open');
             archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open'); allNotesModal.classList.remove('open');
-            document.getElementById('qr-modal').classList.remove('open'); actionSheet.classList.remove('open');
-            currentContext = { habitId: null, dateStr: null, action: null }; document.body.classList.remove('modal-open');
+            document.getElementById('qr-modal').classList.remove('open'); actionSheet.classList.remove('open'); timerModal.classList.remove('open');
+            currentContext = { habitId: null, dateStr: null, selectedMood: null }; document.body.classList.remove('modal-open');
         }
 
         function setupEventListeners() {
-            document.getElementById('sheet-btn-note').addEventListener('click', () => { closeActionSheet(); setTimeout(()=>{ const habit = habits.find(h => h.id == currentContext.habitId); document.getElementById('note-date-label').textContent = `Notiz für den ${currentContext.dateStr.split('-').reverse().join('.')}`; document.getElementById('note-input').value = habit.notes[currentContext.dateStr] || ""; document.getElementById('custom-modal-overlay').classList.add('open'); noteModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => document.getElementById('note-input').focus(), 100); }, 300); });
+            document.getElementById('sheet-btn-note').addEventListener('click', () => { closeActionSheet(); setTimeout(()=>{ openNoteDialog(currentContext.habitId, currentContext.dateStr); }, 300); });
             document.getElementById('sheet-btn-freeze').addEventListener('click', (e) => {
                 vibrate('medium'); const habit = habits.find(h => h.id == currentContext.habitId); const action = e.target.dataset.action;
                 if(action === 'freeze') { habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped.push(currentContext.dateStr); }
@@ -947,24 +1100,22 @@
                 saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
 
-            // QR & CSV Sync - EXTREM-KOMPRIMIERUNG
+            // POMODORO EVENTS
+            document.getElementById('fab-timer').addEventListener('click', () => {
+                vibrate('light'); document.getElementById('custom-modal-overlay').classList.add('open'); timerModal.classList.add('open'); document.body.classList.add('modal-open'); updateTimerDisplay();
+            });
+            document.getElementById('btn-timer-start').addEventListener('click', toggleTimer);
+            document.getElementById('btn-timer-reset').addEventListener('click', resetTimer);
+            document.getElementById('close-timer').addEventListener('click', closeAllModals);
+
+            // QR & CSV Sync
             document.getElementById('btn-qr-sync').addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
-                
-                let optHabits = habits.map(h => ({
-                    i: h.id, n: h.name, a: h.archived ? 1 : 0,
-                    h: packDates(h.history),
-                    s: packDates(h.skipped)
-                }));
-                let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName };
-                
+                let optHabits = habits.map(h => ({ i: h.id, n: h.name, c: h.category, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
+                let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName, x: settings.xp };
                 const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ h: optHabits, s: optSettings }));
-                
                 if (url.length > 2800) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
-                
-                document.getElementById('qr-code-container').innerHTML = ''; 
-                // Error Correction Level L für maximale Datenkapazität im QR Code
-                new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
+                document.getElementById('qr-code-container').innerHTML = ''; new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
                 document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open');
                 document.getElementById('custom-modal-overlay').classList.add('open'); document.getElementById('qr-modal').classList.add('open'); document.body.classList.add('modal-open');
             });
@@ -972,15 +1123,19 @@
 
             document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { renderYearlyCalendar(e.target.value); });
 
+            // ADD HABIT
             const addFn = () => {
-                const input = document.getElementById('new-habit-input'); const name = input.value.trim(); if (!name) return;
+                const input = document.getElementById('new-habit-input'); const name = input.value.trim(); 
+                const cat = document.getElementById('new-habit-category').value;
+                if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false });
+                habits.unshift({ id: newId, name: name, category: cat, history: [], skipped: [], notes: {}, archived: false });
                 habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
             document.getElementById('add-btn').addEventListener('click', addFn);
             document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
 
+            // CALENDAR CLICKS
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
                 const dayCell = target.closest('.day-cell:not(.empty):not(.future)');
@@ -992,8 +1147,9 @@
                     if(habit.skipped.includes(date)) { habit.skipped = habit.skipped.filter(d => d !== date); vibrate('light'); dayCell.classList.remove('skipped'); saveData(); render(); updateGlobalProgress(); return; }
 
                     const idx = habit.history.indexOf(date);
-                    if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); } 
-                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); } 
+                    if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); addXP(-10); } 
+                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); addXP(10); } 
+                    
                     saveData(); updateGlobalProgress();
                     
                     const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
@@ -1022,6 +1178,7 @@
                 if (target.closest('.btn-delete')) { vibrate('heavy'); if(confirm("Gewohnheit ins Archiv verschieben?")) { const id = target.closest('.habit-card').dataset.id; habits.find(h => h.id == id).archived = true; saveData(); render(); updateGlobalProgress(); } }
             });
 
+            // TOUCH & LONG PRESS
             let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
                 const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (!cell) return;
@@ -1033,19 +1190,42 @@
             listEl.addEventListener('touchcancel', () => clearTimeout(pressTimer));
             listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (cell) { e.preventDefault(); if (!cell.dataset.preventClick) { cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } } });
 
+            // MOOD SELECTOR
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    vibrate('light'); document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active'); currentContext.selectedMood = e.target.dataset.mood;
+                });
+            });
+
+            // MODAL ACTIONS
             document.getElementById('stats-toggle').addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); document.getElementById('custom-modal-overlay').classList.add('open'); statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
             
-            document.getElementById('save-note').addEventListener('click', () => { const h = habits.find(h => h.id == currentContext.habitId); const text = document.getElementById('note-input').value.trim(); if (text === "") delete h.notes[currentContext.dateStr]; else h.notes[currentContext.dateStr] = text; saveData(); render(); closeAllModals(); });
+            document.getElementById('save-note').addEventListener('click', () => { 
+                const h = habits.find(h => h.id == currentContext.habitId); 
+                const text = document.getElementById('note-input').value.trim(); 
+                const mood = currentContext.selectedMood;
+                if (text === "" && !mood) delete h.notes[currentContext.dateStr]; 
+                else h.notes[currentContext.dateStr] = { text, mood }; 
+                saveData(); render(); renderAllNotes(); closeAllModals(); 
+            });
+            
             document.getElementById('save-edit').addEventListener('click', () => { const h = habits.find(h => h.id == currentContext.habitId); const newName = document.getElementById('edit-name-input').value.trim(); if (newName) { h.name = newName; saveData(); render(); } closeAllModals(); });
             
             document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive, #close-qr, #close-stats, #close-all-notes').forEach(b => { if(b) b.addEventListener('click', closeAllModals); });
             document.getElementById('custom-modal-overlay').addEventListener('click', closeAllModals);
 
+            // SETTINGS
             const toggleSettings = () => { document.getElementById('settings-panel').classList.toggle('open'); document.getElementById('settings-overlay').classList.toggle('open'); document.body.classList.toggle('modal-open'); };
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => document.getElementById(id).addEventListener('click', toggleSettings));
 
             document.getElementById('theme-toggle').addEventListener('click', () => { vibrate('light'); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
             document.getElementById('save-settings').addEventListener('click', () => { vibrate('light'); settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; settings.appName = document.getElementById('settings-appname-input').value.trim() || 'Habit Tracker'; saveSettings(); toggleSettings(); });
+
+            document.getElementById('avatar-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0]; if (!file) return;
+                const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d'); const M=512; let w=img.width,h=img.height; const ms=Math.min(w,h); cvs.width=M; cvs.height=M; ctx.drawImage(img,(w-ms)/2,(h-ms)/2,ms,ms,0,0,M,M); settings.avatar = cvs.toDataURL('image/webp',0.8); document.getElementById('settings-avatar-preview').src = settings.avatar; document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none'; saveSettings(); }; img.src = ev.target.result; }; r.readAsDataURL(file);
+            });
 
             document.getElementById('open-archive').addEventListener('click', () => { vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; const arch = habits.filter(h => h.archived); if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open'); document.getElementById('custom-modal-overlay').classList.add('open'); archiveManagerModal.classList.add('open'); document.body.classList.add('modal-open'); });
             
@@ -1053,9 +1233,21 @@
         }
 
         window.openNoteDialog = function(habitId, dateStr) {
-            closeAllModals(); currentContext = { habitId, dateStr }; const habit = habits.find(h => h.id == habitId);
+            closeAllModals(); currentContext = { habitId, dateStr, selectedMood: null }; 
+            const habit = habits.find(h => h.id == habitId);
             document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
-            document.getElementById('note-input').value = habit.notes[dateStr] || "";
+            
+            let noteData = habit.notes[dateStr];
+            let text = typeof noteData === 'object' ? noteData.text : (noteData || "");
+            let mood = typeof noteData === 'object' ? noteData.mood : null;
+            
+            document.getElementById('note-input').value = text;
+            
+            document.querySelectorAll('.mood-btn').forEach(b => {
+                b.classList.remove('active');
+                if(b.dataset.mood === mood) { b.classList.add('active'); currentContext.selectedMood = mood; }
+            });
+
             document.getElementById('custom-modal-overlay').classList.add('open'); noteModal.classList.add('open'); document.body.classList.add('modal-open');
             setTimeout(() => document.getElementById('note-input').focus(), 100);
         }
@@ -1074,6 +1266,32 @@
             });
         }
         
+        // CONFETTI
+        function resizeCanvas() { 
+            if(canvas) {
+                canvas.width = window.innerWidth; 
+                canvas.height = window.innerHeight; 
+            }
+        }
+        function fireConfetti(massive = false) {
+            if(!ctx) return;
+            const colors = [settings.primaryColor, '#ef4444', '#10b981', '#f59e0b', '#ec4899'];
+            const count = massive ? 150 : 60;
+            for(let i=0; i<count; i++) particles.push({ x: window.innerWidth / 2, y: massive ? window.innerHeight : window.innerHeight / 2, vx: (Math.random() - 0.5) * (massive ? 25 : 15), vy: (Math.random() - 1) * (massive ? 25 : 15), color: colors[Math.floor(Math.random() * colors.length)], size: Math.random() * 8 + 4, life: massive ? 150 : 100 });
+            if (!animationFrameId) animateConfetti();
+        }
+        function animateConfetti() {
+            if(!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (particles.length === 0) { animationFrameId = null; return; }
+            for(let i=0; i<particles.length; i++) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= 2; p.size *= 0.96;
+                ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
+                if(p.life <= 0 || p.size < 0.5) { particles.splice(i, 1); i--; }
+            }
+            animationFrameId = requestAnimationFrame(animateConfetti);
+        }
+
         init();
     </script>
 </body>
