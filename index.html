@@ -98,7 +98,6 @@
         .input-group { display: flex; gap: 8px; margin-bottom: 30px; background: var(--bg-card); padding: 6px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); align-items: center; }
         .input-wrapper { display: flex; flex: 1; min-width: 10px; position: relative; }
         input[type="text"].habit-input { flex: 1; padding: 12px 14px; border: none; background: transparent; color: var(--text-main); font-size: 1rem; font-weight: 500; outline: none; width: 100%; min-width: 50px; }
-        select.category-select { flex-shrink: 0; appearance: none; background: var(--bg-body); border: 1px solid var(--border); padding: 8px 12px; border-radius: 12px; color: var(--text-main); font-weight: 600; font-size: 0.85rem; outline: none; cursor: pointer; width: auto; }
         .btn-primary { flex-shrink: 0; background: var(--primary); color: #fff; border: none; padding: 12px 20px; border-radius: 14px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 10px var(--primary-light); white-space: nowrap; }
         .btn-primary:active { transform: scale(0.95); box-shadow: none; }
 
@@ -108,20 +107,17 @@
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .habit-title-row { flex: 1; }
         .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; }
-        .category-tag { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 8px; background: var(--border); color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
         
-        .expand-btn { background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .expand-btn { flex-shrink: 0; background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
 
-        .habit-month-nav { display: inline-flex; align-items: center; gap: 8px; margin-top: 5px; background: var(--bg-body); padding: 4px 6px; border-radius: 12px; border: 1px solid var(--border); }
+        .habit-month-nav { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-body); padding: 4px 6px; border-radius: 12px; border: 1px solid var(--border); }
         .habit-month-nav button { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 10px; border-radius: 8px; transition: background 0.2s; }
         .habit-month-nav span { font-size: 0.9rem; font-weight: 700; min-width: 85px; text-align: center; }
 
-        .habit-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-        .habit-stats { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; background: var(--bg-body); padding: 4px 10px; border-radius: 8px; }
-        .streak-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--warning); font-weight: 800; background: rgba(245, 158, 11, 0.15); padding: 4px 10px; border-radius: 8px; }
+        .habit-meta { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; margin-top: 12px; }
         
-        .progress-bar-container { width: 100%; height: 8px; background: var(--bg-body); border-radius: 4px; margin-top: 15px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+        .progress-bar-container { width: 100%; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
         .progress-bar-fill { height: 100%; background: var(--primary); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 4px; }
 
         .habit-actions { display: flex; gap: 5px; align-items: center; justify-content: flex-end; }
@@ -358,7 +354,7 @@
         <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">📅 Kompakter Jahresplan</h4>
         <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
         
-        <div class="yearly-grid" id="yearly-calendar-area">
+        <div id="yearly-calendar-container">
             <!-- Befüllt per JavaScript -->
         </div>
 
@@ -400,12 +396,6 @@
             <div class="input-wrapper">
                 <input type="text" id="new-habit-input" class="habit-input" inputmode="text" enterkeyhint="done" placeholder="Neue Gewohnheit..." autocomplete="off">
             </div>
-            <select id="new-habit-category" class="category-select">
-                <option value="🏋️ Gesundheit">🏋️ Gesundheit</option>
-                <option value="🧠 Geist">🧠 Geist</option>
-                <option value="💼 Arbeit">💼 Arbeit</option>
-                <option value="🎨 Hobby">🎨 Hobby</option>
-            </select>
             <button id="add-btn" class="btn-primary">Hinzufügen</button>
         </div>
 
@@ -425,6 +415,7 @@
         let animationFrameId = null;
         let particles = [];
         let canvas, ctx;
+        let yearlyCalendarYear = new Date().getFullYear(); // Globale Variable für den Jahresplan
 
         /**
          * ELITE PWA SETUP
@@ -568,7 +559,7 @@
                     if (data && data.h) {
                         if (confirm("🚨 Neues Profil erkannt!\n\nDaten importieren und aktuelle überschreiben?")) {
                             const restoredHabits = data.h.map(opt => ({
-                                id: opt.i, name: opt.n, category: opt.c || 'Ziel', archived: opt.a === 1,
+                                id: opt.i, name: opt.n, archived: opt.a === 1,
                                 history: unpackDates(opt.h), skipped: unpackDates(opt.s), notes: {}
                             }));
                             const restoredSettings = {
@@ -593,7 +584,6 @@
             habits.forEach(h => { 
                 if (!h.notes) h.notes = {}; 
                 if (!h.skipped) h.skipped = []; 
-                if (!h.category) h.category = 'Ziel'; 
                 if (h.archived === undefined) h.archived = false; 
             });
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
@@ -726,7 +716,6 @@
                 const monthLabel = formatter.format(displayDate);
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                const streak = calculateStreak(habit.history, habit.skipped);
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -766,20 +755,18 @@
                 card.innerHTML = `
                     <div class="habit-header">
                         <div class="habit-title-row">
-                            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                                <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                    <div class="habit-title" style="margin-bottom: 0;">${escapeHtml(habit.name)}</div>
-                                    <div class="category-tag" style="margin-bottom: 0;">${habit.category || 'Ziel'}</div>
+                            <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
+                                <div>
+                                    <div class="habit-title">${escapeHtml(habit.name)}</div>
                                 </div>
                                 <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                             </div>
-                            <div class="habit-meta">
+                            <div class="habit-meta" style="flex-wrap: nowrap;">
                                 <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)" ${displayDate >= today ? 'style="opacity:0.3; pointer-events:none;"' : ''}>❯</button></div>
-                                ${streak > 0 ? `<span class="streak-badge">🔥 ${streak}</span>` : ''}
+                                <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
                             </div>
-                            <div class="progress-bar-container"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
                         </div>
-                        <div class="habit-actions">
+                        <div class="habit-actions" style="padding-top:20px;">
                             <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
                             <button class="btn-action" title="Nach unten" onclick="moveHabit('${habit.id}', 1)" ${isLast ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                             <button class="btn-action btn-edit" title="Bearbeiten" aria-label="Edit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
@@ -819,37 +806,54 @@
             document.getElementById('badge-100').className = `milestone-badge ${bestStreak>=100 ? 'unlocked' : ''}`;
             document.getElementById('badge-365').className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
 
-            if(activeHabits.length > 0) renderYearlyCalendar(select.value || activeHabits[0].id);
+            yearlyCalendarYear = new Date().getFullYear();
+            if(activeHabits.length > 0) renderYearlyCalendar(select.value || activeHabits[0].id, yearlyCalendarYear);
         }
 
-        function renderYearlyCalendar(habitId) {
+        function renderYearlyCalendar(habitId, yearToRender) {
+            if (!yearToRender) yearToRender = new Date().getFullYear();
             const h = habits.find(x => x.id == habitId);
-            const container = document.getElementById('yearly-calendar-area');
+            const container = document.getElementById('yearly-calendar-container');
             if(!h || !container) return;
-            container.innerHTML = '';
-            const currentYear = new Date().getFullYear();
+            
             const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
             
+            let gridHTML = `<div class="yearly-grid">`;
             for (let m = 0; m < 12; m++) {
-                const monthDiv = document.createElement('div'); monthDiv.className = 'mini-month';
-                const title = document.createElement('div'); title.className = 'mini-month-title'; title.textContent = monthNames[m] + ' ' + currentYear; monthDiv.appendChild(title);
-                const grid = document.createElement('div'); grid.className = 'mini-month-grid';
+                let monthHTML = `<div class="mini-month"><div class="mini-month-title">${monthNames[m]} ${yearToRender}</div><div class="mini-month-grid">`;
                 
-                const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
-                const firstDayIndex = new Date(currentYear, m, 1).getDay();
+                const daysInMonth = new Date(yearToRender, m + 1, 0).getDate();
+                const firstDayIndex = new Date(yearToRender, m, 1).getDay();
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
-                for (let i = 0; i < adjustedFirstDay; i++) { const empty = document.createElement('div'); empty.className = 'mini-day empty'; grid.appendChild(empty); }
+                for (let i = 0; i < adjustedFirstDay; i++) { monthHTML += `<div class="mini-day empty"></div>`; }
                 for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${currentYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const cell = document.createElement('div'); cell.className = 'mini-day';
-                    if (h.history.includes(dateStr)) cell.classList.add('checked');
-                    else if (h.skipped.includes(dateStr)) cell.classList.add('skipped');
-                    grid.appendChild(cell);
+                    const dateStr = `${yearToRender}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    let classes = 'mini-day';
+                    if (h.history.includes(dateStr)) classes += ' checked';
+                    else if (h.skipped.includes(dateStr)) classes += ' skipped';
+                    monthHTML += `<div class="${classes}"></div>`;
                 }
-                monthDiv.appendChild(grid); container.appendChild(monthDiv);
+                monthHTML += `</div></div>`;
+                gridHTML += monthHTML;
             }
+            gridHTML += `</div>`;
+
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--bg-body); border-radius: 12px; padding: 5px 15px; border: 1px solid var(--border);">
+                    <button class="icon-btn" style="width:30px;height:30px; flex-shrink:0;" onclick="changeYearlyCalendarYear('${habitId}', -1)">❮</button>
+                    <span style="font-weight: 800; font-size: 1.1rem;">${yearToRender}</span>
+                    <button class="icon-btn" style="width:30px;height:30px; flex-shrink:0;" onclick="changeYearlyCalendarYear('${habitId}', 1)">❯</button>
+                </div>
+                ${gridHTML}
+            `;
         }
+
+        window.changeYearlyCalendarYear = function(habitId, delta) {
+            vibrate('light');
+            yearlyCalendarYear += delta;
+            renderYearlyCalendar(habitId, yearlyCalendarYear);
+        };
 
         // --- ACTION SHEET LOGIC ---
         function openActionSheet(habitId, dateStr) {
@@ -872,7 +876,7 @@
 
         // --- CSV EXPORT ---
         function exportCSV() {
-            let csv = "Kategorie,Gewohnheit,Datum,Status,Stimmung,Notiz\n";
+            let csv = "Gewohnheit,Datum,Status,Stimmung,Notiz\n";
             habits.forEach(h => {
                 let dates = new Set([...h.history, ...h.skipped, ...Object.keys(h.notes||{})]);
                 Array.from(dates).sort().forEach(d => {
@@ -884,7 +888,7 @@
                     let noteText = typeof noteData === 'object' ? noteData.text : (noteData || "");
                     let noteMood = typeof noteData === 'object' ? (noteData.mood || "") : "";
                     
-                    csv += `"${(h.category||'').replace(/"/g, '""')}","${h.name.replace(/"/g, '""')}",${d},${status},${noteMood},"${noteText.replace(/"/g, '""')}"\n`;
+                    csv += `"${h.name.replace(/"/g, '""')}",${d},${status},${noteMood},"${noteText.replace(/"/g, '""')}"\n`;
                 });
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -899,7 +903,7 @@
             habits.forEach(h => { if (h.notes) { Object.entries(h.notes).forEach(([date, data]) => { 
                 let text = typeof data === 'object' ? data.text : data;
                 let mood = typeof data === 'object' ? data.mood : null;
-                if(text || mood) allNotes.push({ date, habitName: h.name, text, mood, habitId: h.id, category: h.category }); 
+                if(text || mood) allNotes.push({ date, habitName: h.name, text, mood, habitId: h.id }); 
             }); } });
             allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
             
@@ -913,7 +917,6 @@
                 el.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">${note.category || 'Ziel'}</div>
                             <div style="font-weight:bold; color:var(--text-main); font-size:0.95rem;">${dispDate} - <span style="color:var(--primary);">${escapeHtml(note.habitName)}</span></div>
                         </div>
                         ${note.mood ? `<div style="font-size: 1.5rem;">${note.mood}</div>` : ''}
@@ -950,7 +953,7 @@
             // QR & CSV Sync
             document.getElementById('btn-qr-sync').addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
-                let optHabits = habits.map(h => ({ i: h.id, n: h.name, c: h.category, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
+                let optHabits = habits.map(h => ({ i: h.id, n: h.name, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
                 let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName };
                 const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ h: optHabits, s: optSettings }));
                 if (url.length > 2800) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
@@ -960,15 +963,17 @@
             });
             document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
 
-            document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { renderYearlyCalendar(e.target.value); });
+            document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { 
+                yearlyCalendarYear = new Date().getFullYear();
+                renderYearlyCalendar(e.target.value, yearlyCalendarYear); 
+            });
 
             // ADD HABIT
             const addFn = () => {
                 const input = document.getElementById('new-habit-input'); const name = input.value.trim(); 
-                const cat = document.getElementById('new-habit-category') ? document.getElementById('new-habit-category').value : 'Ziel';
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-                habits.unshift({ id: newId, name: name, category: cat, history: [], skipped: [], notes: {}, archived: false });
+                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false });
                 habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
             document.getElementById('add-btn').addEventListener('click', addFn);
@@ -994,9 +999,7 @@
                     const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
                     const year = d.getFullYear(); const month = d.getMonth();
                     const yearPrefix = `${year}-`; const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
-                    const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                     const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                    const streak = calculateStreak(habit.history, habit.skipped);
                     
                     let daysPassed = new Date(year, month + 1, 0).getDate();
                     if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
@@ -1004,12 +1007,8 @@
                     daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
                     const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
                     
-                    if (card.querySelector('.habit-stats')) card.querySelector('.habit-stats').textContent = `${year}: ${yearCount}x`;
                     if (card.querySelector('.progress-bar-fill')) card.querySelector('.progress-bar-fill').style.width = `${progressPct}%`;
                     
-                    let badge = card.querySelector('.streak-badge');
-                    if (streak > 0) { if (!badge) { badge = document.createElement('span'); badge.className = 'streak-badge'; card.querySelector('.habit-meta').appendChild(badge); } badge.textContent = `🔥 ${streak}`; } 
-                    else if (badge) { badge.remove(); }
                     return;
                 }
                 
