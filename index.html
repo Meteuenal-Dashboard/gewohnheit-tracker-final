@@ -412,15 +412,18 @@
     <canvas id="confetti-canvas"></canvas>
 
     <script>
+        // GLOBALE HELPER FUNKTION FÜR LOKALES DATUM
+        const getLocalIsoDate = (date = new Date()) => {
+            const offset = date.getTimezoneOffset() * 60000;
+            return new Date(date.getTime() - offset).toISOString().split('T')[0];
+        };
+
         let currentContext = { habitId: null, dateStr: null, selectedMood: null }; 
         let animationFrameId = null;
         let particles = [];
         let canvas, ctx;
         let yearlyCalendarYear = new Date().getFullYear();
 
-        /**
-         * ELITE PWA SETUP
-         */
         function setupPWA() {
             const appName = settings.appName || "Habits Pro";
             const shortName = appName.length > 12 ? appName.substring(0, 12) : appName;
@@ -441,9 +444,6 @@
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(()=>{});
         }
 
-        /**
-         * INDEXED-DB PERSISTENCE
-         */
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -469,9 +469,6 @@
             } catch(e) { localStorage.setItem(key, JSON.stringify(val)); }
         }
 
-        /**
-         * APP STATE & VARIABLES
-         */
         const COLOR_PALETTE = ['#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', '#6366f1', '#4f46e5', '#64748b', '#334155'];
         let habits = [];
         let settings = { theme: 'light', primaryColor: '#2563eb', username: 'Gast', avatar: null, appName: 'Gewohnheit Tracker' };
@@ -490,7 +487,6 @@
         const allNotesModal = document.getElementById('all-notes-modal');
         const qrModal = document.getElementById('qr-modal');
 
-        // HAPTIC FEEDBACK
         const vibrate = (type = 'light') => { 
             if (!navigator.vibrate) return;
             if (type === 'light') navigator.vibrate(20);
@@ -498,38 +494,9 @@
             if (type === 'heavy') navigator.vibrate([60, 40, 60]);
         };
 
-        // INITIALIZATION
-        async function init() {
-            canvas = document.getElementById('confetti-canvas');
-            if (canvas) {
-                ctx = canvas.getContext('2d');
-            }
-            await checkImportHash();
-            await loadData();
-            applySettings();
-            setupPWA(); 
-            renderColorGrid();
-            setDynamicGreeting();
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-            render(); 
-            updateGlobalProgress();
-            setupEventListeners();
-        }
-
-        function setDynamicGreeting() {
-            const h = new Date().getHours();
-            let g = "Guten Tag"; let sub = "Lass uns deine Gewohnheiten pflegen.";
-            if (h >= 5 && h < 12) { g = "Guten Morgen"; sub = "Ein neuer Tag, ein neuer Streak."; }
-            else if (h >= 18 || h < 5) { g = "Guten Abend"; sub = "Zeit, den Tag erfolgreich abzuschließen."; }
-            document.getElementById('greeting-text').textContent = `${g}, ${settings.username.split(' ')[0]}!`;
-            document.getElementById('greeting-subtext').textContent = sub;
-        }
-
-        // COMPRESSION FOR QR
         const packDates = (dates) => {
             if (!dates || !dates.length) return "";
-            let ints = [...new Set(dates)].map(d => Math.floor((new Date(d) - new Date('2020-01-01')) / 86400000)).sort((a,b)=>a-b);
+            let ints = [...new Set(dates)].map(d => Math.floor((new Date(d + 'T00:00:00Z') - new Date('2020-01-01T00:00:00Z')) / 86400000)).sort((a,b)=>a-b);
             let packed = []; let start = ints[0]; let len = 1;
             for(let i=1; i<ints.length; i++) {
                 if (ints[i] === ints[i-1] + 1) len++;
@@ -545,9 +512,15 @@
             str.split('.').forEach(p => {
                 if (p.includes('-')) {
                     let [s, l] = p.split('-'); let start = parseInt(s, 36); let len = parseInt(l, 36);
-                    for(let i=0; i<len; i++) { let d = new Date('2020-01-01'); d.setDate(d.getDate() + start + i); dates.push(d.toISOString().split('T')[0]); }
+                    for(let i=0; i<len; i++) { 
+                        let d = new Date('2020-01-01T00:00:00Z'); 
+                        d.setUTCDate(d.getUTCDate() + start + i); 
+                        dates.push(d.toISOString().split('T')[0]); 
+                    }
                 } else {
-                    let d = new Date('2020-01-01'); d.setDate(d.getDate() + parseInt(p, 36)); dates.push(d.toISOString().split('T')[0]);
+                    let d = new Date('2020-01-01T00:00:00Z'); 
+                    d.setUTCDate(d.getUTCDate() + parseInt(p, 36)); 
+                    dates.push(d.toISOString().split('T')[0]);
                 }
             });
             return dates;
@@ -572,7 +545,7 @@
                             alert("Erfolgreich übertragen!"); window.location.hash = ''; window.location.reload();
                         } else { window.location.hash = ''; }
                     }
-                } catch(e) { alert("Übertragung fehlgeschlagen. QR-Code fehlerhaft."); window.location.hash = ''; }
+                } catch(e) { alert("Übertragung fehlgeschlagen."); window.location.hash = ''; }
             }
         }
 
@@ -629,28 +602,29 @@
                 if (previewEl) { previewEl.src = settings.avatar; previewEl.style.display = 'block'; }
                 if (placeEl) placeEl.style.display = 'none';
             } else {
-                const init = settings.username.charAt(0).toUpperCase() || '?';
-                if (avatarEl) avatarEl.textContent = init;
+                const initStr = settings.username.charAt(0).toUpperCase() || '?';
+                if (avatarEl) avatarEl.textContent = initStr;
                 if (previewEl) previewEl.style.display = 'none'; 
-                if (placeEl) { placeEl.style.display = 'flex'; placeEl.textContent = init; }
+                if (placeEl) { placeEl.style.display = 'flex'; placeEl.textContent = initStr; }
             }
         }
 
         function calculateStreak(history, skipped = []) {
-            let activeDates = [...history];
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalIsoDate();
             const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-            const yesterday = yesterdayDate.toISOString().split('T')[0];
+            const yesterday = getLocalIsoDate(yesterdayDate);
 
             let checkDate = new Date();
-            if (skipped.includes(today) && !activeDates.includes(today)) checkDate = yesterdayDate;
-            else if (!activeDates.includes(today) && !activeDates.includes(yesterday) && !skipped.includes(yesterday)) return 0;
-            else if (!activeDates.includes(today)) checkDate = yesterdayDate;
+            if (skipped.includes(today) && !history.includes(today)) checkDate = yesterdayDate;
+            else if (!history.includes(today) && !history.includes(yesterday) && !skipped.includes(yesterday)) return 0;
+            else if (!history.includes(today)) checkDate = yesterdayDate;
 
             let streak = 0;
-            while (true) {
-                const dStr = checkDate.toISOString().split('T')[0];
-                if (activeDates.includes(dStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } 
+            let failsafe = 0; 
+            while (failsafe < 5000) {
+                failsafe++;
+                const dStr = getLocalIsoDate(checkDate);
+                if (history.includes(dStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } 
                 else if (skipped.includes(dStr)) { checkDate.setDate(checkDate.getDate() - 1); } 
                 else break;
             }
@@ -664,7 +638,7 @@
                 if (p) p.style.strokeDashoffset = 125.6; 
                 return; 
             }
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getLocalIsoDate();
             let done = 0; let total = 0;
             activeHabits.forEach(h => {
                 if(!h.skipped.includes(todayStr)) { total++; if(h.history.includes(todayStr)) done++; }
@@ -674,6 +648,8 @@
             const p = document.getElementById('global-progress');
             if (p) p.style.strokeDashoffset = offset;
         }
+
+        function escapeHtml(text) { return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]); }
 
         window.moveHabit = function(id, direction) {
             vibrate('light'); const activeHabits = habits.filter(h => !h.archived);
@@ -693,17 +669,13 @@
             render();
         };
 
-        /**
-         * RENDER LOGIC
-         */
         function render() {
             const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
             const activeHabits = habits.filter(h => !h.archived);
             if (activeHabits.length === 0) { listEl.innerHTML = ''; emptyState.style.display = 'block'; return; } 
             else { emptyState.style.display = 'none'; }
 
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            const todayStr = getLocalIsoDate();
             const fragment = document.createDocumentFragment();
 
             activeHabits.forEach((habit, index) => {
@@ -715,13 +687,15 @@
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
                 const monthLabel = formatter.format(displayDate);
+                const yearPrefix = `${year}-`;
+                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
                 const streak = calculateStreak(habit.history, habit.skipped);
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
-                if (year === today.getFullYear() && month === today.getMonth()) daysPassed = today.getDate();
+                if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
                 const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= todayStr).length;
                 daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
                 const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
@@ -735,8 +709,7 @@
                 
                 for (let d = 1; d <= daysInMonth; d++) {
                     const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const cellDateObj = new Date(cellDateStr);
-                    const isFuture = cellDateObj > today;
+                    const isFuture = cellDateStr > todayStr;
                     const isChecked = habit.history.includes(cellDateStr);
                     const isSkipped = habit.skipped.includes(cellDateStr);
                     const isToday = (cellDateStr === todayStr);
@@ -768,6 +741,7 @@
                                     <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                                 </div>
                             </div>
+                            <div class="habit-stats-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">${streak} am Stück • ${yearCount} im Jahr</div>
                             <div class="habit-meta">
                                 <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)">❯</button></div>
                                 <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
@@ -789,12 +763,14 @@
 
         window.changeHabitMonth = function(habitId, delta) { vibrate('light'); const d = habitDisplayDates[habitId]; d.setMonth(d.getMonth() + delta); render(); };
 
-        // --- STATS DASHBOARD ---
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
-            document.getElementById('stat-total-habits').textContent = activeHabits.length;
-            let bestStreak = 0; activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
-            document.getElementById('stat-best-streak').textContent = bestStreak;
+            const totalHabitsEl = document.getElementById('stat-total-habits');
+            const bestStreakEl = document.getElementById('stat-best-streak');
+            if (totalHabitsEl) totalHabitsEl.textContent = activeHabits.length;
+            let bestStreak = 0; 
+            activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
+            if (bestStreakEl) bestStreakEl.textContent = bestStreak;
 
             const select = document.getElementById('heatmap-habit-select');
             if(select) {
@@ -803,10 +779,14 @@
                 if(activeHabits.find(h=>h.id==oldVal)) select.value = oldVal;
             }
 
-            document.getElementById('badge-7').className = `milestone-badge ${bestStreak>=7 ? 'unlocked' : ''}`;
-            document.getElementById('badge-30').className = `milestone-badge ${bestStreak>=30 ? 'unlocked' : ''}`;
-            document.getElementById('badge-100').className = `milestone-badge ${bestStreak>=100 ? 'unlocked' : ''}`;
-            document.getElementById('badge-365').className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
+            const b7 = document.getElementById('badge-7');
+            const b30 = document.getElementById('badge-30');
+            const b100 = document.getElementById('badge-100');
+            const b365 = document.getElementById('badge-365');
+            if(b7) b7.className = `milestone-badge ${bestStreak>=7 ? 'unlocked' : ''}`;
+            if(b30) b30.className = `milestone-badge ${bestStreak>=30 ? 'unlocked' : ''}`;
+            if(b100) b100.className = `milestone-badge ${bestStreak>=100 ? 'unlocked' : ''}`;
+            if(b365) b365.className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
 
             yearlyCalendarYear = new Date().getFullYear();
             if(activeHabits.length > 0) renderYearlyCalendar(select.value || activeHabits[0].id, yearlyCalendarYear);
@@ -821,7 +801,8 @@
             setTimeout(() => {
                 const card = document.querySelector(`.habit-card[data-id="${habitId}"]`);
                 if (card) {
-                    const y = card.getBoundingClientRect().top + window.scrollY - parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) - 20;
+                    const headerHeight = 75;
+                    const y = card.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
                     window.scrollTo({top: y, behavior: 'smooth'});
                 }
             }, 300);
@@ -873,26 +854,34 @@
             renderYearlyCalendar(habitId, yearlyCalendarYear);
         };
 
-        // --- ACTION SHEET LOGIC ---
         function openActionSheet(habitId, dateStr) {
             currentContext = { habitId, dateStr, selectedMood: null };
             const habit = habits.find(h => h.id == habitId);
             const isSkipped = habit.skipped.includes(dateStr);
             const niceDate = dateStr.split('-').reverse().join('.');
             
-            document.getElementById('sheet-title').textContent = `${habit.name} - ${niceDate}`;
-            const btnFreeze = document.getElementById('sheet-btn-freeze');
-            if (isSkipped) { btnFreeze.textContent = "▶️ Pause aufheben"; btnFreeze.dataset.action = "unfreeze"; }
-            else { btnFreeze.textContent = "❄️ Tag pausieren (Urlaub)"; btnFreeze.dataset.action = "freeze"; }
+            const sheetTitleEl = document.getElementById('sheet-title');
+            if (sheetTitleEl) sheetTitleEl.textContent = `${habit.name} - ${niceDate}`;
             
-            document.getElementById('custom-modal-overlay').classList.add('open');
-            actionSheet.classList.add('open');
+            const btnFreeze = document.getElementById('sheet-btn-freeze');
+            if (btnFreeze) {
+                if (isSkipped) { btnFreeze.textContent = "▶️ Pause aufheben"; btnFreeze.dataset.action = "unfreeze"; }
+                else { btnFreeze.textContent = "❄️ Tag pausieren (Urlaub)"; btnFreeze.dataset.action = "freeze"; }
+            }
+            
+            const overlay = document.getElementById('custom-modal-overlay');
+            if (overlay) overlay.classList.add('open');
+            if (actionSheet) actionSheet.classList.add('open');
             document.body.classList.add('modal-open');
         }
 
-        function closeActionSheet() { actionSheet.classList.remove('open'); document.getElementById('custom-modal-overlay').classList.remove('open'); document.body.classList.remove('modal-open'); }
+        function closeActionSheet() { 
+            if (actionSheet) actionSheet.classList.remove('open'); 
+            const overlay = document.getElementById('custom-modal-overlay');
+            if (overlay) overlay.classList.remove('open'); 
+            document.body.classList.remove('modal-open'); 
+        }
 
-        // --- CSV EXPORT ---
         function exportCSV() {
             let csv = "Gewohnheit,Datum,Status,Stimmung,Notiz\n";
             habits.forEach(h => {
@@ -911,10 +900,9 @@
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = `Habits-Export-${new Date().toISOString().split('T')[0]}.csv`; a.click();
+            a.download = `Habits-Export-${getLocalIsoDate()}.csv`; a.click();
         }
 
-        // --- NOTES DIRECTORY (WITH MOOD) ---
         function renderAllNotes() {
             const container = document.getElementById('all-notes-list'); container.innerHTML = '';
             let allNotes = [];
@@ -946,61 +934,86 @@
             });
         }
 
-        // --- EVENTS ---
         function closeAllModals() {
-            document.getElementById('custom-modal-overlay').classList.remove('open'); noteModal.classList.remove('open'); editModal.classList.remove('open');
-            archiveManagerModal.classList.remove('open'); statsModal.classList.remove('open'); allNotesModal.classList.remove('open');
-            document.getElementById('qr-modal').classList.remove('open'); actionSheet.classList.remove('open');
-            currentContext = { habitId: null, dateStr: null, selectedMood: null }; document.body.classList.remove('modal-open');
+            const overlay = document.getElementById('custom-modal-overlay');
+            if (overlay) overlay.classList.remove('open');
+            if (noteModal) noteModal.classList.remove('open'); 
+            if (editModal) editModal.classList.remove('open');
+            if (archiveManagerModal) archiveManagerModal.classList.remove('open'); 
+            if (statsModal) statsModal.classList.remove('open'); 
+            if (allNotesModal) allNotesModal.classList.remove('open');
+            if (qrModal) qrModal.classList.remove('open'); 
+            if (actionSheet) actionSheet.classList.remove('open');
+            currentContext = { habitId: null, dateStr: null, selectedMood: null }; 
+            document.body.classList.remove('modal-open');
         }
 
         function setupEventListeners() {
-            document.getElementById('sheet-btn-note').addEventListener('click', () => { closeActionSheet(); setTimeout(()=>{ openNoteDialog(currentContext.habitId, currentContext.dateStr); }, 300); });
-            document.getElementById('sheet-btn-freeze').addEventListener('click', (e) => {
+            const sheetBtnNote = document.getElementById('sheet-btn-note');
+            if (sheetBtnNote) sheetBtnNote.addEventListener('click', () => { closeActionSheet(); setTimeout(()=>{ openNoteDialog(currentContext.habitId, currentContext.dateStr); }, 300); });
+            
+            const sheetBtnFreeze = document.getElementById('sheet-btn-freeze');
+            if (sheetBtnFreeze) sheetBtnFreeze.addEventListener('click', (e) => {
                 vibrate('medium'); const habit = habits.find(h => h.id == currentContext.habitId); const action = e.target.dataset.action;
                 if(action === 'freeze') { habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped.push(currentContext.dateStr); }
                 else { habit.skipped = habit.skipped.filter(d => d !== currentContext.dateStr); }
                 saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
-            document.getElementById('sheet-btn-clear').addEventListener('click', () => {
+            
+            const sheetBtnClear = document.getElementById('sheet-btn-clear');
+            if (sheetBtnClear) sheetBtnClear.addEventListener('click', () => {
                 vibrate('heavy'); const habit = habits.find(h => h.id == currentContext.habitId);
                 habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped = habit.skipped.filter(d => d !== currentContext.dateStr); delete habit.notes[currentContext.dateStr];
                 saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
 
-            // QR & CSV Sync
-            document.getElementById('btn-qr-sync').addEventListener('click', () => {
+            const btnQrSync = document.getElementById('btn-qr-sync');
+            if (btnQrSync) btnQrSync.addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
                 let optHabits = habits.map(h => ({ i: h.id, n: h.name, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
                 let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName };
                 const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ h: optHabits, s: optSettings }));
                 if (url.length > 2800) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
-                document.getElementById('qr-code-container').innerHTML = ''; new QRCode(document.getElementById('qr-code-container'), { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
-                document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open');
-                document.getElementById('custom-modal-overlay').classList.add('open'); document.getElementById('qr-modal').classList.add('open'); document.body.classList.add('modal-open');
+                const qrContainer = document.getElementById('qr-code-container');
+                if (qrContainer) {
+                    qrContainer.innerHTML = ''; new QRCode(qrContainer, { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
+                }
+                const panel = document.getElementById('settings-panel');
+                const sOverlay = document.getElementById('settings-overlay');
+                if (panel) panel.classList.remove('open'); 
+                if (sOverlay) sOverlay.classList.remove('open');
+                const cOverlay = document.getElementById('custom-modal-overlay');
+                if (cOverlay) cOverlay.classList.add('open'); 
+                if (qrModal) qrModal.classList.add('open'); 
+                document.body.classList.add('modal-open');
             });
-            document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
 
-            document.getElementById('heatmap-habit-select').addEventListener('change', (e) => { 
+            const btnExportCsv = document.getElementById('btn-export-csv');
+            if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
+
+            const heatmapSelect = document.getElementById('heatmap-habit-select');
+            if (heatmapSelect) heatmapSelect.addEventListener('change', (e) => { 
                 yearlyCalendarYear = new Date().getFullYear();
                 renderYearlyCalendar(e.target.value, yearlyCalendarYear); 
             });
 
-            // ADD HABIT
+            const addBtn = document.getElementById('add-btn');
             const addFn = () => {
-                const input = document.getElementById('new-habit-input'); const name = input.value.trim(); 
+                const input = document.getElementById('new-habit-input'); 
+                if (!input) return;
+                const name = input.value.trim(); 
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
                 habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false });
                 habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
-            document.getElementById('add-btn').addEventListener('click', addFn);
-            document.getElementById('new-habit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
+            if (addBtn) addBtn.addEventListener('click', addFn);
+            const inputHabit = document.getElementById('new-habit-input');
+            if (inputHabit) inputHabit.addEventListener('keypress', (e) => { if (e.key === 'Enter') addFn(); });
 
-            // CALENDAR CLICKS
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
-                const dayCell = target.closest('.day-cell:not(.empty):not(.future)');
+                const dayCell = target.closest('.day-cell:not(.empty)');
                 if (dayCell) {
                     if (dayCell.dataset.preventClick === "true") { delete dayCell.dataset.preventClick; return; }
                     const id = dayCell.dataset.habitId; const date = dayCell.dataset.date;
@@ -1010,7 +1023,7 @@
 
                     const idx = habit.history.indexOf(date);
                     if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); } 
-                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
+                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); } 
                     
                     saveData(); updateGlobalProgress();
                     
@@ -1021,32 +1034,36 @@
                     
                     let daysPassed = new Date(year, month + 1, 0).getDate();
                     if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
-                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= new Date().toISOString().split('T')[0]).length;
+                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= getLocalIsoDate()).length;
                     daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
                     const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
                     
-                    if (card.querySelector('.progress-bar-fill')) card.querySelector('.progress-bar-fill').style.width = `${progressPct}%`;
+                    const streakValue = calculateStreak(habit.history, habit.skipped);
+                    const yCount = habit.history.filter(d => d.startsWith(`${new Date().getFullYear()}-`)).length;
+                    
+                    const statsText = card.querySelector('.habit-stats-text');
+                    if (statsText) statsText.textContent = `${streakValue} am Stück • ${yCount} im Jahr`;
+                    const barFill = card.querySelector('.progress-bar-fill');
+                    if (barFill) barFill.style.width = `${progressPct}%`;
                     
                     return;
                 }
                 
-                if (target.closest('.btn-edit')) { vibrate('light'); const id = target.closest('.habit-card').dataset.id; const habit = habits.find(h => h.id == id); currentContext = { habitId: id, action: 'edit' }; document.getElementById('edit-name-input').value = habit.name; document.getElementById('custom-modal-overlay').classList.add('open'); editModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => document.getElementById('edit-name-input').focus(), 100); return; }
+                if (target.closest('.btn-edit')) { vibrate('light'); const id = target.closest('.habit-card').dataset.id; const habit = habits.find(h => h.id == id); currentContext = { habitId: id, action: 'edit' }; const input = document.getElementById('edit-name-input'); if(input) input.value = habit.name; const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(editModal) editModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => { if(input) input.focus(); }, 100); return; }
                 if (target.closest('.btn-delete')) { vibrate('heavy'); if(confirm("Gewohnheit ins Archiv verschieben?")) { const id = target.closest('.habit-card').dataset.id; habits.find(h => h.id == id).archived = true; saveData(); render(); updateGlobalProgress(); } }
             });
 
-            // TOUCH & LONG PRESS
             let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
-                const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (!cell) return;
+                const cell = e.target.closest('.day-cell:not(.empty)'); if (!cell) return;
                 startY = e.touches[0].clientY; startX = e.touches[0].clientX;
                 pressTimer = setTimeout(() => { vibrate('medium'); cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); }, 500); 
             }, {passive: true});
             listEl.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer); }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
             listEl.addEventListener('touchcancel', () => clearTimeout(pressTimer));
-            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty):not(.future)'); if (cell) { e.preventDefault(); if (!cell.dataset.preventClick) { cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } } });
+            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty)'); if (cell) { e.preventDefault(); if (!cell.dataset.preventClick) { cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } } });
 
-            // MOOD SELECTOR
             document.querySelectorAll('.mood-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     vibrate('light'); document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
@@ -1054,81 +1071,126 @@
                 });
             });
 
-            // MODAL ACTIONS
-            document.getElementById('stats-toggle').addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); document.getElementById('custom-modal-overlay').classList.add('open'); statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            const statsToggle = document.getElementById('stats-toggle');
+            if (statsToggle) statsToggle.addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(statsModal) statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
             
-            document.getElementById('save-note').addEventListener('click', () => { 
+            const saveNoteBtn = document.getElementById('save-note');
+            if (saveNoteBtn) saveNoteBtn.addEventListener('click', () => { 
                 const h = habits.find(h => h.id == currentContext.habitId); 
-                const text = document.getElementById('note-input').value.trim(); 
+                const input = document.getElementById('note-input');
+                const text = input ? input.value.trim() : ""; 
                 const mood = currentContext.selectedMood;
                 if (text === "" && !mood) delete h.notes[currentContext.dateStr]; 
                 else h.notes[currentContext.dateStr] = { text, mood }; 
                 saveData(); render(); renderAllNotes(); closeAllModals(); 
             });
             
-            document.getElementById('save-edit').addEventListener('click', () => { const h = habits.find(h => h.id == currentContext.habitId); const newName = document.getElementById('edit-name-input').value.trim(); if (newName) { h.name = newName; saveData(); render(); } closeAllModals(); });
+            const saveEditBtn = document.getElementById('save-edit');
+            if (saveEditBtn) saveEditBtn.addEventListener('click', () => { 
+                const h = habits.find(h => h.id == currentContext.habitId); 
+                const input = document.getElementById('edit-name-input');
+                const newName = input ? input.value.trim() : "";
+                if (newName) { h.name = newName; saveData(); render(); } closeAllModals(); 
+            });
             
             document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive, #close-qr, #close-stats, #close-all-notes').forEach(b => { if(b) b.addEventListener('click', closeAllModals); });
-            document.getElementById('custom-modal-overlay').addEventListener('click', closeAllModals);
+            const globalOverlay = document.getElementById('custom-modal-overlay');
+            if (globalOverlay) globalOverlay.addEventListener('click', closeAllModals);
 
-            // SETTINGS
-            const toggleSettings = () => { document.getElementById('settings-panel').classList.toggle('open'); document.getElementById('settings-overlay').classList.toggle('open'); document.body.classList.toggle('modal-open'); };
-            ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => document.getElementById(id).addEventListener('click', toggleSettings));
-
-            document.getElementById('theme-toggle').addEventListener('click', () => { vibrate('light'); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
-            document.getElementById('save-settings').addEventListener('click', () => { vibrate('light'); settings.username = document.getElementById('settings-name-input').value.trim() || 'Gast'; settings.appName = document.getElementById('settings-appname-input').value.trim() || 'Habit Tracker'; saveSettings(); toggleSettings(); });
-
-            document.getElementById('avatar-upload').addEventListener('change', function(e) {
-                const file = e.target.files[0]; if (!file) return;
-                const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d'); const M=512; let w=img.width,h=img.height; const ms=Math.min(w,h); cvs.width=M; cvs.height=M; ctx.drawImage(img,(w-ms)/2,(h-ms)/2,ms,ms,0,0,M,M); settings.avatar = cvs.toDataURL('image/webp',0.8); document.getElementById('settings-avatar-preview').src = settings.avatar; document.getElementById('settings-avatar-preview').style.display = 'block'; document.getElementById('settings-avatar-placeholder').style.display = 'none'; saveSettings(); }; img.src = ev.target.result; }; r.readAsDataURL(file);
+            const toggleSettings = () => { 
+                const panel = document.getElementById('settings-panel');
+                const overlay = document.getElementById('settings-overlay');
+                if (panel) panel.classList.toggle('open'); 
+                if (overlay) overlay.classList.toggle('open'); 
+                document.body.classList.toggle('modal-open'); 
+            };
+            ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', toggleSettings);
             });
 
-            document.getElementById('open-archive').addEventListener('click', () => { vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; const arch = habits.filter(h => h.archived); if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); document.getElementById('settings-panel').classList.remove('open'); document.getElementById('settings-overlay').classList.remove('open'); document.getElementById('custom-modal-overlay').classList.add('open'); archiveManagerModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) themeToggle.addEventListener('click', () => { vibrate('light'); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
             
-            document.getElementById('notes-overview-toggle').addEventListener('click', () => { vibrate('light'); renderAllNotes(); document.getElementById('custom-modal-overlay').classList.add('open'); allNotesModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            const saveSettingsBtn = document.getElementById('save-settings');
+            if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => { 
+                vibrate('light'); 
+                const nameInput = document.getElementById('settings-name-input');
+                const appNameInput = document.getElementById('settings-appname-input');
+                settings.username = nameInput ? (nameInput.value.trim() || 'Gast') : 'Gast'; 
+                settings.appName = appNameInput ? (appNameInput.value.trim() || 'Habit Tracker') : 'Habit Tracker'; 
+                saveSettings(); toggleSettings(); 
+            });
+
+            const avatarUpload = document.getElementById('avatar-upload');
+            if (avatarUpload) avatarUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0]; if (!file) return;
+                const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctxC = cvs.getContext('2d'); const M=512; let w=img.width,h=img.height; const ms=Math.min(w,h); cvs.width=M; cvs.height=M; ctxC.drawImage(img,(w-ms)/2,(h-ms)/2,ms,ms,0,0,M,M); settings.avatar = cvs.toDataURL('image/webp',0.8); const preview = document.getElementById('settings-avatar-preview'); if(preview) preview.src = settings.avatar; if(preview) preview.style.display = 'block'; const placeholder = document.getElementById('settings-avatar-placeholder'); if(placeholder) placeholder.style.display = 'none'; saveSettings(); }; img.src = ev.target.result; }; r.readAsDataURL(file);
+            });
+
+            const openArchiveBtn = document.getElementById('open-archive');
+            if (openArchiveBtn) openArchiveBtn.addEventListener('click', () => { 
+                vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; 
+                const arch = habits.filter(h => h.archived); 
+                if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; 
+                arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
+                const panel = document.getElementById('settings-panel'); if(panel) panel.classList.remove('open'); 
+                const sOverlay = document.getElementById('settings-overlay'); if(sOverlay) sOverlay.classList.remove('open'); 
+                const cOverlay = document.getElementById('custom-modal-overlay'); if(cOverlay) cOverlay.classList.add('open'); 
+                if(archiveManagerModal) archiveManagerModal.classList.add('open'); 
+                document.body.classList.add('modal-open'); 
+            });
+            
+            const notesOverviewToggle = document.getElementById('notes-overview-toggle');
+            if (notesOverviewToggle) notesOverviewToggle.addEventListener('click', () => { vibrate('light'); renderAllNotes(); const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(allNotesModal) allNotesModal.classList.add('open'); document.body.classList.add('modal-open'); });
         }
 
         window.openNoteDialog = function(habitId, dateStr) {
             closeAllModals(); currentContext = { habitId, dateStr, selectedMood: null }; 
             const habit = habits.find(h => h.id == habitId);
-            document.getElementById('note-date-label').textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
+            const label = document.getElementById('note-date-label');
+            if (label) label.textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
             
             let noteData = habit.notes[dateStr];
             let text = typeof noteData === 'object' ? noteData.text : (noteData || "");
             let mood = typeof noteData === 'object' ? noteData.mood : null;
             
-            document.getElementById('note-input').value = text;
+            const input = document.getElementById('note-input');
+            if (input) input.value = text;
             
             document.querySelectorAll('.mood-btn').forEach(b => {
                 b.classList.remove('active');
                 if(b.dataset.mood === mood) { b.classList.add('active'); currentContext.selectedMood = mood; }
             });
 
-            document.getElementById('custom-modal-overlay').classList.add('open'); noteModal.classList.add('open'); document.body.classList.add('modal-open');
-            setTimeout(() => document.getElementById('note-input').focus(), 100);
+            const overlay = document.getElementById('custom-modal-overlay');
+            if (overlay) overlay.classList.add('open'); 
+            if (noteModal) noteModal.classList.add('open'); 
+            document.body.classList.add('modal-open');
+            setTimeout(() => { if(input) input.focus(); }, 100);
         }
 
         window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); updateGlobalProgress(); closeAllModals(); };
         window.deleteHabit = (id) => { if(confirm("Endgültig löschen?")) { habits = habits.filter(h => h.id != id); saveData(); closeAllModals(); } };
-        function escapeHtml(text) { return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]); }
 
         function renderColorGrid() {
             const grid = document.getElementById('color-grid');
+            if (!grid) return;
             COLOR_PALETTE.forEach(color => {
                 const div = document.createElement('div'); div.className = 'color-option'; div.style.backgroundColor = color;
                 if (settings.primaryColor === color) div.classList.add('selected');
-                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgb = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},1)`); document.querySelector('meta[name="theme-color"]').content = color; });
+                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgbV = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},1)`); const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = color; });
                 grid.appendChild(div);
             });
         }
         
-        // CONFETTI
         function resizeCanvas() { 
             if(canvas) {
                 canvas.width = window.innerWidth; 
                 canvas.height = window.innerHeight; 
             }
         }
+        
         function fireConfetti(massive = false) {
             if(!ctx) return;
             const colors = [settings.primaryColor, '#ef4444', '#10b981', '#f59e0b', '#ec4899'];
@@ -1136,6 +1198,7 @@
             for(let i=0; i<count; i++) particles.push({ x: window.innerWidth / 2, y: massive ? window.innerHeight : window.innerHeight / 2, vx: (Math.random() - 0.5) * (massive ? 25 : 15), vy: (Math.random() - 1) * (massive ? 25 : 15), color: colors[Math.floor(Math.random() * colors.length)], size: Math.random() * 8 + 4, life: massive ? 150 : 100 });
             if (!animationFrameId) animateConfetti();
         }
+        
         function animateConfetti() {
             if(!ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1146,6 +1209,35 @@
                 if(p.life <= 0 || p.size < 0.5) { particles.splice(i, 1); i--; }
             }
             animationFrameId = requestAnimationFrame(animateConfetti);
+        }
+
+        function setDynamicGreeting() {
+            const h = new Date().getHours();
+            let g = "Guten Tag"; let sub = "Lass uns deine Gewohnheiten pflegen.";
+            if (h >= 5 && h < 12) { g = "Guten Morgen"; sub = "Ein neuer Tag, ein neuer Streak."; }
+            else if (h >= 18 || h < 5) { g = "Guten Abend"; sub = "Zeit, den Tag erfolgreich abzuschließen."; }
+            const greetingTextEl = document.getElementById('greeting-text');
+            const greetingSubtextEl = document.getElementById('greeting-subtext');
+            if (greetingTextEl) greetingTextEl.textContent = `${g}, ${settings.username.split(' ')[0]}!`;
+            if (greetingSubtextEl) greetingSubtextEl.textContent = sub;
+        }
+
+        async function init() {
+            canvas = document.getElementById('confetti-canvas');
+            if (canvas) {
+                ctx = canvas.getContext('2d');
+            }
+            await checkImportHash();
+            await loadData();
+            applySettings();
+            setupPWA(); 
+            renderColorGrid();
+            setDynamicGreeting();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            render(); 
+            updateGlobalProgress();
+            setupEventListeners();
         }
 
         init();
