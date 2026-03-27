@@ -176,7 +176,7 @@
         .btn-secondary:active { transform: scale(0.96); background: var(--border); }
 
         /* MOOD TRACKER IN NOTE MODAL */
-        .mood-selector { display: flex; justify-content: space-between; margin-bottom: 15px; background: var(--bg-body); padding: 10px; border-radius: 16px; border: 1px solid var(--border); }
+        .mood-selector { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; background: var(--bg-body); padding: 10px; border-radius: 16px; border: 1px solid var(--border); }
         .mood-btn { font-size: 1.5rem; background: none; border: 2px solid transparent; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; opacity: 0.5; filter: grayscale(1); }
         .mood-btn.active { opacity: 1; filter: grayscale(0); transform: scale(1.1); border-color: var(--primary); background: var(--bg-card); }
 
@@ -789,6 +789,7 @@
                 const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -1237,7 +1238,28 @@
                     else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
                     
                     saveData(); updateGlobalProgress();
-                    render();
+                    
+                    const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
+                    const year = d.getFullYear(); const month = d.getMonth();
+                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+                    const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                    
+                    let daysPassed = new Date(year, month + 1, 0).getDate();
+                    if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
+                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= getLocalIsoDate()).length;
+                    daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
+                    const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
+                    
+                    const yearPrefix = `${year}-`;
+                    const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
+                    const totalChecks = habit.history.length;
+                    const displayMonthName = new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(d);
+                    
+                    const statsText = card.querySelector('.habit-stats-text');
+                    if (statsText) statsText.textContent = `${monthChecks}x im ${displayMonthName} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt`;
+                    const barFill = card.querySelector('.progress-bar-fill');
+                    if (barFill) barFill.style.width = `${progressPct}%`;
+                    
                     return;
                 }
                 
