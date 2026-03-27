@@ -194,18 +194,18 @@
         .custom-select-item { padding: 12px 20px; font-weight: 600; cursor: pointer; transition: background 0.2s; color: var(--text-main); }
         .custom-select-item:hover { background: var(--bg-body); color: var(--primary); }
 
-        /* KOMPAKTER JAHRESPLAN MIT FLIP-CARDS (UMRANDET) */
+        /* KOMPAKTER JAHRESPLAN MIT FLIP-CARDS (UMRANDET + SAFARI FIX) */
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
-        .mini-month { perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; height: 160px; }
-        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
-        .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); }
+        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; height: 160px; }
+        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
         
-        .mini-month-front, .mini-month-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        .mini-month-front, .mini-month-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
         
-        .mini-month-front { z-index: 2; transform: rotateY(0deg); }
-        .mini-month-back { transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; }
+        .mini-month-front { z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); }
+        .mini-month-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; }
         
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5;}
@@ -316,6 +316,17 @@
         <button class="sheet-btn primary" id="sheet-btn-note">📝 Notiz & Mood schreiben</button>
         <button class="sheet-btn" id="sheet-btn-freeze">❄️ Tag pausieren (Urlaub)</button>
         <button class="sheet-btn danger" id="sheet-btn-clear">🧹 Eintrag löschen</button>
+    </div>
+
+    <!-- APP-NATIVE CONFIRM MODAL (REPLACES SYSTEM ALERT) -->
+    <div class="custom-modal" id="confirm-modal" style="text-align: center; max-width: 400px;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+        <h3 id="confirm-modal-title" style="font-size: 1.4rem; color: var(--danger); margin-bottom: 5px;">Bestätigen</h3>
+        <p id="confirm-modal-text" style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 20px;">Bist du sicher?</p>
+        <div class="modal-actions" style="justify-content: center; gap: 10px;">
+            <button class="btn-secondary" id="confirm-modal-cancel" style="width: 50%;">Abbrechen</button>
+            <button class="btn-primary" id="confirm-modal-ok" style="width: 50%; background: var(--danger); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);">Löschen</button>
+        </div>
     </div>
 
     <!-- QR MODAL -->
@@ -450,6 +461,7 @@
         let canvas, ctx;
         let yearlyCalendarYear = new Date().getFullYear();
         let currentStatsHabitId = null;
+        let confirmActionFn = null; // Für das neue Confirm-Modal
 
         function setupPWA() {
             const appName = settings.appName || "Habits Pro";
@@ -675,6 +687,35 @@
             render();
         };
 
+        // HILFSFUNKTION FÜR DAS EIGENE LÖSCH-MODAL
+        function showConfirmModal(title, text, confirmBtnText, actionFn) {
+            vibrate('heavy');
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-text').textContent = text;
+            document.getElementById('confirm-modal-ok').textContent = confirmBtnText;
+            confirmActionFn = actionFn;
+            
+            const overlay = document.getElementById('custom-modal-overlay');
+            const modal = document.getElementById('confirm-modal');
+            if (overlay) overlay.classList.add('open');
+            if (modal) modal.classList.add('open');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            if (modal) modal.classList.remove('open');
+            
+            // Verhindert das Schließen des Overlays, wenn das Archiv noch offen ist
+            const archiveModal = document.getElementById('archive-manager-modal');
+            if (!archiveModal || !archiveModal.classList.contains('open')) {
+                const overlay = document.getElementById('custom-modal-overlay');
+                if (overlay) overlay.classList.remove('open');
+                document.body.classList.remove('modal-open');
+            }
+            confirmActionFn = null;
+        }
+
         function render() {
             const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long' });
             const activeHabits = habits.filter(h => !h.archived);
@@ -779,12 +820,14 @@
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
-            let bestStreak = 0; activeHabits.forEach(h => { 
-                // Simplified fallback if calculateStreak isn't needed here.
-            });
-            // Removed streak counting from global view per request
 
-            // Setup Custom Dropdown
+            const select = document.getElementById('heatmap-habit-select');
+            if(select) {
+                const oldVal = select.value;
+                select.innerHTML = activeHabits.map((h) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
+                if(activeHabits.find(h=>h.id==oldVal)) select.value = oldVal;
+            }
+
             let selectedId = activeHabits.length > 0 ? activeHabits[0].id : null;
             const container = document.getElementById('custom-habit-select-container');
             const dropdown = document.getElementById('custom-habit-select-dropdown');
@@ -900,7 +943,7 @@
                             </div>
                         </div>
                         <div class="mini-month-back" style="${bgStyle}">
-                            <button class="icon-btn" style="position: absolute; top: 5px; right: 5px; width: 26px; height: 26px; z-index: 20; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); color: ${bgImage ? '#fff' : 'var(--text-main)'}; border: 1px solid ${bgImage ? 'rgba(255,255,255,0.5)' : 'var(--border)'};" onclick="event.stopPropagation(); triggerMonthImageUpload('${habitId}', ${yearToRender}, ${m})">
+                            <button class="icon-btn" style="position: absolute; top: 5px; right: 5px; width: 26px; height: 26px; z-index: 20; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); color: ${bgImage ? '#fff' : 'var(--text-main)'}; border: 1px solid ${bgImage ? 'rgba(255,255,255,0.5)' : 'var(--border)'};" onclick="event.stopPropagation(); triggerMonthImageUpload('${habitId}', ${yearToRender}, ${m})">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                             </button>
                             <div class="mini-month-title" style="color: ${bgImage ? '#fff' : 'var(--text-main)'}; z-index: 5;">${monthNames[m]}</div>
@@ -1025,16 +1068,16 @@
 
         function closeAllModals() {
             const overlay = document.getElementById('custom-modal-overlay');
-            if (overlay) overlay.classList.remove('open');
+            if (overlay && !document.getElementById('confirm-modal').classList.contains('open')) overlay.classList.remove('open');
             if (noteModal) noteModal.classList.remove('open'); 
             if (editModal) editModal.classList.remove('open');
-            if (archiveManagerModal) archiveManagerModal.classList.remove('open'); 
+            if (archiveManagerModal && !document.getElementById('confirm-modal').classList.contains('open')) archiveManagerModal.classList.remove('open'); 
             if (statsModal) statsModal.classList.remove('open'); 
             if (allNotesModal) allNotesModal.classList.remove('open');
             if (qrModal) qrModal.classList.remove('open'); 
             if (actionSheet) actionSheet.classList.remove('open');
             currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, uploadYear: null, uploadMonth: null }; 
-            document.body.classList.remove('modal-open');
+            if (!document.getElementById('confirm-modal').classList.contains('open')) document.body.classList.remove('modal-open');
         }
 
         function setupEventListeners() {
@@ -1125,25 +1168,27 @@
                     else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
                     
                     saveData(); updateGlobalProgress();
-                    
-                    const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
-                    const year = d.getFullYear(); const month = d.getMonth();
-                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
-                    const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                    
-                    let daysPassed = new Date(year, month + 1, 0).getDate();
-                    if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
-                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= getLocalIsoDate()).length;
-                    daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
-                    const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
-                    
-                    if (card.querySelector('.progress-bar-fill')) card.querySelector('.progress-bar-fill').style.width = `${progressPct}%`;
-                    
+                    render(); // Render full list directly to update texts instantly
                     return;
                 }
                 
                 if (target.closest('.btn-edit')) { vibrate('light'); const id = target.closest('.habit-card').dataset.id; const habit = habits.find(h => h.id == id); currentContext = { habitId: id, action: 'edit' }; const input = document.getElementById('edit-name-input'); if(input) input.value = habit.name; const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(editModal) editModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => { if(input) input.focus(); }, 100); return; }
-                if (target.closest('.btn-delete')) { vibrate('heavy'); if(confirm("Gewohnheit ins Archiv verschieben?")) { const id = target.closest('.habit-card').dataset.id; habits.find(h => h.id == id).archived = true; saveData(); render(); updateGlobalProgress(); } }
+                
+                if (target.closest('.btn-delete')) { 
+                    vibrate('heavy'); 
+                    const id = target.closest('.habit-card').dataset.id; 
+                    const habit = habits.find(h => h.id == id);
+                    if(!habit) return;
+                    showConfirmModal(
+                        "Gewohnheit archivieren?",
+                        `Möchtest du "${habit.name}" wirklich ins Archiv verschieben?`,
+                        "Archivieren",
+                        () => {
+                            habit.archived = true;
+                            saveData(); render(); updateGlobalProgress();
+                        }
+                    );
+                }
             });
 
             let pressTimer; let startY = 0; let startX = 0;
@@ -1189,6 +1234,16 @@
             document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive, #close-qr, #close-stats, #close-all-notes').forEach(b => { if(b) b.addEventListener('click', closeAllModals); });
             const globalOverlay = document.getElementById('custom-modal-overlay');
             if (globalOverlay) globalOverlay.addEventListener('click', closeAllModals);
+
+            // Bestätigungs-Modal Buttons
+            const confirmCancelBtn = document.getElementById('confirm-modal-cancel');
+            if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', closeConfirmModal);
+
+            const confirmOkBtn = document.getElementById('confirm-modal-ok');
+            if (confirmOkBtn) confirmOkBtn.addEventListener('click', () => {
+                if (confirmActionFn) confirmActionFn();
+                closeConfirmModal();
+            });
 
             const toggleSettings = () => { 
                 const panel = document.getElementById('settings-panel');
@@ -1288,8 +1343,26 @@
             setTimeout(() => { if(input) input.focus(); }, 100);
         }
 
-        window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); updateGlobalProgress(); closeAllModals(); };
-        window.deleteHabit = (id) => { if(confirm("Endgültig löschen?")) { habits = habits.filter(h => h.id != id); saveData(); closeAllModals(); } };
+        window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); updateGlobalProgress(); };
+        window.deleteHabit = (id) => { 
+            showConfirmModal(
+                "Endgültig löschen?",
+                "Diese Gewohnheit und alle dazugehörigen Daten werden für immer gelöscht. Das kann nicht rückgängig gemacht werden.",
+                "Unwiderruflich löschen",
+                () => {
+                    habits = habits.filter(h => h.id != id); 
+                    saveData(); 
+                    
+                    const list = document.getElementById('archive-list-container');
+                    if(list) {
+                        list.innerHTML = '';
+                        const arch = habits.filter(h => h.archived); 
+                        if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; 
+                        arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
+                    }
+                }
+            );
+        };
 
         function renderColorGrid() {
             const grid = document.getElementById('color-grid');
