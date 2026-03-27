@@ -199,11 +199,11 @@
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
-        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; height: auto; min-height: 160px; aspect-ratio: 0.8; }
+        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; aspect-ratio: 1 / 1.15; }
         .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
         .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
         
-        .mini-month-front, .mini-month-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        .mini-month-front, .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
         
         .mini-month-front { z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); }
         .mini-month-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; }
@@ -212,7 +212,7 @@
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
         
         /* Safari Grid Fix */
-        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; min-height: 8px; aspect-ratio: 1; }
+        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; aspect-ratio: 1; }
         .mini-day.empty { background: transparent; }
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
@@ -232,6 +232,9 @@
         
         .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.1s; display: flex; flex-direction: column; }
         .note-summary-item:active { transform: scale(0.98); border-color: var(--primary); }
+
+        /* WICHTIG FÜR ARCHIV MODAL */
+        #confirm-modal { z-index: 205 !important; }
     </style>
 </head>
 <body>
@@ -1234,21 +1237,7 @@
                     else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
                     
                     saveData(); updateGlobalProgress();
-                    
-                    const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
-                    const year = d.getFullYear(); const month = d.getMonth();
-                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
-                    const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                    
-                    let daysPassed = new Date(year, month + 1, 0).getDate();
-                    if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
-                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= getLocalIsoDate()).length;
-                    daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
-                    const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
-                    
-                    const barFill = card.querySelector('.progress-bar-fill');
-                    if (barFill) barFill.style.width = `${progressPct}%`;
-                    
+                    render();
                     return;
                 }
                 
@@ -1348,7 +1337,8 @@
             if (themeToggle) themeToggle.addEventListener('click', () => { vibrate('light'); settings.theme = settings.theme === 'light' ? 'dark' : 'light'; saveSettings(); });
             
             const saveSettingsBtn = document.getElementById('save-settings');
-            if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => { 
+            if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', (e) => { 
+                e.preventDefault(); e.stopPropagation();
                 vibrate('light'); 
                 const nameInput = document.getElementById('settings-name-input');
                 const appNameInput = document.getElementById('settings-appname-input');
