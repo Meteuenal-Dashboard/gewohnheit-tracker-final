@@ -785,11 +785,8 @@
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
                 const monthLabel = formatter.format(displayDate);
-                const yearPrefix = `${year}-`;
-                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -846,7 +843,6 @@
                                             <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                                         </div>
                                     </div>
-                                    <div class="habit-stats-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">${monthChecks}x im ${monthLabel.split(' ')[0]} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt</div>
                                     <div class="habit-meta">
                                         <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)">❯</button></div>
                                         <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
@@ -1250,13 +1246,6 @@
                     daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
                     const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
                     
-                    const yearPrefix = `${year}-`;
-                    const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
-                    const totalChecks = habit.history.length;
-                    const displayMonthName = new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(d);
-                    
-                    const statsText = card.querySelector('.habit-stats-text');
-                    if (statsText) statsText.textContent = `${monthChecks}x im ${displayMonthName} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt`;
                     const barFill = card.querySelector('.progress-bar-fill');
                     if (barFill) barFill.style.width = `${progressPct}%`;
                     
@@ -1344,7 +1333,11 @@
                 const overlay = document.getElementById('settings-overlay');
                 if (panel) panel.classList.toggle('open'); 
                 if (overlay) overlay.classList.toggle('open'); 
-                document.body.classList.toggle('modal-open'); 
+                if (panel && panel.classList.contains('open')) {
+                    document.body.classList.add('modal-open');
+                } else {
+                    document.body.classList.remove('modal-open');
+                }
             };
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1412,7 +1405,15 @@
             });
             
             const notesOverviewToggle = document.getElementById('notes-overview-toggle');
-            if (notesOverviewToggle) notesOverviewToggle.addEventListener('click', () => { vibrate('light'); renderAllNotes(); const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(allNotesModal) allNotesModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            if (notesOverviewToggle) notesOverviewToggle.addEventListener('click', () => { 
+                vibrate('light'); 
+                renderAllNotes(); 
+                const panel = document.getElementById('settings-panel'); if(panel) panel.classList.remove('open'); 
+                const sOverlay = document.getElementById('settings-overlay'); if(sOverlay) sOverlay.classList.remove('open'); 
+                const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); 
+                if(allNotesModal) allNotesModal.classList.add('open'); 
+                document.body.classList.add('modal-open'); 
+            });
         }
 
         window.openNoteDialog = function(habitId, dateStr) {
