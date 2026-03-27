@@ -619,7 +619,7 @@
         }
 
         function saveData() { dbSet('habit_tracker_pro_habits', habits); }
-        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setupPWA(); setDynamicGreeting(); }
+        function saveSettings() { dbSet('habit_tracker_pro_settings', settings); applySettings(); setDynamicGreeting(); }
 
         function applySettings() {
             document.body.setAttribute('data-theme', settings.theme);
