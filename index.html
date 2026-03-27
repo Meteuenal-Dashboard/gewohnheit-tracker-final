@@ -352,7 +352,10 @@
         </div>
 
         <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">📅 Kompakter Jahresplan</h4>
-        <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
+        <div style="position: relative; margin-bottom: 15px;">
+            <select id="heatmap-habit-select" style="width: 100%; padding: 14px 40px 14px 20px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-card); color: var(--text-main); font-size: 1rem; font-weight: 700; outline: none; appearance: none; cursor: pointer; box-shadow: var(--shadow);"></select>
+            <svg style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted);" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
         
         <div id="yearly-calendar-container">
             <!-- Befüllt per JavaScript -->
@@ -685,14 +688,9 @@
                 const firstDayIndex = new Date(year, month, 1).getDay();
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
-                const displayMonthName = formatter.format(displayDate);
-                const monthLabel = `${displayMonthName} ${year}`;
-                
-                const yearPrefix = `${year}-`;
-                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
+                const monthLabel = formatter.format(displayDate);
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -743,7 +741,6 @@
                                     <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                                 </div>
                             </div>
-                            <div class="habit-stats-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">${monthChecks}x im ${displayMonthName} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt</div>
                             <div class="habit-meta">
                                 <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)">❯</button></div>
                                 <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
@@ -809,6 +806,15 @@
             const today = new Date();
             const todayStr = getLocalIsoDate(today);
 
+            const currentMonthIdx = today.getMonth();
+            const currentMonthName = monthNames[currentMonthIdx];
+            const currentMonthPrefix = `${yearToRender}-${String(currentMonthIdx + 1).padStart(2, '0')}-`;
+            const currentMonthChecks = h.history.filter(d => d.startsWith(currentMonthPrefix)).length;
+            
+            const yearPrefix = `${yearToRender}-`;
+            const yearChecks = h.history.filter(d => d.startsWith(yearPrefix)).length;
+            const totalChecks = h.history.length;
+
             let gridHTML = `<div class="yearly-grid">`;
             for (let m = 0; m < 12; m++) {
                 const monthPrefix = `${yearToRender}-${String(m + 1).padStart(2, '0')}-`;
@@ -868,10 +874,13 @@
             gridHTML += `</div>`;
 
             container.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--bg-body); border-radius: 12px; padding: 5px 15px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: var(--bg-body); border-radius: 12px; padding: 5px 15px; border: 1px solid var(--border);">
                     <button class="icon-btn" style="width:30px;height:30px; flex-shrink:0;" onclick="changeYearlyCalendarYear('${habitId}', -1)">❮</button>
                     <span style="font-weight: 800; font-size: 1.1rem;">${yearToRender}</span>
                     <button class="icon-btn" style="width:30px;height:30px; flex-shrink:0;" onclick="changeYearlyCalendarYear('${habitId}', 1)">❯</button>
+                </div>
+                <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); font-weight: 700; margin-bottom: 15px; background: var(--bg-card); padding: 10px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+                    ${currentMonthChecks}x im ${currentMonthName} • ${yearChecks}x in ${yearToRender} • ${totalChecks}x Gesamt
                 </div>
                 ${gridHTML}
             `;
@@ -1066,11 +1075,8 @@
                     
                     const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
                     const year = d.getFullYear(); const month = d.getMonth();
-                    const yearPrefix = `${year}-`; const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
-                    const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
+                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                     const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                    const totalChecks = habit.history.length;
-                    const displayMonthName = new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(d);
                     
                     let daysPassed = new Date(year, month + 1, 0).getDate();
                     if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
@@ -1078,10 +1084,7 @@
                     daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
                     const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
                     
-                    const statsText = card.querySelector('.habit-stats-text');
-                    if (statsText) statsText.textContent = `${monthChecks}x im ${displayMonthName} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt`;
-                    const barFill = card.querySelector('.progress-bar-fill');
-                    if (barFill) barFill.style.width = `${progressPct}%`;
+                    if (card.querySelector('.progress-bar-fill')) card.querySelector('.progress-bar-fill').style.width = `${progressPct}%`;
                     
                     return;
                 }
