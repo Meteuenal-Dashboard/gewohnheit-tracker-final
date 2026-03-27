@@ -175,15 +175,10 @@
         .btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 700; transition: transform 0.1s, background 0.2s; }
         .btn-secondary:active { transform: scale(0.96); background: var(--border); }
 
-        /* NOTE & MOOD MODAL IN THEME COLOR */
-        #note-modal { background-color: var(--primary); color: #ffffff; border-color: var(--primary-dark); }
-        #note-modal h3, #note-modal span, #note-modal .settings-label { color: #ffffff !important; }
-        #note-modal textarea { background-color: rgba(255, 255, 255, 0.95); color: #1e293b; border: none; }
-        #note-modal .mood-selector { background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); }
-        #note-modal .mood-btn { opacity: 0.7; filter: none; }
-        #note-modal .mood-btn.active { background-color: #ffffff; border-color: #ffffff; opacity: 1; transform: scale(1.1); color: var(--text-main); }
-        #note-modal .btn-secondary { background-color: rgba(255, 255, 255, 0.2); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.4); }
-        #note-modal .btn-primary { background-color: #ffffff; color: var(--primary); }
+        /* MOOD TRACKER IN NOTE MODAL */
+        .mood-selector { display: flex; justify-content: space-between; margin-bottom: 15px; background: var(--bg-body); padding: 10px; border-radius: 16px; border: 1px solid var(--border); }
+        .mood-btn { font-size: 1.5rem; background: none; border: 2px solid transparent; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; opacity: 0.5; filter: grayscale(1); }
+        .mood-btn.active { opacity: 1; filter: grayscale(0); transform: scale(1.1); border-color: var(--primary); background: var(--bg-card); }
 
         /* SCROLLABLE STATS DASHBOARD (ACHT FENSTER UMRANDET) */
         #stats-modal { max-height: 92vh; width: 95%; max-width: 600px; padding: 20px 15px; overflow-y: auto; }
@@ -215,6 +210,13 @@
         
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
+        
+        /* Safari Grid Fix */
+        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; min-height: 8px; aspect-ratio: 1; }
+        .mini-day.empty { background: transparent; }
+        .mini-day.checked { background: var(--primary); opacity: 1; }
+        .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
+        .mini-day.has-note-mini::before { content: ""; position: absolute; top: -2px; right: -2px; width: 4px; height: 4px; background-color: var(--warning); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 1px var(--bg-body); }
 
         .mini-circle-chart { width: 60px; height: 60px; margin: 0 auto; overflow: visible; z-index: 5;}
         .mini-circle-bg { fill: none; stroke: var(--border); stroke-width: 6; }
@@ -319,7 +321,7 @@
         <button class="sheet-btn danger" id="sheet-btn-clear">🧹 Eintrag löschen</button>
     </div>
 
-    <!-- APP-NATIVE CONFIRM MODAL (REPLACES SYSTEM ALERT) -->
+    <!-- APP-NATIVE CONFIRM MODAL -->
     <div class="custom-modal" id="confirm-modal" style="text-align: center; max-width: 400px;">
         <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
         <h3 id="confirm-modal-title" style="font-size: 1.4rem; color: var(--danger); margin-bottom: 5px;">Bestätigen</h3>
@@ -347,11 +349,16 @@
         
         <span class="settings-label" style="font-size: 0.75rem;">Stimmung (Mood)</span>
         <div class="mood-selector" id="mood-selector">
-            <button class="mood-btn" data-mood="😭">😭</button>
+            <button class="mood-btn" data-mood="😫">😫</button>
+            <button class="mood-btn" data-mood="😢">😢</button>
             <button class="mood-btn" data-mood="😕">😕</button>
             <button class="mood-btn" data-mood="😐">😐</button>
             <button class="mood-btn" data-mood="🙂">🙂</button>
+            <button class="mood-btn" data-mood="😊">😊</button>
+            <button class="mood-btn" data-mood="🥰">🥰</button>
             <button class="mood-btn" data-mood="🤩">🤩</button>
+            <button class="mood-btn" data-mood="🥳">🥳</button>
+            <button class="mood-btn" data-mood="💪">💪</button>
         </div>
 
         <textarea id="note-input" placeholder="Reflektiere deinen Tag..."></textarea>
@@ -361,7 +368,7 @@
         </div>
     </div>
 
-    <!-- VERSTECKTER BILD-UPLOAD FÜR HAUPT-RÜCKSEITEN -->
+    <!-- VERSTECKTER BILD-UPLOAD -->
     <input type="file" id="habit-image-upload" accept="image/*" style="display:none;">
 
     <!-- STATS DASHBOARD -->
@@ -383,7 +390,7 @@
 
         <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">📅 Kompakter Jahresplan</h4>
         
-        <!-- NEUES CUSTOM DROPDOWN -->
+        <!-- CUSTOM DROPDOWN -->
         <div class="custom-select-container" id="custom-habit-select-container">
             <div class="custom-select-trigger" id="custom-habit-select-trigger">
                 <span id="custom-habit-select-text">Wähle Gewohnheit</span>
@@ -463,7 +470,7 @@
         let canvas, ctx;
         let yearlyCalendarYear = new Date().getFullYear();
         let currentStatsHabitId = null;
-        let confirmActionFn = null; // Für das neue Confirm-Modal
+        let confirmActionFn = null; 
 
         function setupPWA() {
             const appName = settings.appName || "Habits Pro";
@@ -480,9 +487,15 @@
             const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
             document.getElementById('dynamic-manifest').setAttribute('href', URL.createObjectURL(manifestBlob));
             document.getElementById('dynamic-apple-icon').setAttribute('href', appIcon);
-            
-            const swCode = `self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('activate', (e) => self.clients.claim()); self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Offline'))); });`;
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(()=>{});
+        }
+
+        let swRegistered = false;
+        function registerSW() {
+            if (!swRegistered && 'serviceWorker' in navigator) {
+                const swCode = `self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('activate', (e) => self.clients.claim()); self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Offline'))); });`;
+                navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(()=>{});
+                swRegistered = true;
+            }
         }
 
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
@@ -832,6 +845,7 @@
                                             <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                                         </div>
                                     </div>
+                                    <div class="habit-stats-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">${monthChecks}x im ${monthLabel.split(' ')[0]} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt</div>
                                     <div class="habit-meta">
                                         <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)">❯</button></div>
                                         <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
@@ -1482,7 +1496,7 @@
             await checkImportHash();
             await loadData();
             applySettings();
-            setupPWA(); 
+            registerSW(); 
             renderColorGrid();
             setDynamicGreeting();
             resizeCanvas();
