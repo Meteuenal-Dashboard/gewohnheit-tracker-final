@@ -199,20 +199,18 @@
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
-        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; aspect-ratio: 1 / 1.15; }
-        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; }
+        .mini-month-inner { position: relative; width: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
         .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
         
-        .mini-month-front, .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
-        
-        .mini-month-front { z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); }
-        .mini-month-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; }
+        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
         
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
         
         /* Safari Grid Fix */
-        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; aspect-ratio: 1; }
+        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; min-height: 8px; aspect-ratio: 1; }
         .mini-day.empty { background: transparent; }
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
@@ -232,6 +230,9 @@
         
         .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.1s; display: flex; flex-direction: column; }
         .note-summary-item:active { transform: scale(0.98); border-color: var(--primary); }
+
+        .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border); }
+        .archive-item-name { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
 
         /* WICHTIG FÜR ARCHIV MODAL */
         #confirm-modal { z-index: 205 !important; }
@@ -1012,7 +1013,7 @@
                         <div class="mini-month-back" style="${bgStyle}">
                             ${bgImage ? `<div style="position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.6) 100%); z-index: 0; border-radius: 12px;"></div>` : ''}
                             <div style="position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%; width: 100%;">
-                                <div class="mini-month-title" style="color: ${bgImage ? '#fff' : 'var(--text-main)'}; text-shadow: ${bgImage ? '0 1px 3px rgba(0,0,0,0.8)' : 'none'}; margin: 0; padding-bottom: 5px;">${monthNames[m]}</div>
+                                <div class="mini-month-title" style="color: ${bgImage ? '#fff' : 'var(--text-main)'}; text-shadow: ${bgImage ? '0 1px 3px rgba(0,0,0,0.8)' : 'none'}; margin: 0; padding-bottom: 5px;">${monthNames[m]} ${yearToRender}</div>
                                 <svg class="mini-circle-chart" viewBox="0 0 100 100" style="margin: auto; width: 50px; height: 50px;">
                                     <circle class="mini-circle-bg" cx="50" cy="50" r="30" style="${bgImage ? 'stroke: rgba(255,255,255,0.2);' : ''}" />
                                     <circle class="mini-circle-progress" cx="50" cy="50" r="30" stroke-dasharray="${dashArray}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 50 50)" style="${bgImage ? 'stroke: #fff;' : ''}" />
@@ -1386,7 +1387,7 @@
                 vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; 
                 const arch = habits.filter(h => h.archived); 
                 if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; 
-                arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
+                arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div style="display:flex; gap: 5px;"><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
                 const panel = document.getElementById('settings-panel'); if(panel) panel.classList.remove('open'); 
                 const sOverlay = document.getElementById('settings-overlay'); if(sOverlay) sOverlay.classList.remove('open'); 
                 const cOverlay = document.getElementById('custom-modal-overlay'); if(cOverlay) cOverlay.classList.add('open'); 
@@ -1435,8 +1436,8 @@
         window.deleteHabit = (id) => { 
             showConfirmModal(
                 "Endgültig löschen?",
-                "Diese Gewohnheit und alle dazugehörigen Daten werden für immer gelöscht. Das kann nicht rückgängig gemacht werden.",
-                "Unwiderruflich löschen",
+                "Diese Gewohnheit und alle dazugehörigen Daten werden für immer gelöscht.",
+                "Löschen",
                 () => {
                     habits = habits.filter(h => h.id != id); 
                     saveData(); 
@@ -1446,8 +1447,10 @@
                         list.innerHTML = '';
                         const arch = habits.filter(h => h.archived); 
                         if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; 
-                        arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
+                        arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div style="display:flex; gap: 5px;"><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
                     }
+                    render();
+                    updateGlobalProgress();
                 }
             );
         };
