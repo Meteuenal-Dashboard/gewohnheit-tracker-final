@@ -179,18 +179,20 @@
         .stat-box { background: var(--bg-body); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid var(--border); }
         .stat-box-value { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
         .stat-box-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-        
-        .milestones-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .milestone-badge { padding: 15px 10px; background: var(--bg-body); border-radius: 16px; border: 1px solid var(--border); text-align: center; opacity: 0.4; filter: grayscale(1); }
-        .milestone-badge.unlocked { opacity: 1; filter: grayscale(0); background: rgba(245, 158, 11, 0.1); border-color: var(--warning); }
-        .milestone-icon { font-size: 1.8rem; margin-bottom: 5px; }
-        .milestone-text { font-size: 0.75rem; font-weight: 800; color: var(--text-main); }
 
-        /* KOMPAKTER JAHRESPLAN (12-Month-Grid) */
+        /* KOMPAKTER JAHRESPLAN MIT FLIP-CARDS */
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
-        .mini-month { background: var(--bg-body); padding: 10px; border-radius: 12px; border: 1px solid var(--primary); cursor: pointer; transition: border-color 0.2s; }
-        .mini-month:active { border-color: var(--primary); }
+        
+        .mini-month { perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; height: 160px; }
+        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); }
+        
+        .mini-month-front, .mini-month-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary); background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .mini-month-front { z-index: 2; transform: rotateY(0deg); }
+        .mini-month-back { transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; }
+        
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; }
         .mini-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
         .mini-day { aspect-ratio: 1; border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; }
@@ -198,6 +200,11 @@
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
         .mini-day.has-note-mini::before { content: ""; position: absolute; top: -2px; right: -2px; width: 4px; height: 4px; background-color: var(--warning); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 1px var(--bg-body); }
+
+        .mini-circle-chart { width: 60px; height: 60px; margin: 0 auto; overflow: visible; }
+        .mini-circle-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+        .mini-circle-progress { fill: none; stroke: var(--primary); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease-out; }
+        .mini-circle-text { font-family: sans-serif; font-size: 14px; font-weight: bold; fill: var(--text-main); text-anchor: middle; dominant-baseline: middle; }
 
         .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); line-height: 1.6; }
         .settings-label { font-weight: 700; margin-bottom: 12px; display: block; color: var(--text-main); text-transform: uppercase; font-size: 0.8rem; }
@@ -344,14 +351,6 @@
             </div>
         </div>
 
-        <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">🏆 Meilensteine</h4>
-        <div class="milestones-container">
-            <div class="milestone-badge" id="badge-7"><div class="milestone-icon">🥉</div><div class="milestone-text">7 TAGE</div></div>
-            <div class="milestone-badge" id="badge-30"><div class="milestone-icon">🥈</div><div class="milestone-text">30 TAGE</div></div>
-            <div class="milestone-badge" id="badge-100"><div class="milestone-icon">🥇</div><div class="milestone-text">100 TAGE</div></div>
-            <div class="milestone-badge" id="badge-365"><div class="milestone-icon">👑</div><div class="milestone-text">1 JAHR</div></div>
-        </div>
-
         <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">📅 Kompakter Jahresplan</h4>
         <select id="heatmap-habit-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 600; margin-bottom: 10px; outline:none; appearance: none;"></select>
         
@@ -492,7 +491,6 @@
             if (type === 'light') navigator.vibrate(20);
             if (type === 'medium') navigator.vibrate(40);
             if (type === 'heavy') navigator.vibrate([60, 40, 60]);
-            if (type === 'success') navigator.vibrate([30, 50, 30]);
         };
 
         const packDates = (dates) => {
@@ -546,7 +544,7 @@
                             alert("Erfolgreich übertragen!"); window.location.hash = ''; window.location.reload();
                         } else { window.location.hash = ''; }
                     }
-                } catch(e) { alert("Übertragung fehlgeschlagen."); window.location.hash = ''; }
+                } catch(e) { alert("Übertragung fehlgeschlagen. QR-Code fehlerhaft."); window.location.hash = ''; }
             }
         }
 
@@ -671,7 +669,7 @@
         };
 
         function render() {
-            const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
+            const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long' });
             const activeHabits = habits.filter(h => !h.archived);
             if (activeHabits.length === 0) { listEl.innerHTML = ''; emptyState.style.display = 'block'; return; } 
             else { emptyState.style.display = 'none'; }
@@ -687,11 +685,14 @@
                 const firstDayIndex = new Date(year, month, 1).getDay();
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
-                const monthLabel = formatter.format(displayDate);
+                const displayMonthName = formatter.format(displayDate);
+                const monthLabel = `${displayMonthName} ${year}`;
+                
                 const yearPrefix = `${year}-`;
                 const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -710,6 +711,7 @@
                 for (let d = 1; d <= daysInMonth; d++) {
                     const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     const isFuture = cellDateStr > todayStr;
+                    
                     const isChecked = habit.history.includes(cellDateStr);
                     const isSkipped = habit.skipped.includes(cellDateStr);
                     const isToday = (cellDateStr === todayStr);
@@ -741,7 +743,7 @@
                                     <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                                 </div>
                             </div>
-                            <div class="habit-stats-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">${monthChecks} im Monat • ${yearCount} im Jahr</div>
+                            <div class="habit-stats-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">${monthChecks}x im ${displayMonthName} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt</div>
                             <div class="habit-meta">
                                 <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)">❯</button></div>
                                 <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
@@ -765,12 +767,9 @@
 
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
-            const totalHabitsEl = document.getElementById('stat-total-habits');
-            const bestStreakEl = document.getElementById('stat-best-streak');
-            if (totalHabitsEl) totalHabitsEl.textContent = activeHabits.length;
-            let bestStreak = 0; 
-            activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
-            if (bestStreakEl) bestStreakEl.textContent = bestStreak;
+            document.getElementById('stat-total-habits').textContent = activeHabits.length;
+            let bestStreak = 0; activeHabits.forEach(h => { const s = calculateStreak(h.history, h.skipped); if (s > bestStreak) bestStreak = s; });
+            document.getElementById('stat-best-streak').textContent = bestStreak;
 
             const select = document.getElementById('heatmap-habit-select');
             if(select) {
@@ -778,15 +777,6 @@
                 select.innerHTML = activeHabits.map((h) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
                 if(activeHabits.find(h=>h.id==oldVal)) select.value = oldVal;
             }
-
-            const b7 = document.getElementById('badge-7');
-            const b30 = document.getElementById('badge-30');
-            const b100 = document.getElementById('badge-100');
-            const b365 = document.getElementById('badge-365');
-            if(b7) b7.className = `milestone-badge ${bestStreak>=7 ? 'unlocked' : ''}`;
-            if(b30) b30.className = `milestone-badge ${bestStreak>=30 ? 'unlocked' : ''}`;
-            if(b100) b100.className = `milestone-badge ${bestStreak>=100 ? 'unlocked' : ''}`;
-            if(b365) b365.className = `milestone-badge ${bestStreak>=365 ? 'unlocked' : ''}`;
 
             yearlyCalendarYear = new Date().getFullYear();
             if(activeHabits.length > 0) renderYearlyCalendar(select.value || activeHabits[0].id, yearlyCalendarYear);
@@ -816,9 +806,34 @@
             container.innerHTML = '';
             const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
             
+            const today = new Date();
+            const todayStr = getLocalIsoDate(today);
+
             let gridHTML = `<div class="yearly-grid">`;
             for (let m = 0; m < 12; m++) {
-                let monthHTML = `<div class="mini-month" onclick="navigateToMonth('${habitId}', ${yearToRender}, ${m})"><div class="mini-month-title">${monthNames[m]} ${yearToRender}</div><div class="mini-month-grid">`;
+                const monthPrefix = `${yearToRender}-${String(m + 1).padStart(2, '0')}-`;
+                const monthChecks = h.history.filter(d => d.startsWith(monthPrefix)).length;
+                
+                let daysPassed = new Date(yearToRender, m + 1, 0).getDate();
+                if (yearToRender === today.getFullYear() && m === today.getMonth()) {
+                    daysPassed = today.getDate();
+                } else if (yearToRender > today.getFullYear() || (yearToRender === today.getFullYear() && m > today.getMonth())) {
+                    daysPassed = 0;
+                }
+                
+                const skippedThisMonth = h.skipped.filter(d => d.startsWith(monthPrefix) && d <= todayStr).length;
+                if (daysPassed > 0) daysPassed = Math.max(1, daysPassed - skippedThisMonth);
+                let pct = daysPassed > 0 ? Math.min(100, Math.round((monthChecks / daysPassed) * 100)) : 0;
+
+                const dashArray = 188.49;
+                const dashOffset = dashArray - (dashArray * pct) / 100;
+
+                let monthHTML = `
+                <div class="mini-month" onclick="this.classList.toggle('flipped'); vibrate('light');">
+                    <div class="mini-month-inner">
+                        <div class="mini-month-front">
+                            <div class="mini-month-title">${monthNames[m]} ${yearToRender}</div>
+                            <div class="mini-month-grid">`;
                 
                 const daysInMonth = new Date(yearToRender, m + 1, 0).getDate();
                 const firstDayIndex = new Date(yearToRender, m, 1).getDay();
@@ -833,7 +848,21 @@
                     if (h.notes && h.notes[dateStr]) classes += ' has-note-mini';
                     monthHTML += `<div class="${classes}"></div>`;
                 }
-                monthHTML += `</div></div>`;
+                
+                monthHTML += `
+                            </div>
+                        </div>
+                        <div class="mini-month-back">
+                            <div class="mini-month-title">${monthNames[m]}</div>
+                            <svg class="mini-circle-chart" viewBox="0 0 100 100">
+                                <circle class="mini-circle-bg" cx="50" cy="50" r="30" />
+                                <circle class="mini-circle-progress" cx="50" cy="50" r="30" stroke-dasharray="${dashArray}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 50 50)" />
+                                <text class="mini-circle-text" x="50" y="55">${pct}%</text>
+                            </svg>
+                            <button class="btn-secondary" style="margin-top: 10px; padding: 4px 8px; font-size: 0.7rem; z-index: 10;" onclick="event.stopPropagation(); navigateToMonth('${habitId}', ${yearToRender}, ${m})">Zum Monat</button>
+                        </div>
+                    </div>
+                </div>`;
                 gridHTML += monthHTML;
             }
             gridHTML += `</div>`;
@@ -846,6 +875,14 @@
                 </div>
                 ${gridHTML}
             `;
+            
+            // Allow CSS transition to take effect
+            setTimeout(() => {
+                const charts = container.querySelectorAll('.mini-circle-progress');
+                charts.forEach(chart => {
+                    chart.style.strokeDashoffset = chart.getAttribute('stroke-dashoffset');
+                });
+            }, 50);
         }
 
         window.changeYearlyCalendarYear = function(habitId, delta) {
@@ -1023,14 +1060,17 @@
 
                     const idx = habit.history.indexOf(date);
                     if (idx > -1) { habit.history.splice(idx, 1); vibrate('light'); dayCell.classList.remove('checked'); } 
-                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); } 
+                    else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
                     
                     saveData(); updateGlobalProgress();
                     
                     const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
                     const year = d.getFullYear(); const month = d.getMonth();
                     const yearPrefix = `${year}-`; const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+                    const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                     const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                    const totalChecks = habit.history.length;
+                    const displayMonthName = new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(d);
                     
                     let daysPassed = new Date(year, month + 1, 0).getDate();
                     if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
@@ -1038,10 +1078,8 @@
                     daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
                     const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
                     
-                    const yCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
-                    
                     const statsText = card.querySelector('.habit-stats-text');
-                    if (statsText) statsText.textContent = `${monthChecks} im Monat • ${yCount} im Jahr`;
+                    if (statsText) statsText.textContent = `${monthChecks}x im ${displayMonthName} • ${yearCount}x in ${year} • ${totalChecks}x Gesamt`;
                     const barFill = card.querySelector('.progress-bar-fill');
                     if (barFill) barFill.style.width = `${progressPct}%`;
                     
@@ -1178,7 +1216,7 @@
             COLOR_PALETTE.forEach(color => {
                 const div = document.createElement('div'); div.className = 'color-option'; div.style.backgroundColor = color;
                 if (settings.primaryColor === color) div.classList.add('selected');
-                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgbV = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},1)`); const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = color; });
+                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgbV = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgbV&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgbV>>16)&255},${(rgb>>8)&255},${rgbV&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},1)`); const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = color; });
                 grid.appendChild(div);
             });
         }
