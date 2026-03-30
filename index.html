@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA & iOS Kompatibilität -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -10,6 +12,7 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
+    <!-- Dynamisches Manifest & Apple Touch Icon -->
     <link id="dynamic-manifest" rel="manifest" href="">
     <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
 
@@ -199,12 +202,12 @@
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
-        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: 100%; }
-        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; }
+        .mini-month-inner { position: relative; width: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
         .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
         
-        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; width: 100%; height: 100%; box-sizing: border-box; }
-        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
+        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
         
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
@@ -483,9 +486,16 @@
             const appIcon = settings.avatar ? settings.avatar : defaultIcon;
             
             const manifestObj = {
-                "name": appName, "short_name": shortName, "start_url": ".", "display": "standalone",
-                "background_color": settings.theme === 'dark' ? "#0f172a" : "#f8fafc", "theme_color": settings.primaryColor,
-                "icons": [{ "src": appIcon, "sizes": "192x192 512x512", "type": settings.avatar ? "image/webp" : "image/svg+xml", "purpose": "any maskable" }]
+                "name": appName, 
+                "short_name": shortName, 
+                "start_url": ".", 
+                "display": "standalone",
+                "background_color": settings.theme === 'dark' ? "#0f172a" : "#f8fafc", 
+                "theme_color": settings.primaryColor,
+                "icons": [
+                    { "src": appIcon, "sizes": "192x192", "type": settings.avatar ? "image/jpeg" : "image/svg+xml", "purpose": "any" },
+                    { "src": appIcon, "sizes": "512x512", "type": settings.avatar ? "image/jpeg" : "image/svg+xml", "purpose": "any maskable" }
+                ]
             };
             
             const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
@@ -496,9 +506,73 @@
         let swRegistered = false;
         function registerSW() {
             if (!swRegistered && 'serviceWorker' in navigator) {
-                const swCode = `self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('activate', (e) => self.clients.claim()); self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Offline'))); });`;
-                navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(()=>{});
-                swRegistered = true;
+                const appUrl = window.location.href.split('#')[0];
+                const swCode = `
+                    const CACHE_NAME = 'gewohnheit-tracker-pro-v2';
+                    const ASSETS = [
+                        '${appUrl}',
+                        'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js',
+                        'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
+                    ];
+
+                    self.addEventListener('install', (event) => {
+                        self.skipWaiting();
+                        event.waitUntil(
+                            caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+                        );
+                    });
+
+                    self.addEventListener('activate', (event) => {
+                        event.waitUntil(self.clients.claim());
+                        event.waitUntil(
+                            caches.keys().then((cacheNames) => {
+                                return Promise.all(
+                                    cacheNames.map((cacheName) => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            })
+                        );
+                    });
+
+                    self.addEventListener('fetch', (event) => {
+                        event.respondWith(
+                            caches.match(event.request).then((cachedResponse) => {
+                                if (cachedResponse) {
+                                    return cachedResponse;
+                                }
+                                return fetch(event.request).then((networkResponse) => {
+                                    if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                                        return networkResponse;
+                                    }
+                                    const responseToCache = networkResponse.clone();
+                                    caches.open(CACHE_NAME).then((cache) => {
+                                        if (event.request.url.startsWith('http')) {
+                                            cache.put(event.request, responseToCache);
+                                        }
+                                    });
+                                    return networkResponse;
+                                }).catch(() => {
+                                    return new Response('Offline Modus aktiv. Keine Netzwerkverbindung.');
+                                });
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], {type: 'application/javascript'});
+                const swUrl = URL.createObjectURL(blob);
+                
+                try {
+                    navigator.serviceWorker.register(swUrl).then(() => {
+                        swRegistered = true;
+                    }).catch((error) => {
+                        console.log('Service Worker Registration failed (Async):', error.message);
+                    });
+                } catch (error) {
+                    console.log('Service Worker Registration failed (Sync):', error.message);
+                }
             }
         }
 
@@ -789,8 +863,11 @@
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
                 const monthLabel = formatter.format(displayDate);
+                const yearPrefix = `${year}-`;
+                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
