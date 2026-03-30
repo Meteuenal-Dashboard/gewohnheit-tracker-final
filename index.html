@@ -12,9 +12,9 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
-    <!-- PWA Manifest & Apple Touch Icon -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <!-- Dynamisches Manifest & Apple Touch Icon -->
+    <link id="dynamic-manifest" rel="manifest" href="">
+    <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
 
     <!-- Externe Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
@@ -198,16 +198,16 @@
         .custom-select-item { padding: 12px 20px; font-weight: 600; cursor: pointer; transition: background 0.2s; color: var(--text-main); }
         .custom-select-item:hover { background: var(--bg-body); color: var(--primary); }
 
-        /* KOMPAKTER JAHRESPLAN MIT FLIP-CARDS (UMRANDET + SAFARI FIX) */
-        .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
+        /* KOMPAKTER JAHRESPLAN MIT FLIP-CARDS */
+        .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; align-items: stretch; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
-        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; }
-        .mini-month-inner { position: relative; width: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: 100%; }
+        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
         .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
         
-        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
-        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); align-items: center; justify-content: center; z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; width: 100%; height: 100%; box-sizing: border-box; }
+        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; justify-content: space-between; align-items: center; box-sizing: border-box; }
         
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
@@ -845,6 +845,30 @@
             }
         };
 
+        function renderArchiveManager() {
+            const listContainer = document.getElementById('archive-list-container');
+            if (!listContainer) return;
+            listContainer.innerHTML = ''; 
+            const archivedHabits = habits.filter(h => h.archived); 
+            
+            if(!archivedHabits.length) {
+                listContainer.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>';
+                return;
+            }
+            
+            archivedHabits.forEach(h => {
+                const el = document.createElement('div');
+                el.className = 'archive-item';
+                el.innerHTML = `
+                    <span class="archive-item-name">${escapeHtml(h.name)}</span>
+                    <div style="display:flex; gap: 5px;">
+                        <button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="window.restoreHabit('${h.id}')">Zurück</button>
+                        <button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="window.deleteHabit('${h.id}')">Löschen</button>
+                    </div>`;
+                listContainer.appendChild(el);
+            });
+        }
+
         function render() {
             const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long' });
             const activeHabits = habits.filter(h => !h.archived);
@@ -867,6 +891,7 @@
                 const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -903,6 +928,12 @@
                     if(hasNote) classes.push(hasNote);
 
                     gridHTML += `<div class="${classes.join(' ')}" data-habit-id="${habit.id}" data-date="${cellDateStr}"><span>${d}</span></div>`;
+                }
+
+                // FIX: Fülle immer auf exakt 42 Kästchen auf (6 Wochen x 7 Tage).
+                let totalCells = adjustedFirstDay + daysInMonth;
+                for (let i = totalCells; i < 42; i++) {
+                    gridHTML += `<div class="day-cell empty"></div>`;
                 }
 
                 const isFirst = index === 0; const isLast = index === activeHabits.length - 1;
@@ -1082,6 +1113,12 @@
                     if (h.notes && h.notes[dateStr]) classes += ' has-note-mini';
                     monthHTML += `<div class="${classes}"></div>`;
                 }
+
+                // FIX: Fülle immer auf exakt 42 Kästchen auf (6 Wochen x 7 Tage).
+                let totalCells = adjustedFirstDay + daysInMonth;
+                for (let i = totalCells; i < 42; i++) {
+                    monthHTML += `<div class="mini-day empty"></div>`;
+                }
                 
                 monthHTML += `
                             </div>
@@ -1227,6 +1264,10 @@
         }
 
         function setupEventListeners() {
+            // Verhindern von doppelten Event-Listenern
+            if (window._eventsSetup) return;
+            window._eventsSetup = true;
+
             const sheetBtnNote = document.getElementById('sheet-btn-note');
             if (sheetBtnNote) sheetBtnNote.addEventListener('click', () => { closeActionSheet(); setTimeout(()=>{ openNoteDialog(currentContext.habitId, currentContext.dateStr); }, 300); });
             
@@ -1460,10 +1501,8 @@
 
             const openArchiveBtn = document.getElementById('open-archive');
             if (openArchiveBtn) openArchiveBtn.addEventListener('click', () => { 
-                vibrate('light'); const list = document.getElementById('archive-list-container'); list.innerHTML = ''; 
-                const arch = habits.filter(h => h.archived); 
-                if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; 
-                arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div style="display:flex; gap: 5px;"><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="window.deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
+                vibrate('light'); 
+                renderArchiveManager();
                 const panel = document.getElementById('settings-panel'); if(panel) panel.classList.remove('open'); 
                 const sOverlay = document.getElementById('settings-overlay'); if(sOverlay) sOverlay.classList.remove('open'); 
                 const cOverlay = document.getElementById('custom-modal-overlay'); if(cOverlay) cOverlay.classList.add('open'); 
@@ -1508,7 +1547,14 @@
             setTimeout(() => { if(input) input.focus(); }, 100);
         }
 
-        window.restoreHabit = (id) => { habits.find(h => h.id == id).archived = false; saveData(); render(); updateGlobalProgress(); };
+        window.restoreHabit = (id) => { 
+            const h = habits.find(h => h.id == id);
+            if (h) h.archived = false; 
+            saveData(); 
+            renderArchiveManager(); 
+            render(); 
+            updateGlobalProgress(); 
+        };
         window.deleteHabit = (id) => { 
             showConfirmModal(
                 "Endgültig löschen?",
@@ -1517,14 +1563,7 @@
                 () => {
                     habits = habits.filter(h => String(h.id) !== String(id)); 
                     saveData(); 
-                    
-                    const list = document.getElementById('archive-list-container');
-                    if(list) {
-                        list.innerHTML = '';
-                        const arch = habits.filter(h => h.archived); 
-                        if(!arch.length) list.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Leer.</p>'; 
-                        arch.forEach(h => { const el = document.createElement('div'); el.className = 'archive-item'; el.innerHTML = `<span class="archive-item-name">${escapeHtml(h.name)}</span><div style="display:flex; gap: 5px;"><button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="restoreHabit('${h.id}')">Zurück</button><button class="btn-secondary btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="window.deleteHabit('${h.id}')">Löschen</button></div>`; list.appendChild(el); }); 
-                    }
+                    renderArchiveManager();
                     render();
                     updateGlobalProgress();
                     if(document.getElementById('stats-modal') && document.getElementById('stats-modal').classList.contains('open')) {
