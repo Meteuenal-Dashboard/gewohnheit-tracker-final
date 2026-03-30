@@ -12,9 +12,9 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
-    <!-- Dynamisches Manifest & Apple Touch Icon -->
-    <link id="dynamic-manifest" rel="manifest" href="">
-    <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
+    <!-- PWA Manifest & Apple Touch Icon -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
 
     <!-- Externe Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
@@ -867,7 +867,6 @@
                 const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
