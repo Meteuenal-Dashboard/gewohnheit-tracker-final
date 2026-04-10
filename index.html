@@ -117,7 +117,7 @@
         .habit-header { display: flex; flex-direction: column; gap: 10px; }
         .habit-title-row { width: 100%; }
         .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; flex: 1; display: flex; align-items: center; gap: 10px; }
-        .habit-category-icon { font-size: 1.2rem; }
+        .habit-category-icon { font-size: 1.2rem; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; object-fit: contain; }
         
         .expand-btn { flex-shrink: 0; background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
@@ -191,23 +191,15 @@
         .category-option-icon { font-size: 1.2rem; }
         .category-option-label { font-size: 0.9rem; font-weight: 600; }
 
-        /* SCROLLABLE STATS DASHBOARD (ACHT FENSTER UMRANDET) */
+        /* SCROLLABLE STATS DASHBOARD */
         #stats-modal { max-height: 92vh; width: 95%; max-width: 600px; padding: 20px 15px; overflow-y: auto; }
         .stats-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .stat-box { background: var(--bg-body); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid var(--primary) !important; }
         .stat-box-value { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
         .stat-box-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
         
-        /* CUSTOM SELECT FÜR HABITS IM DASHBOARD */
-        .custom-select-container { position: relative; width: 100%; margin-bottom: 15px; }
-        .custom-select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-radius: 14px; border: 1px solid var(--primary); background: var(--bg-card); color: var(--text-main); font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); transition: border-color 0.2s; }
-        .custom-select-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-top: 5px; z-index: 300; opacity: 0; pointer-events: none; transform: translateY(-10px); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); max-height: 200px; overflow-y: auto; }
-        .custom-select-dropdown.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
-        .custom-select-item { padding: 12px 20px; font-weight: 600; cursor: pointer; transition: background 0.2s; color: var(--text-main); }
-        .custom-select-item:hover { background: var(--bg-body); color: var(--primary); }
-
         /* KOMPAKTER JAHRESPLAN MIT FLIP-CARDS */
-        .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; align-items: stretch; }
+        .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; align-items: start; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
         .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; display: flex; flex-direction: column; }
@@ -247,6 +239,11 @@
 
         /* WICHTIG FÜR ARCHIV MODAL */
         #confirm-modal { z-index: 205 !important; }
+
+        /* STICKER STYLING */
+        .sticker-preview { width: 100%; height: 100px; background: var(--bg-body); border: 2px dashed var(--border); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; position: relative; overflow: hidden; }
+        .sticker-preview img { max-height: 80px; object-fit: contain; }
+        .sticker-controls { display: flex; gap: 10px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -383,8 +380,11 @@
         </div>
     </div>
 
-    <!-- VERSTECKTER BILD-UPLOAD -->
+    <!-- VERSTECKTER BILD-UPLOAD FÜR RÜCKSEITEN -->
     <input type="file" id="habit-image-upload" accept="image/*" style="display:none;">
+    
+    <!-- VERSTECKTER UPLOAD FÜR CUSTOM STICKER -->
+    <input type="file" id="sticker-upload" accept="image/*" style="display:none;">
 
     <!-- STATS DASHBOARD -->
     <div class="custom-modal" id="stats-modal">
@@ -425,12 +425,21 @@
         </div>
     </div>
 
-    <!-- EDIT MODAL (MIT KATEGORIEN) -->
+    <!-- EDIT MODAL (MIT KATEGORIEN & CUSTOM STICKER) -->
     <div class="custom-modal" id="edit-modal" style="max-width: 500px;">
         <h3>Ziel anpassen</h3>
         <input type="text" id="edit-name-input" inputmode="text" enterkeyhint="done" style="width:100%; padding:15px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); font-size:1.1rem; font-weight:700; margin-bottom: 20px;">
         
-        <span class="settings-label">Kategorie wählen</span>
+        <span class="settings-label">KI-Sticker / GIF</span>
+        <div class="sticker-preview" id="sticker-preview-box">
+            <span id="sticker-placeholder-text" style="color: var(--text-muted); font-size: 0.8rem;">Kein Sticker gewählt</span>
+        </div>
+        <div class="sticker-controls">
+            <button class="btn-secondary" style="flex:1" onclick="document.getElementById('sticker-upload').click()">📷 Hochladen</button>
+            <button class="btn-secondary" id="delete-sticker-btn" style="color: var(--danger); display: none;" onclick="removeCurrentSticker()">🗑️ Entfernen</button>
+        </div>
+
+        <span class="settings-label">Oder Kategorie wählen</span>
         <div class="category-grid" id="category-selector">
             <!-- Befüllt per JS -->
         </div>
@@ -499,7 +508,7 @@
             return new Date(date.getTime() - offset).toISOString().split('T')[0];
         };
 
-        let currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes' }; 
+        let currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes', currentSticker: null }; 
         let animationFrameId = null;
         let particles = [];
         let canvas, ctx;
@@ -519,6 +528,7 @@
 
         let swRegistered = false;
         function registerSW() {
+            // Service Worker Registrierung nur auf echten Web-Servern (http/https)
             if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http'))) {
                 navigator.serviceWorker.register('sw.js')
                 .then(() => {
@@ -620,7 +630,7 @@
                             const restoredHabits = data.h.map(opt => ({
                                 id: opt.i, name: opt.n, archived: opt.a === 1,
                                 history: unpackDates(opt.h), skipped: unpackDates(opt.s), 
-                                category: opt.c || 'anderes', notes: {}, image: null
+                                category: opt.c || 'anderes', notes: {}, image: null, customIcon: null
                             }));
                             const restoredSettings = {
                                 theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an,
@@ -646,6 +656,7 @@
                 if (!h.skipped) h.skipped = []; 
                 if (!h.image) h.image = null; 
                 if (!h.category) h.category = 'anderes';
+                if (!h.customIcon) h.customIcon = null;
                 if (h.archived === undefined) h.archived = false; 
             });
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
@@ -913,7 +924,9 @@
                                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 10px;">
                                         <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <div class="habit-title" style="margin-bottom: 0;">
-                                                <span class="habit-category-icon">${categoryObj.icon}</span>
+                                                <div class="habit-category-icon">
+                                                    ${habit.customIcon ? `<img src="${habit.customIcon}" style="width:100%; height:100%; object-fit:contain;">` : categoryObj.icon}
+                                                </div>
                                                 ${escapeHtml(habit.name)}
                                             </div>
                                         </div>
@@ -1075,8 +1088,10 @@
                     monthHTML += `<div class="${classes}"></div>`;
                 }
 
-                let cellCount = adjustedFirstDay + daysInMonth;
-                for (let i = cellCount; i < 42; i++) { monthHTML += `<div class="mini-day empty"></div>`; }
+                let currentCells = adjustedFirstDay + daysInMonth;
+                for (let i = currentCells; i < 42; i++) {
+                    monthHTML += `<div class="mini-day empty"></div>`;
+                }
                 
                 monthHTML += `
                             </div>
@@ -1217,7 +1232,7 @@
             if (allNotesModal) allNotesModal.classList.remove('open');
             if (qrModal) qrModal.classList.remove('open'); 
             if (actionSheet) actionSheet.classList.remove('open');
-            currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes' }; 
+            currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes', currentSticker: null }; 
             if (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open')) document.body.classList.remove('modal-open');
         }
 
@@ -1247,7 +1262,6 @@
             if (btnQrSync) btnQrSync.addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
                 
-                // Wir entfernen Bilder und Notizen aus dem Sync, um den QR-Code klein zu halten
                 let optHabits = habits.map(h => ({ 
                     i: h.id, 
                     n: h.name, 
@@ -1280,22 +1294,6 @@
             const btnExportCsv = document.getElementById('btn-export-csv');
             if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
 
-            const selectTrigger = document.getElementById('custom-habit-select-trigger');
-            if (selectTrigger) {
-                selectTrigger.addEventListener('click', () => {
-                    const dropdown = document.getElementById('custom-habit-select-dropdown');
-                    if (dropdown) dropdown.classList.toggle('open');
-                });
-            }
-
-            document.addEventListener('click', (e) => {
-                const container = document.getElementById('custom-habit-select-container');
-                if (container && !container.contains(e.target)) {
-                    const drop = document.getElementById('custom-habit-select-dropdown');
-                    if (drop) drop.classList.remove('open');
-                }
-            });
-
             const addBtn = document.getElementById('add-btn');
             const addFn = () => {
                 const input = document.getElementById('new-habit-input'); 
@@ -1303,7 +1301,7 @@
                 const name = input.value.trim(); 
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false, image: null, category: 'anderes' });
+                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false, image: null, category: 'anderes', customIcon: null });
                 habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
             if (addBtn) addBtn.addEventListener('click', addFn);
@@ -1347,10 +1345,11 @@
                     vibrate('light'); 
                     const id = target.closest('.habit-card-wrapper').dataset.id; 
                     const habit = habits.find(h => h.id == id); 
-                    currentContext = { habitId: id, action: 'edit', selectedCategory: habit.category || 'anderes' }; 
+                    currentContext = { habitId: id, action: 'edit', selectedCategory: habit.category || 'anderes', currentSticker: habit.customIcon }; 
                     const input = document.getElementById('edit-name-input'); 
                     if(input) input.value = habit.name; 
                     
+                    updateStickerPreview();
                     renderCategorySelector();
                     
                     const overlay = document.getElementById('custom-modal-overlay'); 
@@ -1378,6 +1377,25 @@
                 }
             });
 
+            // STICKER UPLOAD HANDLER
+            const stickerUploadInput = document.getElementById('sticker-upload');
+            if (stickerUploadInput) {
+                stickerUploadInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0]; if (!file) return;
+                    const r = new FileReader(); r.onload = (ev) => { 
+                        const img = new Image(); img.onload = () => { 
+                            const cvs = document.createElement('canvas'); const ctxC = cvs.getContext('2d'); 
+                            const MAX = 120; let w=img.width, h=img.height; 
+                            if (w>h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
+                            cvs.width=w; cvs.height=h; ctxC.drawImage(img,0,0,w,h); 
+                            currentContext.currentSticker = cvs.toDataURL(file.type === 'image/gif' ? 'image/gif' : 'image/webp', 0.8); 
+                            updateStickerPreview();
+                        }; img.src = ev.target.result; 
+                    }; r.readAsDataURL(file);
+                    e.target.value = '';
+                });
+            }
+
             let pressTimer; let startY = 0; let startX = 0;
             listEl.addEventListener('touchstart', (e) => {
                 const cell = e.target.closest('.day-cell:not(.empty)'); if (!cell) return;
@@ -1387,14 +1405,6 @@
             listEl.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientY - startY) > 10 || Math.abs(e.touches[0].clientX - startX) > 10) clearTimeout(pressTimer); }, {passive: true});
             listEl.addEventListener('touchend', () => clearTimeout(pressTimer));
             listEl.addEventListener('touchcancel', () => clearTimeout(pressTimer));
-            listEl.addEventListener('contextmenu', (e) => { const cell = e.target.closest('.day-cell:not(.empty)'); if (cell) { e.preventDefault(); if (!cell.dataset.preventClick) { cell.dataset.preventClick = "true"; openActionSheet(cell.dataset.habitId, cell.dataset.date); } } });
-
-            document.querySelectorAll('.mood-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    vibrate('light'); document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active'); currentContext.selectedMood = e.target.dataset.mood;
-                });
-            });
 
             const statsToggle = document.getElementById('stats-toggle');
             if (statsToggle) statsToggle.addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(statsModal) statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
@@ -1421,6 +1431,7 @@
                 if (newName) { 
                     h.name = newName; 
                     h.category = currentContext.selectedCategory;
+                    h.customIcon = currentContext.currentSticker;
                     saveData(); 
                     render(); 
                 } 
@@ -1446,11 +1457,8 @@
                 const overlay = document.getElementById('settings-overlay');
                 if (panel) panel.classList.toggle('open'); 
                 if (overlay) overlay.classList.toggle('open'); 
-                if (panel && panel.classList.contains('open')) {
-                    document.body.classList.add('modal-open');
-                } else {
-                    document.body.classList.remove('modal-open');
-                }
+                if (panel && panel.classList.contains('open')) document.body.classList.add('modal-open');
+                else document.body.classList.remove('modal-open');
             };
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1474,7 +1482,7 @@
             const avatarUpload = document.getElementById('avatar-upload');
             if (avatarUpload) avatarUpload.addEventListener('change', function(e) {
                 const file = e.target.files[0]; if (!file) return;
-                const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctxC = cvs.getContext('2d'); const M=512; let w=img.width,h=img.height; const ms=Math.min(w,h); cvs.width=M; cvs.height=M; ctxC.drawImage(img,(w-ms)/2,(h-ms)/2,ms,ms,0,0,M,M); settings.avatar = cvs.toDataURL('image/webp',0.8); const preview = document.getElementById('settings-avatar-preview'); if(preview) preview.src = settings.avatar; if(preview) preview.style.display = 'block'; const placeholder = document.getElementById('settings-avatar-placeholder'); if(placeholder) placeholder.style.display = 'none'; saveSettings(); }; img.src = ev.target.result; }; r.readAsDataURL(file);
+                const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctxC = cvs.getContext('2d'); const M=512; let w=img.width,h=img.height; const ms=Math.min(w,h); cvs.width=M; cvs.height=M; ctxC.drawImage(img,(w-ms)/2,(h-ms)/2,ms,ms,0,0,M,M); settings.avatar = cvs.toDataURL('image/webp',0.8); applySettings(); saveSettings(); }; img.src = ev.target.result; }; r.readAsDataURL(file);
             });
             
             const habitImageUpload = document.getElementById('habit-image-upload');
@@ -1488,17 +1496,8 @@
                             if (w>h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
                             cvs.width=w; cvs.height=h; ctxC.drawImage(img,0,0,w,h); 
                             const base64 = cvs.toDataURL('image/jpeg', 0.7); 
-                            
                             const hObj = habits.find(x => x.id == currentContext.uploadHabitId);
-                            if (hObj) {
-                                hObj.image = base64;
-                                saveData();
-                                render();
-                                const statsModalEl = document.getElementById('stats-modal');
-                                if (statsModalEl && statsModalEl.classList.contains('open')) {
-                                    renderYearlyCalendar(hObj.id, yearlyCalendarYear);
-                                }
-                            }
+                            if (hObj) { hObj.image = base64; saveData(); render(); }
                         }; img.src = ev.target.result; 
                     }; r.readAsDataURL(file);
                     e.target.value = '';
@@ -1526,6 +1525,25 @@
                 if(allNotesModal) allNotesModal.classList.add('open'); 
                 document.body.classList.add('modal-open'); 
             });
+        }
+
+        function updateStickerPreview() {
+            const box = document.getElementById('sticker-preview-box');
+            const deleteBtn = document.getElementById('delete-sticker-btn');
+            if (!box) return;
+            if (currentContext.currentSticker) {
+                box.innerHTML = `<img src="${currentContext.currentSticker}">`;
+                if (deleteBtn) deleteBtn.style.display = 'block';
+            } else {
+                box.innerHTML = `<span style="color: var(--text-muted); font-size: 0.8rem;">Kein Sticker gewählt</span>`;
+                if (deleteBtn) deleteBtn.style.display = 'none';
+            }
+        }
+
+        window.removeCurrentSticker = function() {
+            vibrate('light');
+            currentContext.currentSticker = null;
+            updateStickerPreview();
         }
 
         function renderCategorySelector() {
@@ -1565,9 +1583,7 @@
                     renderArchiveManager();
                     render();
                     updateGlobalProgress();
-                    if(document.getElementById('stats-modal') && document.getElementById('stats-modal').classList.contains('open')) {
-                        updateStatsDashboard();
-                    }
+                    if(document.getElementById('stats-modal') && document.getElementById('stats-modal').classList.contains('open')) updateStatsDashboard();
                 }
             );
         };
@@ -1578,16 +1594,13 @@
             COLOR_PALETTE.forEach(color => {
                 const div = document.createElement('div'); div.className = 'color-option'; div.style.backgroundColor = color;
                 if (settings.primaryColor === color) div.classList.add('selected');
-                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgbV = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},1)`); const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = color; });
+                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); saveSettings(); });
                 grid.appendChild(div);
             });
         }
         
         function resizeCanvas() { 
-            if(canvas) {
-                canvas.width = window.innerWidth; 
-                canvas.height = window.innerHeight; 
-            }
+            if(canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         }
         
         function fireConfetti(massive = false) {
@@ -1623,9 +1636,7 @@
 
         async function init() {
             canvas = document.getElementById('confetti-canvas');
-            if (canvas) {
-                ctx = canvas.getContext('2d');
-            }
+            if (canvas) ctx = canvas.getContext('2d');
             await checkImportHash();
             await loadData();
             applySettings();
