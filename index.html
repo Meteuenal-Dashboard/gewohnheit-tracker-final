@@ -12,9 +12,9 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
-    <!-- Dynamisches Manifest & Apple Touch Icon -->
-    <link id="dynamic-manifest" rel="manifest" href="">
-    <link rel="apple-touch-icon" id="dynamic-apple-icon" href="">
+    <!-- Statisches PWA Manifest & Apple Touch Icon -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
 
     <!-- Externe Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
@@ -213,7 +213,7 @@
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
         
         /* Safari Grid Fix */
-        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; min-height: 8px; aspect-ratio: 1; }
+        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; aspect-ratio: 1; }
         .mini-day.empty { background: transparent; }
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
@@ -480,99 +480,25 @@
         let confirmActionFn = null; 
 
         function setupPWA() {
-            const appName = settings.appName || "Habits Pro";
-            const shortName = appName.length > 12 ? appName.substring(0, 12) : appName;
-            const defaultIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMwIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
-            const appIcon = settings.avatar ? settings.avatar : defaultIcon;
-            
-            const manifestObj = {
-                "name": appName, 
-                "short_name": shortName, 
-                "start_url": ".", 
-                "display": "standalone",
-                "background_color": settings.theme === 'dark' ? "#0f172a" : "#f8fafc", 
-                "theme_color": settings.primaryColor,
-                "icons": [
-                    { "src": appIcon, "sizes": "192x192", "type": settings.avatar ? "image/jpeg" : "image/svg+xml", "purpose": "any" },
-                    { "src": appIcon, "sizes": "512x512", "type": settings.avatar ? "image/jpeg" : "image/svg+xml", "purpose": "any maskable" }
-                ]
-            };
-            
-            const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
-            document.getElementById('dynamic-manifest').setAttribute('href', URL.createObjectURL(manifestBlob));
-            document.getElementById('dynamic-apple-icon').setAttribute('href', appIcon);
+            let metaTheme = document.querySelector('meta[name="theme-color"]');
+            if(!metaTheme) { 
+                metaTheme = document.createElement('meta'); 
+                metaTheme.name = "theme-color"; 
+                document.head.appendChild(metaTheme); 
+            }
+            metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
         let swRegistered = false;
         function registerSW() {
-            if (!swRegistered && 'serviceWorker' in navigator) {
-                const appUrl = window.location.href.split('#')[0];
-                const swCode = `
-                    const CACHE_NAME = 'gewohnheit-tracker-pro-v2';
-                    const ASSETS = [
-                        '${appUrl}',
-                        'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js',
-                        'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
-                    ];
-
-                    self.addEventListener('install', (event) => {
-                        self.skipWaiting();
-                        event.waitUntil(
-                            caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-                        );
-                    });
-
-                    self.addEventListener('activate', (event) => {
-                        event.waitUntil(self.clients.claim());
-                        event.waitUntil(
-                            caches.keys().then((cacheNames) => {
-                                return Promise.all(
-                                    cacheNames.map((cacheName) => {
-                                        if (cacheName !== CACHE_NAME) {
-                                            return caches.delete(cacheName);
-                                        }
-                                    })
-                                );
-                            })
-                        );
-                    });
-
-                    self.addEventListener('fetch', (event) => {
-                        event.respondWith(
-                            caches.match(event.request).then((cachedResponse) => {
-                                if (cachedResponse) {
-                                    return cachedResponse;
-                                }
-                                return fetch(event.request).then((networkResponse) => {
-                                    if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                                        return networkResponse;
-                                    }
-                                    const responseToCache = networkResponse.clone();
-                                    caches.open(CACHE_NAME).then((cache) => {
-                                        if (event.request.url.startsWith('http')) {
-                                            cache.put(event.request, responseToCache);
-                                        }
-                                    });
-                                    return networkResponse;
-                                }).catch(() => {
-                                    return new Response('Offline Modus aktiv. Keine Netzwerkverbindung.');
-                                });
-                            })
-                        );
-                    });
-                `;
-                const blob = new Blob([swCode], {type: 'application/javascript'});
-                const swUrl = URL.createObjectURL(blob);
-                
-                try {
-                    navigator.serviceWorker.register(swUrl).then(() => {
-                        swRegistered = true;
-                    }).catch((error) => {
-                        console.log('Service Worker Registration failed (Async):', error.message);
-                    });
-                } catch (error) {
-                    console.log('Service Worker Registration failed (Sync):', error.message);
-                }
+            // Service Worker Registrierung nur auf echten Web-Servern (http/https)
+            if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http'))) {
+                navigator.serviceWorker.register('sw.js')
+                .then(() => {
+                    console.log('Service Worker erfolgreich registriert.');
+                    swRegistered = true;
+                })
+                .catch(err => console.log('Service Worker Registrierung unterdrückt:', err.message));
             }
         }
 
@@ -887,11 +813,8 @@
                 const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
                 
                 const monthLabel = formatter.format(displayDate);
-                const yearPrefix = `${year}-`;
-                const yearCount = habit.history.filter(d => d.startsWith(yearPrefix)).length;
                 const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
                 const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
-                const totalChecks = habit.history.length;
                 const notes = habit.notes || {};
 
                 let daysPassed = daysInMonth;
@@ -930,9 +853,9 @@
                     gridHTML += `<div class="${classes.join(' ')}" data-habit-id="${habit.id}" data-date="${cellDateStr}"><span>${d}</span></div>`;
                 }
 
-                // FIX: Fülle immer auf exakt 42 Kästchen auf (6 Wochen x 7 Tage).
-                let totalCells = adjustedFirstDay + daysInMonth;
-                for (let i = totalCells; i < 42; i++) {
+                // Auffüllen auf 42 Kästchen für bündigen Abschluss
+                let currentCells = adjustedFirstDay + daysInMonth;
+                for (let i = currentCells; i < 42; i++) {
                     gridHTML += `<div class="day-cell empty"></div>`;
                 }
 
@@ -1004,33 +927,23 @@
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
-
-            const select = document.getElementById('heatmap-habit-select');
-            if(select) {
-                const oldVal = select.value;
-                select.innerHTML = activeHabits.map((h) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
-                if(activeHabits.find(h=>h.id==oldVal)) select.value = oldVal;
-            }
-
-            let selectedId = activeHabits.length > 0 ? activeHabits[0].id : null;
-            const container = document.getElementById('custom-habit-select-container');
+            
             const dropdown = document.getElementById('custom-habit-select-dropdown');
             const textEl = document.getElementById('custom-habit-select-text');
-            
-            if (container && container.dataset.value && activeHabits.find(h => h.id == container.dataset.value)) {
-                selectedId = container.dataset.value;
-            }
+            const container = document.getElementById('custom-habit-select-container');
 
             if (dropdown && activeHabits.length > 0) {
                 dropdown.innerHTML = activeHabits.map(h => `<div class="custom-select-item" onclick="selectStatsHabit('${h.id}', '${escapeHtml(h.name).replace(/'/g, "\\'")}')">${escapeHtml(h.name)}</div>`).join('');
-            }
-            
-            if (selectedId) {
+                
+                let selectedId = container.dataset.value;
+                if (!selectedId || !activeHabits.find(h => h.id == selectedId)) {
+                    selectedId = activeHabits[0].id;
+                }
+                
                 const hObj = activeHabits.find(h => h.id == selectedId);
                 textEl.textContent = hObj.name;
                 container.dataset.value = hObj.id;
                 currentStatsHabitId = selectedId;
-                yearlyCalendarYear = new Date().getFullYear();
                 renderYearlyCalendar(selectedId, yearlyCalendarYear);
             }
         }
@@ -1114,11 +1027,9 @@
                     monthHTML += `<div class="${classes}"></div>`;
                 }
 
-                // FIX: Fülle immer auf exakt 42 Kästchen auf (6 Wochen x 7 Tage).
-                let totalCells = adjustedFirstDay + daysInMonth;
-                for (let i = totalCells; i < 42; i++) {
-                    monthHTML += `<div class="mini-day empty"></div>`;
-                }
+                // Bündiges Auffüllen auf 42 Tage (6 Zeilen)
+                let cellCount = adjustedFirstDay + daysInMonth;
+                for (let i = cellCount; i < 42; i++) { monthHTML += `<div class="mini-day empty"></div>`; }
                 
                 monthHTML += `
                             </div>
@@ -1264,7 +1175,6 @@
         }
 
         function setupEventListeners() {
-            // Verhindern von doppelten Event-Listenern
             if (window._eventsSetup) return;
             window._eventsSetup = true;
 
