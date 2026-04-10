@@ -12,7 +12,7 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
-    <!-- Statisches PWA Manifest & Apple Touch Icon -->
+    <!-- PWA Manifest & Apple Touch Icon -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192x192.png">
 
@@ -116,7 +116,8 @@
 
         .habit-header { display: flex; flex-direction: column; gap: 10px; }
         .habit-title-row { width: 100%; }
-        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; flex: 1; }
+        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; flex: 1; display: flex; align-items: center; gap: 10px; }
+        .habit-category-icon { font-size: 1.2rem; }
         
         .expand-btn { flex-shrink: 0; background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
@@ -183,6 +184,13 @@
         .mood-btn { font-size: 1.5rem; background: none; border: 2px solid transparent; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; opacity: 0.5; filter: grayscale(1); }
         .mood-btn.active { opacity: 1; filter: grayscale(0); transform: scale(1.1); border-color: var(--primary); background: var(--bg-card); }
 
+        /* CATEGORY SELECTOR */
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .category-option { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-body); border: 2px solid transparent; border-radius: 14px; cursor: pointer; transition: all 0.2s; }
+        .category-option.selected { border-color: var(--primary); background: var(--bg-card); box-shadow: var(--shadow); }
+        .category-option-icon { font-size: 1.2rem; }
+        .category-option-label { font-size: 0.9rem; font-weight: 600; }
+
         /* SCROLLABLE STATS DASHBOARD (ACHT FENSTER UMRANDET) */
         #stats-modal { max-height: 92vh; width: 95%; max-width: 600px; padding: 20px 15px; overflow-y: auto; }
         .stats-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
@@ -202,18 +210,18 @@
         .yearly-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; align-items: stretch; }
         @media (max-width: 400px) { .yearly-grid { grid-template-columns: repeat(2, 1fr); } }
         
-        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: 100%; }
-        .mini-month-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .mini-month { perspective: 1000px; -webkit-perspective: 1000px; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; height: auto; display: flex; flex-direction: column; }
+        .mini-month-inner { position: relative; width: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), -webkit-transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; flex: 1; display: flex; flex-direction: column; }
         .mini-month.flipped .mini-month-inner { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
         
-        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; width: 100%; height: 100%; box-sizing: border-box; }
-        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 10px; display: flex; flex-direction: column; overflow: hidden; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .mini-month-front { position: relative; z-index: 2; transform: rotateY(0deg); -webkit-transform: rotateY(0deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 5px; display: flex; flex-direction: column; overflow: hidden; width: 100%; height: 100%; box-sizing: border-box; }
+        .mini-month-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); z-index: 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; border: 1px solid var(--primary) !important; background: var(--bg-body); padding: 5px; display: flex; flex-direction: column; overflow: hidden; justify-content: space-between; align-items: center; box-sizing: border-box; }
         
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
         
         /* Safari Grid Fix */
-        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; aspect-ratio: 1; }
+        .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; min-height: 8px; aspect-ratio: 1; }
         .mini-day.empty { background: transparent; }
         .mini-day.checked { background: var(--primary); opacity: 1; }
         .mini-day.skipped { background: var(--text-muted); opacity: 0.5; }
@@ -234,7 +242,7 @@
         .note-summary-item { background: var(--bg-body); padding: 15px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.1s; display: flex; flex-direction: column; }
         .note-summary-item:active { transform: scale(0.98); border-color: var(--primary); }
 
-        .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border); }
+        .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; }
         .archive-item-name { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
 
         /* WICHTIG FÜR ARCHIV MODAL */
@@ -417,6 +425,22 @@
         </div>
     </div>
 
+    <!-- EDIT MODAL (MIT KATEGORIEN) -->
+    <div class="custom-modal" id="edit-modal" style="max-width: 500px;">
+        <h3>Ziel anpassen</h3>
+        <input type="text" id="edit-name-input" inputmode="text" enterkeyhint="done" style="width:100%; padding:15px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); font-size:1.1rem; font-weight:700; margin-bottom: 20px;">
+        
+        <span class="settings-label">Kategorie wählen</span>
+        <div class="category-grid" id="category-selector">
+            <!-- Befüllt per JS -->
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-edit">Abbrechen</button>
+            <button class="btn-primary" id="save-edit">Speichern</button>
+        </div>
+    </div>
+
     <!-- OTHER MODALS -->
     <div class="custom-modal" id="all-notes-modal" style="max-width: 600px; height: 80vh;">
         <h3>Journal & Notizen</h3>
@@ -424,19 +448,10 @@
         <div class="modal-actions"><button class="btn-secondary" id="close-all-notes" style="width: 100%;">Schließen</button></div>
     </div>
 
-    <div class="custom-modal" id="edit-modal">
-        <h3>Gewohnheit umbenennen</h3>
-        <input type="text" id="edit-name-input" inputmode="text" enterkeyhint="done" style="width:100%; padding:15px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); font-size:1.1rem; font-weight:700;">
-        <div class="modal-actions">
-            <button class="btn-secondary" id="cancel-edit">Abbrechen</button>
-            <button class="btn-primary" id="save-edit">Speichern</button>
-        </div>
-    </div>
-
     <div class="custom-modal" id="archive-manager-modal">
         <h3>Archiv</h3>
         <div id="archive-list-container" style="overflow-y: auto; flex-grow: 1; display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
-        <div class="modal-actions"><button class="btn-secondary" id="close-archive" style="width:100%;">Schließen</button></div>
+        <div class="modal-actions"><button class="btn-secondary" id="close-archive" style="width: 100%;">Schließen</button></div>
     </div>
 
     <!-- MAIN CONTENT -->
@@ -465,13 +480,26 @@
     <canvas id="confetti-canvas"></canvas>
 
     <script>
+        const CATEGORIES = [
+            { id: 'sport', icon: '🚴', label: 'Sport' },
+            { id: 'meditation', icon: '🧘', label: 'Meditation' },
+            { id: 'finanzen', icon: '💰', label: 'Finanzen' },
+            { id: 'studium', icon: '🎓', label: 'Studium' },
+            { id: 'arbeit', icon: '💼', label: 'Arbeit' },
+            { id: 'gesundheit', icon: '🍏', label: 'Gesundheit' },
+            { id: 'ernaehrung', icon: '🍳', label: 'Ernährung' },
+            { id: 'kunst', icon: '🎨', label: 'Kunst' },
+            { id: 'zuhause', icon: '🏠', label: 'Zuhause' },
+            { id: 'anderes', icon: '✨', label: 'Anderes' }
+        ];
+
         // GLOBALE HELPER FUNKTION FÜR LOKALES DATUM
         const getLocalIsoDate = (date = new Date()) => {
             const offset = date.getTimezoneOffset() * 60000;
             return new Date(date.getTime() - offset).toISOString().split('T')[0];
         };
 
-        let currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null }; 
+        let currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes' }; 
         let animationFrameId = null;
         let particles = [];
         let canvas, ctx;
@@ -491,7 +519,6 @@
 
         let swRegistered = false;
         function registerSW() {
-            // Service Worker Registrierung nur auf echten Web-Servern (http/https)
             if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http'))) {
                 navigator.serviceWorker.register('sw.js')
                 .then(() => {
@@ -592,7 +619,8 @@
                         if (confirm("🚨 Neues Profil erkannt!\n\nDaten importieren und aktuelle überschreiben?")) {
                             const restoredHabits = data.h.map(opt => ({
                                 id: opt.i, name: opt.n, archived: opt.a === 1,
-                                history: unpackDates(opt.h), skipped: unpackDates(opt.s), notes: {}, image: null
+                                history: unpackDates(opt.h), skipped: unpackDates(opt.s), 
+                                category: opt.c || 'anderes', notes: {}, image: null
                             }));
                             const restoredSettings = {
                                 theme: data.s.t, primaryColor: data.s.p, username: data.s.u, appName: data.s.an,
@@ -617,6 +645,7 @@
                 if (!h.notes) h.notes = {}; 
                 if (!h.skipped) h.skipped = []; 
                 if (!h.image) h.image = null; 
+                if (!h.category) h.category = 'anderes';
                 if (h.archived === undefined) h.archived = false; 
             });
             habits.forEach(h => { if(!habitDisplayDates[h.id]) habitDisplayDates[h.id] = new Date(); });
@@ -668,26 +697,41 @@
             }
         }
 
-        function calculateStreak(history, skipped = []) {
-            const today = getLocalIsoDate();
-            const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-            const yesterday = getLocalIsoDate(yesterdayDate);
-
-            let checkDate = new Date();
-            if (skipped.includes(today) && !history.includes(today)) checkDate = yesterdayDate;
-            else if (!history.includes(today) && !history.includes(yesterday) && !skipped.includes(yesterday)) return 0;
-            else if (!history.includes(today)) checkDate = yesterdayDate;
-
-            let streak = 0;
-            let failsafe = 0; 
-            while (failsafe < 5000) {
-                failsafe++;
-                const dStr = getLocalIsoDate(checkDate);
-                if (history.includes(dStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } 
-                else if (skipped.includes(dStr)) { checkDate.setDate(checkDate.getDate() - 1); } 
-                else break;
+        function calculateBestStreak(history, skipped = []) {
+            if (!history || history.length === 0) return 0;
+            const doneDates = [...new Set(history)].sort();
+            const skipSet = new Set(skipped);
+            
+            let maxStreak = 0;
+            let currentStreak = 0;
+            
+            if (doneDates.length === 0) return 0;
+            
+            let currentDay = new Date(doneDates[0]);
+            let endDay = new Date();
+            
+            while(currentDay <= endDay) {
+                let dStr = getLocalIsoDate(currentDay);
+                if (history.includes(dStr)) {
+                    currentStreak++;
+                } else if (skipSet.has(dStr)) {
+                    // Streak bleibt erhalten
+                } else {
+                    currentStreak = 0;
+                }
+                maxStreak = Math.max(maxStreak, currentStreak);
+                currentDay.setDate(currentDay.getDate() + 1);
             }
-            return streak;
+            return maxStreak;
+        }
+
+        function getBestStreakOverall() {
+            let max = 0;
+            habits.filter(h => !h.archived).forEach(h => {
+                const s = calculateBestStreak(h.history, h.skipped);
+                if (s > max) max = s;
+            });
+            return max;
         }
 
         function updateGlobalProgress() {
@@ -853,13 +897,13 @@
                     gridHTML += `<div class="${classes.join(' ')}" data-habit-id="${habit.id}" data-date="${cellDateStr}"><span>${d}</span></div>`;
                 }
 
-                // Auffüllen auf 42 Kästchen für bündigen Abschluss
                 let currentCells = adjustedFirstDay + daysInMonth;
                 for (let i = currentCells; i < 42; i++) {
                     gridHTML += `<div class="day-cell empty"></div>`;
                 }
 
                 const isFirst = index === 0; const isLast = index === activeHabits.length - 1;
+                const categoryObj = CATEGORIES.find(c => c.id === habit.category) || CATEGORIES[CATEGORIES.length - 1];
 
                 cardWrapper.innerHTML = `
                     <div class="habit-card-inner" id="habit-inner-${habit.id}">
@@ -868,7 +912,10 @@
                                 <div class="habit-title-row">
                                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 10px;">
                                         <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <div class="habit-title" style="margin-bottom: 0;">${escapeHtml(habit.name)}</div>
+                                            <div class="habit-title" style="margin-bottom: 0;">
+                                                <span class="habit-category-icon">${categoryObj.icon}</span>
+                                                ${escapeHtml(habit.name)}
+                                            </div>
                                         </div>
                                         <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
                                             <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
@@ -927,6 +974,7 @@
         function updateStatsDashboard() {
             const activeHabits = habits.filter(h => !h.archived);
             document.getElementById('stat-total-habits').textContent = activeHabits.length;
+            document.getElementById('stat-best-streak').textContent = getBestStreakOverall();
             
             const dropdown = document.getElementById('custom-habit-select-dropdown');
             const textEl = document.getElementById('custom-habit-select-text');
@@ -1027,7 +1075,6 @@
                     monthHTML += `<div class="${classes}"></div>`;
                 }
 
-                // Bündiges Auffüllen auf 42 Tage (6 Zeilen)
                 let cellCount = adjustedFirstDay + daysInMonth;
                 for (let i = cellCount; i < 42; i++) { monthHTML += `<div class="mini-day empty"></div>`; }
                 
@@ -1170,7 +1217,7 @@
             if (allNotesModal) allNotesModal.classList.remove('open');
             if (qrModal) qrModal.classList.remove('open'); 
             if (actionSheet) actionSheet.classList.remove('open');
-            currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null }; 
+            currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes' }; 
             if (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open')) document.body.classList.remove('modal-open');
         }
 
@@ -1199,10 +1246,23 @@
             const btnQrSync = document.getElementById('btn-qr-sync');
             if (btnQrSync) btnQrSync.addEventListener('click', () => {
                 if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
-                let optHabits = habits.map(h => ({ i: h.id, n: h.name, a: h.archived ? 1 : 0, h: packDates(h.history), s: packDates(h.skipped) }));
+                
+                // Wir entfernen Bilder und Notizen aus dem Sync, um den QR-Code klein zu halten
+                let optHabits = habits.map(h => ({ 
+                    i: h.id, 
+                    n: h.name, 
+                    a: h.archived ? 1 : 0, 
+                    h: packDates(h.history), 
+                    s: packDates(h.skipped),
+                    c: h.category || 'anderes'
+                }));
+                
                 let optSettings = { t: settings.theme, p: settings.primaryColor, u: settings.username, an: settings.appName };
-                const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(JSON.stringify({ h: optHabits, s: optSettings }));
-                if (url.length > 2800) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
+                const syncData = JSON.stringify({ h: optHabits, s: optSettings });
+                const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(syncData);
+                
+                if (url.length > 2900) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
+                
                 const qrContainer = document.getElementById('qr-code-container');
                 if (qrContainer) {
                     qrContainer.innerHTML = ''; new QRCode(qrContainer, { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
@@ -1243,7 +1303,7 @@
                 const name = input.value.trim(); 
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
-                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false, image: null });
+                habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false, image: null, category: 'anderes' });
                 habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); render(); updateGlobalProgress(); input.blur();
             };
             if (addBtn) addBtn.addEventListener('click', addFn);
@@ -1265,11 +1325,41 @@
                     else { habit.history.push(date); vibrate('light'); dayCell.classList.add('checked'); fireConfetti(); } 
                     
                     saveData(); updateGlobalProgress();
-                    render();
+                    
+                    const card = dayCell.closest('.habit-card'); const d = habitDisplayDates[id] || new Date();
+                    const year = d.getFullYear(); const month = d.getMonth();
+                    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+                    const monthChecks = habit.history.filter(d => d.startsWith(monthPrefix)).length;
+                    
+                    let daysPassed = new Date(year, month + 1, 0).getDate();
+                    if (year === new Date().getFullYear() && month === new Date().getMonth()) daysPassed = new Date().getDate();
+                    const skippedThisMonth = habit.skipped.filter(d => d.startsWith(monthPrefix) && d <= getLocalIsoDate()).length;
+                    daysPassed = Math.max(1, daysPassed - skippedThisMonth); 
+                    const progressPct = Math.min(100, Math.round((monthChecks / daysPassed) * 100));
+                    
+                    const barFill = card.querySelector('.progress-bar-fill');
+                    if (barFill) barFill.style.width = `${progressPct}%`;
+                    
                     return;
                 }
                 
-                if (target.closest('.btn-edit')) { vibrate('light'); const id = target.closest('.habit-card-wrapper').dataset.id; const habit = habits.find(h => h.id == id); currentContext = { habitId: id, action: 'edit' }; const input = document.getElementById('edit-name-input'); if(input) input.value = habit.name; const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(editModal) editModal.classList.add('open'); document.body.classList.add('modal-open'); setTimeout(() => { if(input) input.focus(); }, 100); return; }
+                if (target.closest('.btn-edit')) { 
+                    vibrate('light'); 
+                    const id = target.closest('.habit-card-wrapper').dataset.id; 
+                    const habit = habits.find(h => h.id == id); 
+                    currentContext = { habitId: id, action: 'edit', selectedCategory: habit.category || 'anderes' }; 
+                    const input = document.getElementById('edit-name-input'); 
+                    if(input) input.value = habit.name; 
+                    
+                    renderCategorySelector();
+                    
+                    const overlay = document.getElementById('custom-modal-overlay'); 
+                    if(overlay) overlay.classList.add('open'); 
+                    if(editModal) editModal.classList.add('open'); 
+                    document.body.classList.add('modal-open'); 
+                    setTimeout(() => { if(input) input.focus(); }, 100); 
+                    return; 
+                }
                 
                 if (target.closest('.btn-delete')) { 
                     vibrate('heavy'); 
@@ -1328,7 +1418,13 @@
                 const h = habits.find(h => h.id == currentContext.habitId); 
                 const input = document.getElementById('edit-name-input');
                 const newName = input ? input.value.trim() : "";
-                if (newName) { h.name = newName; saveData(); render(); } closeAllModals(); 
+                if (newName) { 
+                    h.name = newName; 
+                    h.category = currentContext.selectedCategory;
+                    saveData(); 
+                    render(); 
+                } 
+                closeAllModals(); 
             });
             
             document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive, #close-qr, #close-all-notes').forEach(b => { if(b) b.addEventListener('click', closeAllModals); });
@@ -1432,29 +1528,21 @@
             });
         }
 
-        window.openNoteDialog = function(habitId, dateStr) {
-            closeAllModals(); currentContext = { habitId, dateStr, selectedMood: null }; 
-            const habit = habits.find(h => h.id == habitId);
-            const label = document.getElementById('note-date-label');
-            if (label) label.textContent = `Notiz für den ${dateStr.split('-').reverse().join('.')}`;
-            
-            let noteData = habit.notes[dateStr];
-            let text = typeof noteData === 'object' ? noteData.text : (noteData || "");
-            let mood = typeof noteData === 'object' ? noteData.mood : null;
-            
-            const input = document.getElementById('note-input');
-            if (input) input.value = text;
-            
-            document.querySelectorAll('.mood-btn').forEach(b => {
-                b.classList.remove('active');
-                if(b.dataset.mood === mood) { b.classList.add('active'); currentContext.selectedMood = mood; }
-            });
+        function renderCategorySelector() {
+            const container = document.getElementById('category-selector');
+            if (!container) return;
+            container.innerHTML = CATEGORIES.map(cat => `
+                <div class="category-option ${currentContext.selectedCategory === cat.id ? 'selected' : ''}" onclick="selectCategory('${cat.id}')">
+                    <span class="category-option-icon">${cat.icon}</span>
+                    <span class="category-option-label">${cat.label}</span>
+                </div>
+            `).join('');
+        }
 
-            const overlay = document.getElementById('custom-modal-overlay');
-            if (overlay) overlay.classList.add('open'); 
-            if (noteModal) noteModal.classList.add('open'); 
-            document.body.classList.add('modal-open');
-            setTimeout(() => { if(input) input.focus(); }, 100);
+        window.selectCategory = function(catId) {
+            vibrate('light');
+            currentContext.selectedCategory = catId;
+            renderCategorySelector();
         }
 
         window.restoreHabit = (id) => { 
@@ -1465,6 +1553,7 @@
             render(); 
             updateGlobalProgress(); 
         };
+
         window.deleteHabit = (id) => { 
             showConfirmModal(
                 "Endgültig löschen?",
@@ -1489,7 +1578,7 @@
             COLOR_PALETTE.forEach(color => {
                 const div = document.createElement('div'); div.className = 'color-option'; div.style.backgroundColor = color;
                 if (settings.primaryColor === color) div.classList.add('selected');
-                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgbV = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgbV>>16)&255},${(rgb>>8)&255},${rgb&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgb>>16)&255},${(rgb>>8)&255},${rgb&255},1)`); const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = color; });
+                div.addEventListener('click', () => { vibrate('light'); settings.primaryColor = color; document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); document.documentElement.style.setProperty('--primary', color); const rgbV = parseInt(color.replace('#',''),16); document.documentElement.style.setProperty('--primary-light', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},0.2)`); document.documentElement.style.setProperty('--primary-med', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},0.6)`); document.documentElement.style.setProperty('--primary-dark', `rgba(${(rgbV>>16)&255},${(rgbV>>8)&255},${rgb&255},1)`); const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = color; });
                 grid.appendChild(div);
             });
         }
