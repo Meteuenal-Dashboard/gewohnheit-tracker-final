@@ -12,7 +12,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '3.7';
+            var currentVersion = '3.8';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -194,8 +194,8 @@
         /* PERFEKTES GRID VIEW (Ohne Lücken, exakt bündig ausgerichtet!) */
         #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
         #habit-list.grid-view .habit-card-wrapper { width: 100%; display: flex; flex-direction: column; height: 100%; perspective: none; }
-        #habit-list.grid-view .habit-card-inner { display: flex; flex-direction: column; flex-grow: 1; transition: transform 0.2s; }
-        #habit-list.grid-view .habit-card { flex-grow: 1; padding: 15px; display: flex; flex-direction: column; justify-content: flex-start; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        #habit-list.grid-view .habit-card-inner { display: flex; flex-direction: column; flex-grow: 1; transition: transform 0.2s; height: 100%; }
+        #habit-list.grid-view .habit-card { flex-grow: 1; padding: 15px; display: flex; flex-direction: column; justify-content: flex-start; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; height: 100%; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
         
         #habit-list.grid-view .habit-header { display: flex; flex-direction: column; flex-grow: 1; }
@@ -206,8 +206,8 @@
         #habit-list.grid-view .habit-title { font-size: 1rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
         #habit-list.grid-view .habit-category-icon { width: 40px; height: 40px; border-radius: 10px; font-size: 1.5rem; }
         
-        /* Streaks bündig links anzeigen im Grid */
-        #habit-list.grid-view .streak-container { margin-top: 4px; margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
+        /* Streaks absolut bündig links anzeigen im Grid */
+        #habit-list.grid-view .streak-container { margin-left: 0; margin-top: 4px; font-size: 0.75rem; width: 100%; justify-content: flex-start; }
         
         /* Sämtliche Aktions-Buttons und Pfeile restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
@@ -369,7 +369,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v3.7</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v3.8</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -621,6 +621,28 @@
                 document.head.appendChild(metaTheme); 
             }
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
+        }
+
+        // FEHLENDE FUNKTION WIEDER HINZUGEFÜGT (Verhindert ReferenceError)
+        function killServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+            if ('caches' in window) {
+                try {
+                    caches.keys().then(function(names) {
+                        for (let name of names) {
+                            caches.delete(name);
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
         }
 
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
@@ -1936,6 +1958,7 @@
             saveData(); 
             renderArchiveManager(); 
             updateGlobalAndSpecificRender(); 
+            updateGlobalProgress(); 
         };
 
         window.deleteHabit = (id) => { 
@@ -1948,6 +1971,7 @@
                     saveData(); 
                     renderArchiveManager();
                     updateGlobalAndSpecificRender();
+                    updateGlobalProgress();
                     if(document.getElementById('stats-modal') && document.getElementById('stats-modal').classList.contains('open')) updateStatsDashboard();
                 }
             );
