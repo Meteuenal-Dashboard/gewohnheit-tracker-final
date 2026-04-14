@@ -4,41 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- ANTI CACHE BEFEHLE -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-
-    <!-- AUTOMATISCHES UPDATE-SKRIPT (Zerstört alte Caches sofort) -->
-    <script>
-        (function() {
-            var currentVersion = '2.6';
-            var lastVersion = localStorage.getItem('app_version');
-            if (lastVersion !== currentVersion) {
-                localStorage.setItem('app_version', currentVersion);
-                
-                // Lösche alle Service Worker
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for(let r of registrations) r.unregister();
-                    }).catch(function(e){});
-                }
-                
-                // Lösche alle Cache-Speicher
-                if ('caches' in window) {
-                    caches.keys().then(function(names) {
-                        for (let name of names) caches.delete(name);
-                    }).catch(function(e){});
-                }
-                
-                // Lade Seite mit Zeitstempel neu, um Netzwerk-Download zu erzwingen
-                if (window.location.search.indexOf('updated') === -1) {
-                    window.location.replace(window.location.pathname + '?updated=' + new Date().getTime());
-                }
-            }
-        })();
-    </script>
-
     <!-- PWA & iOS Kompatibilität -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -310,7 +275,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.6</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.7</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -568,6 +533,27 @@
                 document.head.appendChild(metaTheme); 
             }
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
+        }
+
+        // NEUER REGISTER SW: Network-First Logik für Updates
+        let swRegistered = false;
+        function registerSW() {
+            if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    swRegistered = true;
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                vibrate('heavy');
+                                if (confirm("🚀 Ein App-Update ist verfügbar! Jetzt aktualisieren? (Deine Daten bleiben zu 100% erhalten)")) {
+                                    window.location.reload();
+                                }
+                            }
+                        });
+                    });
+                }).catch(err => console.log('SW Error:', err));
+            }
         }
 
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
@@ -1303,6 +1289,7 @@
         // --- ZENTRALE EVENT LISTENERS & STICKER VERARBEITUNG ---
         
         function processStickerUpload(src, isGif = false) {
+            // Android Keyboards schicken manchmal HTTP URLs, Canvas würde hier durch CORS crashen.
             if (isGif || src.startsWith('http') || src.includes('data:image/gif')) {
                 currentContext.currentSticker = src;
                 updateStickerPreview();
@@ -1490,6 +1477,7 @@
                     if(editModal) editModal.classList.add('open'); 
                     document.body.classList.add('modal-open'); 
                     
+                    // Verhindern, dass die "Sticker-Box" beim Öffnen komisch aussieht
                     const pasteArea = document.getElementById('sticker-paste-area');
                     if (pasteArea) pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
 
@@ -1536,21 +1524,10 @@
                 });
             }
             
-            // NEU: STICKER PASTE SUPPORT (Für Samsung und iOS)
+            // NEU: STICKER PASTE SUPPORT (Tastatur-Sticker abfangen für iOS & ANDROID)
             const pasteArea = document.getElementById('sticker-paste-area');
             if (pasteArea) {
-                
-                // Funktion zum Checken, ob sich ein Bild im Container eingenistet hat
-                const checkPasteArea = () => {
-                    const imgs = pasteArea.querySelectorAll('img');
-                    if (imgs.length > 0) {
-                        const src = imgs[0].src;
-                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
-                        if (src) processStickerUpload(src, src.includes('gif') || src.includes('data:image/gif'));
-                    }
-                };
-
-                // 1. Paste Event
+                // 1. Paste Event (Klassisch iOS und normale Browser)
                 pasteArea.addEventListener('paste', function(e) {
                     const modal = document.getElementById('edit-modal');
                     if (modal && modal.classList.contains('open')) {
@@ -1568,6 +1545,7 @@
                             }
                         }
                         
+                        // Fallback für HTML-Pastes (Manche Android Tastaturen senden img-Tags als Text)
                         const htmlData = e.clipboardData.getData('text/html');
                         if (htmlData) {
                             const tempDiv = document.createElement('div');
@@ -1580,13 +1558,20 @@
                             }
                         }
                         
-                        setTimeout(checkPasteArea, 50);
+                        setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
                     }
                 });
                 
-                // 2. Input Event (Samsung / GBoard fängt Bilder oft hier ab)
+                // 2. Input Event (WICHTIG für Samsung Keyboard und Gboard!)
+                // Diese Tastaturen werfen Bilder oft direkt ins DOM statt ein Paste-Event zu feuern.
                 pasteArea.addEventListener('input', (e) => {
-                    checkPasteArea();
+                    const img = pasteArea.querySelector('img');
+                    if (img && img.src) {
+                        const src = img.src;
+                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+                        processStickerUpload(src, src.includes('gif'));
+                        return;
+                    }
                     setTimeout(() => { 
                         if (!pasteArea.querySelector('img')) {
                             pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; 
@@ -1594,12 +1579,19 @@
                     }, 100);
                 });
 
-                // 3. MutationObserver (Der allerletzte Wächter)
-                const observer = new MutationObserver(checkPasteArea);
+                // 3. MutationObserver als ultimativer Fallback
+                const observer = new MutationObserver((mutations) => {
+                    const img = pasteArea.querySelector('img');
+                    if (img && img.src) {
+                        const src = img.src;
+                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+                        processStickerUpload(src, src.includes('gif'));
+                    }
+                });
                 observer.observe(pasteArea, { childList: true, subtree: true });
             }
 
-            // NOTFALL UPDATE BUTTON
+            // NOTFALL UPDATE BUTTON ACTION (Cache & SW Kill)
             const forceUpdateBtn = document.getElementById('force-update-btn');
             if (forceUpdateBtn) {
                 forceUpdateBtn.addEventListener('click', () => {
