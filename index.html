@@ -4,10 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- ANTI CACHE BEFEHLE: Zwingt Handys dazu, Updates bei jedem Start zu laden -->
+    <!-- ANTI CACHE BEFEHLE -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+
+    <!-- AUTOMATISCHES UPDATE-SKRIPT (Zerstört alte Caches sofort) -->
+    <script>
+        (function() {
+            var currentVersion = '2.6';
+            var lastVersion = localStorage.getItem('app_version');
+            if (lastVersion !== currentVersion) {
+                localStorage.setItem('app_version', currentVersion);
+                
+                // Lösche alle Service Worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let r of registrations) r.unregister();
+                    }).catch(function(e){});
+                }
+                
+                // Lösche alle Cache-Speicher
+                if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                        for (let name of names) caches.delete(name);
+                    }).catch(function(e){});
+                }
+                
+                // Lade Seite mit Zeitstempel neu, um Netzwerk-Download zu erzwingen
+                if (window.location.search.indexOf('updated') === -1) {
+                    window.location.replace(window.location.pathname + '?updated=' + new Date().getTime());
+                }
+            }
+        })();
+    </script>
 
     <!-- PWA & iOS Kompatibilität -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -280,7 +310,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.5</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.6</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -538,20 +568,6 @@
                 document.head.appendChild(metaTheme); 
             }
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
-        }
-
-        // Radikaler Kill-Switch für Service Worker - So bleibt die PWA im Browser wie ein normales Tagebuch immer aktuell!
-        function killServiceWorkers() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for(let registration of registrations) {
-                            registration.unregister();
-                            console.log('Alten Service Worker Cache gelöscht.');
-                        }
-                    }).catch(function(err){});
-                } catch(e) {}
-            }
         }
 
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
@@ -1287,7 +1303,6 @@
         // --- ZENTRALE EVENT LISTENERS & STICKER VERARBEITUNG ---
         
         function processStickerUpload(src, isGif = false) {
-            // Android Keyboards schicken manchmal HTTP URLs, Canvas würde hier durch CORS crashen.
             if (isGif || src.startsWith('http') || src.includes('data:image/gif')) {
                 currentContext.currentSticker = src;
                 updateStickerPreview();
@@ -1521,10 +1536,21 @@
                 });
             }
             
-            // NEU: STICKER PASTE SUPPORT (Tastatur-Sticker abfangen für iOS & ANDROID)
+            // NEU: STICKER PASTE SUPPORT (Für Samsung und iOS)
             const pasteArea = document.getElementById('sticker-paste-area');
             if (pasteArea) {
-                // 1. Paste Event (Klassisch iOS und normale Browser)
+                
+                // Funktion zum Checken, ob sich ein Bild im Container eingenistet hat
+                const checkPasteArea = () => {
+                    const imgs = pasteArea.querySelectorAll('img');
+                    if (imgs.length > 0) {
+                        const src = imgs[0].src;
+                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+                        if (src) processStickerUpload(src, src.includes('gif') || src.includes('data:image/gif'));
+                    }
+                };
+
+                // 1. Paste Event
                 pasteArea.addEventListener('paste', function(e) {
                     const modal = document.getElementById('edit-modal');
                     if (modal && modal.classList.contains('open')) {
@@ -1542,7 +1568,6 @@
                             }
                         }
                         
-                        // Fallback für HTML-Pastes (Manche Android Tastaturen senden img-Tags als Text)
                         const htmlData = e.clipboardData.getData('text/html');
                         if (htmlData) {
                             const tempDiv = document.createElement('div');
@@ -1555,20 +1580,13 @@
                             }
                         }
                         
-                        setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
+                        setTimeout(checkPasteArea, 50);
                     }
                 });
                 
-                // 2. Input Event (WICHTIG für Samsung Keyboard und Gboard!)
-                // Diese Tastaturen werfen Bilder oft direkt ins DOM statt ein Paste-Event zu feuern.
+                // 2. Input Event (Samsung / GBoard fängt Bilder oft hier ab)
                 pasteArea.addEventListener('input', (e) => {
-                    const img = pasteArea.querySelector('img');
-                    if (img && img.src) {
-                        const src = img.src;
-                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
-                        processStickerUpload(src, src.includes('gif'));
-                        return;
-                    }
+                    checkPasteArea();
                     setTimeout(() => { 
                         if (!pasteArea.querySelector('img')) {
                             pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; 
@@ -1576,19 +1594,12 @@
                     }, 100);
                 });
 
-                // 3. MutationObserver als ultimativer Fallback
-                const observer = new MutationObserver((mutations) => {
-                    const img = pasteArea.querySelector('img');
-                    if (img && img.src) {
-                        const src = img.src;
-                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
-                        processStickerUpload(src, src.includes('gif'));
-                    }
-                });
+                // 3. MutationObserver (Der allerletzte Wächter)
+                const observer = new MutationObserver(checkPasteArea);
                 observer.observe(pasteArea, { childList: true, subtree: true });
             }
 
-            // NOTFALL UPDATE BUTTON ACTION (Cache & SW Kill)
+            // NOTFALL UPDATE BUTTON
             const forceUpdateBtn = document.getElementById('force-update-btn');
             if (forceUpdateBtn) {
                 forceUpdateBtn.addEventListener('click', () => {
@@ -1841,7 +1852,7 @@
             canvas = document.getElementById('confetti-canvas');
             if (canvas) ctx = canvas.getContext('2d');
             
-            // Führe radikalen Cache-Kill bei jedem Start aus (ähnlich dem Tagebuch)
+            // Lösche den Service Worker, falls noch einer feststeckt
             killServiceWorkers();
             
             await checkImportHash();
