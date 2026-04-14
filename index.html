@@ -12,10 +12,6 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
-    <!-- PWA Manifest & Apple Touch Icon -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
-
     <!-- Externe Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -117,7 +113,8 @@
         .habit-header { display: flex; flex-direction: column; gap: 10px; }
         .habit-title-row { width: 100%; }
         .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; flex: 1; display: flex; align-items: center; gap: 10px; }
-        .habit-category-icon { font-size: 1.2rem; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; object-fit: contain; }
+        .habit-category-icon { font-size: 1.2rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px;}
+        .habit-category-icon img { width: 100%; height: 100%; object-fit: contain; }
         
         .expand-btn { flex-shrink: 0; background: var(--bg-body); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .habit-card.expanded .expand-btn { transform: rotate(180deg); background: var(--primary); color: white; border-color: var(--primary); }
@@ -237,7 +234,6 @@
         .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; }
         .archive-item-name { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
 
-        /* WICHTIG FÜR ARCHIV MODAL */
         #confirm-modal { z-index: 205 !important; }
 
         /* STICKER STYLING */
@@ -384,7 +380,7 @@
     <input type="file" id="habit-image-upload" accept="image/*" style="display:none;">
     
     <!-- VERSTECKTER UPLOAD FÜR CUSTOM STICKER -->
-    <input type="file" id="sticker-upload" accept="image/*" style="display:none;">
+    <input type="file" id="sticker-upload" accept="image/*, image/gif" style="display:none;">
 
     <!-- STATS DASHBOARD -->
     <div class="custom-modal" id="stats-modal">
@@ -435,8 +431,9 @@
             <span id="sticker-placeholder-text" style="color: var(--text-muted); font-size: 0.8rem;">Kein Sticker gewählt</span>
         </div>
         <div class="sticker-controls">
-            <button class="btn-secondary" style="flex:1" onclick="document.getElementById('sticker-upload').click()">📷 Hochladen</button>
-            <button class="btn-secondary" id="delete-sticker-btn" style="color: var(--danger); display: none;" onclick="removeCurrentSticker()">🗑️ Entfernen</button>
+            <!-- MOBILE FIX: Statt einem Button, der einen Input klickt, nutzen wir ein <label>, das direkt mit dem Input verbunden ist -->
+            <label for="sticker-upload" class="btn-secondary" style="flex:1; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0;">📷 Hochladen</label>
+            <button class="btn-secondary" id="delete-sticker-btn" style="color: var(--danger); display: none; margin:0;" onclick="removeCurrentSticker()">🗑️ Entfernen</button>
         </div>
 
         <span class="settings-label">Oder Kategorie wählen</span>
@@ -528,7 +525,6 @@
 
         let swRegistered = false;
         function registerSW() {
-            // Service Worker Registrierung nur auf echten Web-Servern (http/https)
             if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http'))) {
                 navigator.serviceWorker.register('sw.js')
                 .then(() => {
@@ -556,12 +552,20 @@
                 });
             } catch(e) { return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null; }
         }
+        
+        // CATCH DB ERRORS FOR LARGE BASE64 DATA (Prevents PWA Crashing)
         async function dbSet(key, val) {
             try {
                 const db = await initDB();
                 db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(val, key);
                 localStorage.setItem(key, JSON.stringify(val));
-            } catch(e) { localStorage.setItem(key, JSON.stringify(val)); }
+            } catch(e) { 
+                try {
+                    localStorage.setItem(key, JSON.stringify(val)); 
+                } catch(err) {
+                    console.error("Speicherlimit erreicht! Möglicherweise ist ein hochgeladenes Bild oder GIF zu groß.");
+                }
+            }
         }
 
         const COLOR_PALETTE = ['#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ea580c', '#ef4444', '#dc2626', '#f43f5e', '#ec4899', '#d946ef', '#c026d3', '#a855f7', '#8b5cf6', '#6366f1', '#4f46e5', '#64748b', '#334155'];
@@ -572,7 +576,6 @@
 
         const listEl = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
-        const customModalOverlay = document.getElementById('custom-modal-overlay');
         const actionSheet = document.getElementById('action-sheet');
         
         const noteModal = document.getElementById('note-modal');
@@ -655,7 +658,8 @@
                 if (!h.notes) h.notes = {}; 
                 if (!h.skipped) h.skipped = []; 
                 if (!h.image) h.image = null; 
-                if (!h.category) h.category = 'anderes';
+                // Zwingender Default-Wert für Kategorie-Bug
+                if (!h.category || !CATEGORIES.find(c => c.id === h.category)) h.category = 'anderes';
                 if (!h.customIcon) h.customIcon = null;
                 if (h.archived === undefined) h.archived = false; 
             });
@@ -914,7 +918,8 @@
                 }
 
                 const isFirst = index === 0; const isLast = index === activeHabits.length - 1;
-                const categoryObj = CATEGORIES.find(c => c.id === habit.category) || CATEGORIES[CATEGORIES.length - 1];
+                // Category Fallback sicherstellen
+                const categoryObj = CATEGORIES.find(c => c.id === habit.category) || CATEGORIES.find(c => c.id === 'anderes');
 
                 cardWrapper.innerHTML = `
                     <div class="habit-card-inner" id="habit-inner-${habit.id}">
@@ -925,7 +930,7 @@
                                         <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <div class="habit-title" style="margin-bottom: 0;">
                                                 <div class="habit-category-icon">
-                                                    ${habit.customIcon ? `<img src="${habit.customIcon}" style="width:100%; height:100%; object-fit:contain;">` : categoryObj.icon}
+                                                    ${habit.customIcon ? `<img src="${habit.customIcon}" style="width:100%; height:100%; object-fit:contain; border-radius: 6px;">` : categoryObj.icon}
                                                 </div>
                                                 ${escapeHtml(habit.name)}
                                             </div>
@@ -1143,7 +1148,7 @@
         };
 
         function openActionSheet(habitId, dateStr) {
-            currentContext = { habitId, dateStr, selectedMood: null };
+            currentContext = { ...currentContext, habitId, dateStr, selectedMood: null };
             const habit = habits.find(h => h.id == habitId);
             const isSkipped = habit.skipped.includes(dateStr);
             const niceDate = dateStr.split('-').reverse().join('.');
@@ -1232,6 +1237,8 @@
             if (allNotesModal) allNotesModal.classList.remove('open');
             if (qrModal) qrModal.classList.remove('open'); 
             if (actionSheet) actionSheet.classList.remove('open');
+            
+            // Kontext zurücksetzen
             currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes', currentSticker: null }; 
             if (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open')) document.body.classList.remove('modal-open');
         }
@@ -1345,7 +1352,16 @@
                     vibrate('light'); 
                     const id = target.closest('.habit-card-wrapper').dataset.id; 
                     const habit = habits.find(h => h.id == id); 
-                    currentContext = { habitId: id, action: 'edit', selectedCategory: habit.category || 'anderes', currentSticker: habit.customIcon }; 
+                    
+                    // Lade Zustand sauber
+                    currentContext = { 
+                        ...currentContext,
+                        habitId: id, 
+                        action: 'edit', 
+                        selectedCategory: habit.category || 'anderes', 
+                        currentSticker: habit.customIcon 
+                    }; 
+                    
                     const input = document.getElementById('edit-name-input'); 
                     if(input) input.value = habit.name; 
                     
@@ -1377,22 +1393,47 @@
                 }
             });
 
-            // STICKER UPLOAD HANDLER
+            // STICKER UPLOAD HANDLER (GIF & MOBILE FIX)
             const stickerUploadInput = document.getElementById('sticker-upload');
             if (stickerUploadInput) {
                 stickerUploadInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0]; if (!file) return;
-                    const r = new FileReader(); r.onload = (ev) => { 
-                        const img = new Image(); img.onload = () => { 
-                            const cvs = document.createElement('canvas'); const ctxC = cvs.getContext('2d'); 
-                            const MAX = 120; let w=img.width, h=img.height; 
-                            if (w>h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
-                            cvs.width=w; cvs.height=h; ctxC.drawImage(img,0,0,w,h); 
-                            currentContext.currentSticker = cvs.toDataURL(file.type === 'image/gif' ? 'image/gif' : 'image/webp', 0.8); 
+                    const file = e.target.files[0]; 
+                    if (!file) return;
+
+                    // Für PWA/Mobile: Maximale Größe prüfen (z.B. 5 MB) um DB-Abstürze zu verhindern
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert("Die Datei ist zu groß (max. 5 MB). Bitte wähle ein kleineres Bild.");
+                        e.target.value = '';
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { 
+                        const rawData = ev.target.result;
+                        
+                        // Wenn es ein GIF ist, direkt speichern um Animation zu erhalten
+                        if (file.type === 'image/gif') {
+                            currentContext.currentSticker = rawData;
                             updateStickerPreview();
-                        }; img.src = ev.target.result; 
-                    }; r.readAsDataURL(file);
-                    e.target.value = '';
+                        } else {
+                            // Bei statischen Bildern komprimieren über Canvas
+                            const img = new Image(); 
+                            img.onload = () => { 
+                                const cvs = document.createElement('canvas'); 
+                                const ctxC = cvs.getContext('2d'); 
+                                const MAX = 200; // Ausreichend für kleine Icons
+                                let w=img.width, h=img.height; 
+                                if (w>h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
+                                cvs.width=w; cvs.height=h; 
+                                ctxC.drawImage(img,0,0,w,h); 
+                                currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
+                                updateStickerPreview();
+                            }; 
+                            img.src = rawData; 
+                        }
+                    }; 
+                    reader.readAsDataURL(file);
+                    e.target.value = ''; // Input zurücksetzen für neuen Versuch
                 });
             }
 
@@ -1423,11 +1464,13 @@
                 saveData(); render(); renderAllNotes(); closeAllModals(); 
             });
             
+            // ROBUSTER SPEICHER-VORGANG (Fix für Kategorien/Sticker)
             const saveEditBtn = document.getElementById('save-edit');
             if (saveEditBtn) saveEditBtn.addEventListener('click', () => { 
                 const h = habits.find(h => h.id == currentContext.habitId); 
                 const input = document.getElementById('edit-name-input');
                 const newName = input ? input.value.trim() : "";
+                
                 if (newName) { 
                     h.name = newName; 
                     h.category = currentContext.selectedCategory;
