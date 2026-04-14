@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
+    <!-- ANTI CACHE BEFEHLE: Zwingt Handys dazu, Updates bei jedem Start zu laden -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <!-- PWA & iOS Kompatibilität -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -535,7 +540,27 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
-        // NEUER REGISTER SW: Network-First Logik für Updates
+        function killServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+            if ('caches' in window) {
+                try {
+                    caches.keys().then(function(names) {
+                        for (let name of names) {
+                            caches.delete(name);
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+        }
+
         let swRegistered = false;
         function registerSW() {
             if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
@@ -1477,7 +1502,6 @@
                     if(editModal) editModal.classList.add('open'); 
                     document.body.classList.add('modal-open'); 
                     
-                    // Verhindern, dass die "Sticker-Box" beim Öffnen komisch aussieht
                     const pasteArea = document.getElementById('sticker-paste-area');
                     if (pasteArea) pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
 
