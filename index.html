@@ -280,7 +280,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.4</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.5</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -440,8 +440,8 @@
         <span class="settings-label">Handy-Sticker / Eignes Bild</span>
         <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Lade ein Bild hoch oder <b>tippe auf das Feld unten, um einen Sticker von deiner Tastatur einzufügen</b>.</p>
         
-        <!-- NEU: STICKER PASTE AREA FÜR HANDYS (Ermöglicht iOS "Einsetzen") -->
-        <div id="sticker-paste-area" contenteditable="true" style="border: 2px dashed var(--primary); padding: 15px; border-radius: 12px; text-align: center; color: var(--primary); font-weight: 700; cursor: text; margin-bottom: 10px; background: var(--primary-light); outline: none;">
+        <!-- NEU: STICKER PASTE AREA FÜR HANDYS (Ermöglicht iOS "Einsetzen" und Samsung Keyboard) -->
+        <div id="sticker-paste-area" contenteditable="true" style="border: 2px dashed var(--primary); padding: 15px; border-radius: 12px; text-align: center; color: var(--primary); font-weight: 700; cursor: text; margin-bottom: 10px; background: var(--primary-light); outline: none; min-height: 50px;">
             👇 Hier tippen & Sticker einfügen
         </div>
 
@@ -540,22 +540,15 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
-        // Radikaler Kill-Switch für Service Worker - Ersetzt "registerSW"
+        // Radikaler Kill-Switch für Service Worker - So bleibt die PWA im Browser wie ein normales Tagebuch immer aktuell!
         function killServiceWorkers() {
             if ('serviceWorker' in navigator) {
                 try {
                     navigator.serviceWorker.getRegistrations().then(function(registrations) {
                         for(let registration of registrations) {
                             registration.unregister();
-                            console.log('Alten Cache gelöscht.');
+                            console.log('Alten Service Worker Cache gelöscht.');
                         }
-                    }).catch(function(err){});
-                } catch(e) {}
-            }
-            if ('caches' in window) {
-                try {
-                    caches.keys().then(function(names) {
-                        for (let name of names) caches.delete(name);
                     }).catch(function(err){});
                 } catch(e) {}
             }
@@ -1294,7 +1287,8 @@
         // --- ZENTRALE EVENT LISTENERS & STICKER VERARBEITUNG ---
         
         function processStickerUpload(src, isGif = false) {
-            if (isGif) {
+            // Android Keyboards schicken manchmal HTTP URLs, Canvas würde hier durch CORS crashen.
+            if (isGif || src.startsWith('http') || src.includes('data:image/gif')) {
                 currentContext.currentSticker = src;
                 updateStickerPreview();
                 vibrate('success');
@@ -1302,17 +1296,28 @@
                 const img = new Image(); 
                 img.crossOrigin = "Anonymous";
                 img.onload = () => { 
-                    const cvs = document.createElement('canvas'); 
-                    const ctxC = cvs.getContext('2d'); 
-                    const MAX = 200;
-                    let w = img.width, h = img.height; 
-                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                    cvs.width = w; cvs.height = h; 
-                    ctxC.drawImage(img, 0, 0, w, h); 
-                    currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
+                    try {
+                        const cvs = document.createElement('canvas'); 
+                        const ctxC = cvs.getContext('2d'); 
+                        const MAX = 200;
+                        let w = img.width, h = img.height; 
+                        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                        cvs.width = w; cvs.height = h; 
+                        ctxC.drawImage(img, 0, 0, w, h); 
+                        currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
+                        updateStickerPreview();
+                        vibrate('success');
+                    } catch(err) {
+                        currentContext.currentSticker = src;
+                        updateStickerPreview();
+                        vibrate('success');
+                    }
+                }; 
+                img.onerror = () => {
+                    currentContext.currentSticker = src;
                     updateStickerPreview();
                     vibrate('success');
-                }; 
+                };
                 img.src = src; 
             }
         }
@@ -1516,53 +1521,71 @@
                 });
             }
             
-            // STICKER PASTE SUPPORT (Tastatur-Sticker abfangen)
+            // NEU: STICKER PASTE SUPPORT (Tastatur-Sticker abfangen für iOS & ANDROID)
             const pasteArea = document.getElementById('sticker-paste-area');
             if (pasteArea) {
+                // 1. Paste Event (Klassisch iOS und normale Browser)
                 pasteArea.addEventListener('paste', function(e) {
                     const modal = document.getElementById('edit-modal');
                     if (modal && modal.classList.contains('open')) {
                         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                        let foundImage = false;
                         for (let i = 0; i < items.length; i++) {
                             if (items[i].type.indexOf('image') !== -1) {
                                 e.preventDefault(); 
-                                foundImage = true;
                                 const file = items[i].getAsFile();
                                 const reader = new FileReader();
                                 reader.onload = function(event) {
                                     processStickerUpload(event.target.result, file.type === 'image/gif');
                                 };
                                 reader.readAsDataURL(file);
-                                break;
+                                return;
                             }
                         }
+                        
+                        // Fallback für HTML-Pastes (Manche Android Tastaturen senden img-Tags als Text)
+                        const htmlData = e.clipboardData.getData('text/html');
+                        if (htmlData) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = htmlData;
+                            const img = tempDiv.querySelector('img');
+                            if (img && img.src) {
+                                e.preventDefault();
+                                processStickerUpload(img.src, img.src.includes('gif'));
+                                return;
+                            }
+                        }
+                        
                         setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
                     }
                 });
                 
-                // Fallback für iOS Memojis die als <img> in den DOM geworfen werden
-                const observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-                            mutation.addedNodes.forEach((node) => {
-                                if (node.tagName === 'IMG' && node.src) {
-                                    processStickerUpload(node.src, false);
-                                    setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
-                                }
-                            });
-                        }
-                    });
-                });
-                observer.observe(pasteArea, { childList: true, subtree: true });
-                
+                // 2. Input Event (WICHTIG für Samsung Keyboard und Gboard!)
+                // Diese Tastaturen werfen Bilder oft direkt ins DOM statt ein Paste-Event zu feuern.
                 pasteArea.addEventListener('input', (e) => {
+                    const img = pasteArea.querySelector('img');
+                    if (img && img.src) {
+                        const src = img.src;
+                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+                        processStickerUpload(src, src.includes('gif'));
+                        return;
+                    }
                     setTimeout(() => { 
                         if (!pasteArea.querySelector('img')) {
                             pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; 
                         }
                     }, 100);
                 });
+
+                // 3. MutationObserver als ultimativer Fallback
+                const observer = new MutationObserver((mutations) => {
+                    const img = pasteArea.querySelector('img');
+                    if (img && img.src) {
+                        const src = img.src;
+                        pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+                        processStickerUpload(src, src.includes('gif'));
+                    }
+                });
+                observer.observe(pasteArea, { childList: true, subtree: true });
             }
 
             // NOTFALL UPDATE BUTTON ACTION (Cache & SW Kill)
