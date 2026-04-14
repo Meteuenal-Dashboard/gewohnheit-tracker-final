@@ -12,7 +12,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '3.0';
+            var currentVersion = '3.1';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -185,7 +185,7 @@
 
         /* PERFEKTES GRID VIEW (2-SPALTEN MODUS MIT BÜNDIGEM MONAT/BALKEN) */
         #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
-        #habit-list.grid-view .habit-card-wrapper { width: 100%; height: auto; perspective: none; }
+        #habit-list.grid-view .habit-card-wrapper { width: 100%; height: 100%; perspective: none; }
         #habit-list.grid-view .habit-card-inner { transition: transform 0.2s; height: 100%; }
         #habit-list.grid-view .habit-card { padding: 15px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
@@ -201,11 +201,11 @@
         /* Aktions-Buttons und Pfeile restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
         
-        /* Monat und Fortschrittsbalken UNTEN FESTNAGELN */
-        #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-        #habit-list.grid-view .habit-month-nav { font-size: 0.8rem; justify-content: center; padding: 4px; pointer-events: none; width: 100%; }
+        /* Monat und Fortschrittsbalken UNTEN FESTNAGELN (absolut bündig) */
+        #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; width: 100%; }
+        #habit-list.grid-view .habit-month-nav { font-size: 0.8rem; justify-content: center; padding: 4px 0; pointer-events: none; width: 100%; margin-bottom: 0; }
         #habit-list.grid-view .habit-month-nav button { display: none; }
-        #habit-list.grid-view .progress-bar-container { margin-left: 0; width: 100%; }
+        #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; }
         #habit-list.grid-view .calendar-container { display: none !important; }
         #habit-list.grid-view .habit-card-inner.flipped { transform: none; }
 
@@ -357,7 +357,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v3.0</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v3.1</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -497,7 +497,7 @@
 
         <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 0.5px;">📅 Kompakter Jahresplan</h4>
         
-        <!-- SCHICKES CUSTOM DROPDOWN FÜR STATS (Repariert) -->
+        <!-- SCHICKES CUSTOM DROPDOWN FÜR STATS -->
         <div class="custom-select-container" id="custom-habit-select-container">
             <div class="custom-select-trigger" id="custom-habit-select-trigger">
                 <span id="custom-habit-select-text">Wähle Gewohnheit</span>
