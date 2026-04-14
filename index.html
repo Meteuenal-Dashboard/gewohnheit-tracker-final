@@ -12,7 +12,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '4.0';
+            var currentVersion = '4.1';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -106,21 +106,21 @@
 
         .user-profile { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; flex: 1; }
         
-        /* 100% FUNKTIONIERENDER SVG RING */
-        .avatar-container { position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        /* 100% FEINGESCHLIFFENER, DEZENTER SVG RING */
+        .avatar-container { position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .global-progress-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); z-index: 1; pointer-events: none; }
-        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 2.5; } /* Dezent! */
         .global-progress-bar { 
             fill: none; 
             stroke: var(--primary); 
-            stroke-width: 4; 
+            stroke-width: 2.5; /* Dezent! */
             stroke-linecap: round; 
-            /* Exakter mathematischer Umfang für Radius 26 (2 * PI * 26) = 163.36 */
-            stroke-dasharray: 163.36; 
-            stroke-dashoffset: 163.36; 
+            /* Umfang für Radius 22 (2 * PI * 22) = 138.23 */
+            stroke-dasharray: 138.23; 
+            stroke-dashoffset: 138.23; 
             transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.4s ease; 
         }
-        .avatar { position: relative; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; border: 2px solid var(--bg-card); z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+        .avatar { position: relative; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid transparent; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
         
         .user-info { display: flex; flex-direction: column; width: 100%; max-width: 150px; }
         .user-name { font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: -0.3px; display: flex; align-items: center; gap: 5px; }
@@ -171,9 +171,9 @@
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; margin-top: auto; padding-top: 15px; width: 100%; }
         
         /* ZEMENTIERTE MONATS-PFEILE (Verhindert das Stapeln!) */
-        .habit-month-nav { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: fit-content; }
-        .habit-month-nav button { display: flex !important; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0 !important; }
-        .habit-month-nav span { font-size: 0.9rem; font-weight: 700; text-align: center; white-space: nowrap !important; flex-shrink: 0 !important; padding: 0 4px; }
+        .habit-month-nav { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: fit-content; }
+        .habit-month-nav button { display: flex; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0; }
+        .habit-month-nav span { font-size: 0.9rem; font-weight: 700; text-align: center; white-space: nowrap; flex-shrink: 0; padding: 0 4px; }
 
         .progress-bar-container { width: 100%; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); flex-grow: 1; min-width: 50px; margin-left: 0; }
         .progress-bar-fill { height: 100%; background: var(--primary); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 4px; }
@@ -206,29 +206,34 @@
 
         /* PERFEKTES GRID VIEW (Ohne Lücken, exakt bündig ausgerichtet!) */
         #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
-        #habit-list.grid-view .habit-card { padding: 12px; }
+        #habit-list.grid-view .habit-card-wrapper { width: 100%; display: flex; flex-direction: column; height: 100%; perspective: none; }
+        #habit-list.grid-view .habit-card-inner { display: flex; flex-direction: column; flex-grow: 1; transition: transform 0.2s; }
+        #habit-list.grid-view .habit-card { flex-grow: 1; padding: 15px; display: flex; flex-direction: column; justify-content: flex-start; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
         
-        #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; }
-        #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; }
+        #habit-list.grid-view .habit-header { display: flex; flex-direction: column; flex-grow: 1; }
+        #habit-list.grid-view .habit-title-row { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
+        #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; display: flex; }
+        #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 8px; display: flex; width: 100%; }
         
-        #habit-list.grid-view .habit-title { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
-        #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
+        #habit-list.grid-view .habit-title { font-size: 1rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
+        #habit-list.grid-view .habit-category-icon { width: 40px; height: 40px; border-radius: 10px; font-size: 1.5rem; }
         
         /* Streaks bündig links anzeigen im Grid */
-        #habit-list.grid-view .streak-container { margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
+        #habit-list.grid-view .streak-container { margin-top: 4px; margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
         
-        /* Sämtliche Aktions-Buttons restlos verstecken */
+        /* Sämtliche Aktions-Buttons und Pfeile restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
+        #habit-list.grid-view .habit-month-nav button { display: none !important; } /* PFEILE VERSCHWINDEN GANZ */
         
         /* Monat und Fortschrittsbalken PERFEKT BÜNDIG UND GANZ UNTEN FESTNAGELN */
         #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100%; padding-top: 10px !important; flex-shrink: 0; }
         #habit-list.grid-view .habit-month-nav { min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none; justify-content: flex-start; pointer-events: none; width: 100%; margin-bottom: 0;}
-        #habit-list.grid-view .habit-month-nav button { display: none !important; }
-        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.8rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.85rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
         #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; height: 6px; }
         
         #habit-list.grid-view .calendar-container { display: none !important; }
+        #habit-list.grid-view .habit-card-inner.flipped { transform: none; }
 
         /* FULLSCREEN HABIT MODAL ("Wie eine App") */
         #fullscreen-habit-overlay {
@@ -344,9 +349,9 @@
     <header class="app-header">
         <div class="user-profile" id="profile-trigger">
             <div class="avatar-container">
-                <svg class="global-progress-svg" viewBox="0 0 60 60">
-                    <circle class="global-progress-bg" cx="30" cy="30" r="26" />
-                    <circle class="global-progress-bar" id="global-progress" cx="30" cy="30" r="26" />
+                <svg class="global-progress-svg" viewBox="0 0 50 50">
+                    <circle class="global-progress-bg" cx="25" cy="25" r="22" />
+                    <circle class="global-progress-bar" id="global-progress" cx="25" cy="25" r="22" />
                 </svg>
                 <div class="avatar" id="header-avatar">?</div>
             </div>
@@ -376,7 +381,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.0</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.1</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -902,8 +907,8 @@
             const p = document.getElementById('global-progress');
             if(!p) return;
             
-            // Echter mathematischer Umfang 2 * PI * 26 = 163.36
-            let offset = 163.36; 
+            // Echter mathematischer Umfang 2 * PI * 22 = 138.23
+            let offset = 138.23; 
             if(activeHabits.length > 0) { 
                 const todayStr = getLocalIsoDate();
                 let done = 0; let total = 0;
@@ -914,7 +919,7 @@
                     }
                 });
                 const pct = total === 0 ? 0 : (done / total);
-                offset = 163.36 - (163.36 * pct);
+                offset = 138.23 - (138.23 * pct);
             }
             
             p.getBoundingClientRect(); 
@@ -1101,9 +1106,9 @@
                                 </div>
                                 <div class="habit-meta">
                                     <div class="habit-month-nav">
-                                        <button onclick="changeHabitMonth('${habit.id}', -1)" style="display:flex !important; flex-shrink:0 !important;">❮</button>
-                                        <span style="white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis;">${monthLabel}</span>
-                                        <button onclick="changeHabitMonth('${habit.id}', 1)" style="display:flex !important; flex-shrink:0 !important;">❯</button>
+                                        <button onclick="changeHabitMonth('${habit.id}', -1)">❮</button>
+                                        <span>${monthLabel}</span>
+                                        <button onclick="changeHabitMonth('${habit.id}', 1)">❯</button>
                                     </div>
                                     <div class="progress-bar-container"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
                                 </div>
@@ -1169,6 +1174,7 @@
 
         function updateGlobalAndSpecificRender() {
             render();
+            updateGlobalProgress(); 
             if (currentFullscreenHabitId) {
                 const h = habits.find(x => x.id == currentFullscreenHabitId);
                 const container = document.getElementById('fullscreen-habit-content');
@@ -1178,7 +1184,6 @@
                     closeFullscreenHabit();
                 }
             }
-            updateGlobalProgress(); // Aktualisiere Ring bei jedem Render
         }
 
         window.changeHabitMonth = function(habitId, delta) { vibrate('light'); const d = habitDisplayDates[habitId]; d.setMonth(d.getMonth() + delta); updateGlobalAndSpecificRender(); };
@@ -1654,8 +1659,7 @@
                         } 
                     }
                     
-                    saveData(); 
-                    updateGlobalProgress();
+                    saveData(); updateGlobalProgress();
                     updateGlobalAndSpecificRender();
                     return;
                 }
