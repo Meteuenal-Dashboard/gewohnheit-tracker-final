@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
+    <!-- ANTI CACHE BEFEHLE: Zwingt Handys dazu, Updates bei jedem Start zu laden -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <!-- PWA & iOS Kompatibilität -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -275,7 +280,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen</h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.2</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -314,7 +319,6 @@
             <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 10px;">🗄️ Archiv & Mülleimer</button>
             <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-bottom: 10px; color: var(--success); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05);">📊 Daten als Excel (CSV)</button>
             
-            <!-- NEU: Notfall Button, falls sich die App nicht aktualisiert -->
             <button class="btn-secondary" id="force-update-btn" style="width:100%; margin-bottom: 10px; color: var(--primary); border-color: var(--primary-light); background: var(--primary-light);">🔄 App aktualisieren (Cache leeren)</button>
         </div>
         
@@ -434,8 +438,13 @@
         <input type="text" id="edit-name-input" inputmode="text" style="width:100%; padding:15px; border-radius:12px; border:2px solid var(--border); background:var(--bg-body); color:var(--text-main); font-size:1.1rem; font-weight:700; margin-bottom: 20px;">
         
         <span class="settings-label">Handy-Sticker / Eignes Bild</span>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Lade ein Bild hoch oder <b>füge direkt einen Sticker von deiner Tastatur in dieses Fenster ein (Paste)</b>.</p>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Lade ein Bild hoch oder <b>tippe auf das Feld unten, um einen Sticker von deiner Tastatur einzufügen</b>.</p>
         
+        <!-- NEU: STICKER PASTE AREA FÜR HANDYS (Ermöglicht iOS "Einsetzen") -->
+        <div id="sticker-paste-area" contenteditable="true" style="border: 2px dashed var(--primary); padding: 15px; border-radius: 12px; text-align: center; color: var(--primary); font-weight: 700; cursor: text; margin-bottom: 10px; background: var(--primary-light); outline: none;">
+            👇 Hier tippen & Sticker einfügen
+        </div>
+
         <div class="sticker-preview" id="sticker-preview-box">
             <span id="sticker-placeholder-text" style="color: var(--text-muted); font-size: 0.8rem;">Kein Sticker gewählt</span>
         </div>
@@ -533,25 +542,17 @@
 
         let swRegistered = false;
         function registerSW() {
-            if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-                navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('Service Worker registriert.');
-                    swRegistered = true;
-                    // Auto-Update Checker
-                    reg.onupdatefound = () => {
-                        const installingWorker = reg.installing;
-                        installingWorker.onstatechange = () => {
-                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                showConfirmModal(
-                                    "🚀 Update verfügbar!",
-                                    "Eine neue Version der App ist verfügbar. Jetzt aktualisieren?",
-                                    "Aktualisieren",
-                                    () => { window.location.reload(true); }
-                                );
-                            }
-                        };
-                    };
-                }).catch(err => console.log('SW Error:', err.message));
+            // Anti-Cache Logik: Falls alte Service Worker existieren, updaten!
+            if ('serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.update();
+                        }
+                    }).catch(e => console.log('SW update error:', e));
+                } catch(err) {
+                    console.log('SW getRegistrations blocked (Sandbox):', err);
+                }
             }
         }
 
@@ -1439,6 +1440,11 @@
                     if(overlay) overlay.classList.add('open'); 
                     if(editModal) editModal.classList.add('open'); 
                     document.body.classList.add('modal-open'); 
+                    
+                    // Verhindern, dass die "Sticker-Box" beim Öffnen komisch aussieht
+                    const pasteArea = document.getElementById('sticker-paste-area');
+                    if (pasteArea) pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+
                     setTimeout(() => { if(input) input.focus(); }, 100); 
                     return; 
                 }
@@ -1501,49 +1507,76 @@
             }
             
             // NEU: STICKER PASTE SUPPORT (Tastatur-Sticker abfangen)
-            document.addEventListener('paste', function(e) {
-                const modal = document.getElementById('edit-modal');
-                if (modal && modal.classList.contains('open')) {
-                    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                    for (let i = 0; i < items.length; i++) {
-                        if (items[i].type.indexOf('image') !== -1) {
-                            e.preventDefault(); // Verhindert, dass kryptischer Text ins Feld eingefügt wird
-                            const file = items[i].getAsFile();
-                            const reader = new FileReader();
-                            reader.onload = function(event) {
-                                const img = new Image();
-                                img.onload = () => {
-                                    const cvs = document.createElement('canvas'); 
-                                    const ctxC = cvs.getContext('2d'); 
-                                    const MAX = 200;
-                                    let w = img.width, h = img.height; 
-                                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                                    cvs.width = w; cvs.height = h; 
-                                    ctxC.drawImage(img, 0, 0, w, h); 
-                                    currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
-                                    updateStickerPreview();
-                                    vibrate('success');
+            const pasteArea = document.getElementById('sticker-paste-area');
+            if (pasteArea) {
+                pasteArea.addEventListener('paste', function(e) {
+                    const modal = document.getElementById('edit-modal');
+                    if (modal && modal.classList.contains('open')) {
+                        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                        let foundImage = false;
+                        for (let i = 0; i < items.length; i++) {
+                            if (items[i].type.indexOf('image') !== -1) {
+                                e.preventDefault(); // Verhindert normalen Text-Paste
+                                foundImage = true;
+                                const file = items[i].getAsFile();
+                                const reader = new FileReader();
+                                reader.onload = function(event) {
+                                    const rawData = event.target.result;
+                                    if (file.type === 'image/gif') {
+                                        currentContext.currentSticker = rawData;
+                                        updateStickerPreview();
+                                        vibrate('success');
+                                    } else {
+                                        const img = new Image();
+                                        img.onload = () => {
+                                            const cvs = document.createElement('canvas'); 
+                                            const ctxC = cvs.getContext('2d'); 
+                                            const MAX = 200;
+                                            let w = img.width, h = img.height; 
+                                            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                                            cvs.width = w; cvs.height = h; 
+                                            ctxC.drawImage(img, 0, 0, w, h); 
+                                            currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
+                                            updateStickerPreview();
+                                            vibrate('success');
+                                        };
+                                        img.src = rawData;
+                                    }
                                 };
-                                img.src = event.target.result;
-                            };
-                            reader.readAsDataURL(file);
-                            break;
+                                reader.readAsDataURL(file);
+                                break;
+                            }
                         }
+                        
+                        // Text wieder zurücksetzen, falls Text eingefügt wurde
+                        setTimeout(() => {
+                            pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
+                        }, 50);
                     }
-                }
-            });
+                });
+                
+                // Verhindern, dass man normalen Text reinschreibt
+                pasteArea.addEventListener('input', (e) => {
+                    setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
+                });
+            }
 
             // NOTFALL UPDATE BUTTON
             const forceUpdateBtn = document.getElementById('force-update-btn');
             if (forceUpdateBtn) {
                 forceUpdateBtn.addEventListener('click', () => {
+                    vibrate('light');
                     if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                            for(let registration of registrations) {
-                                registration.unregister();
-                            }
+                        try {
+                            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                                for(let registration of registrations) {
+                                    registration.unregister();
+                                }
+                                window.location.reload(true);
+                            }).catch(() => window.location.reload(true));
+                        } catch (err) {
                             window.location.reload(true);
-                        });
+                        }
                     } else {
                         window.location.reload(true);
                     }
