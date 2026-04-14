@@ -12,7 +12,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '3.5';
+            var currentVersion = '3.6';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -105,12 +105,13 @@
         }
 
         .user-profile { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; flex: 1; }
-        .avatar-container { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
-        .global-progress-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 3; }
-        /* FEDERNDE ANIMATION FÜR DEN RING */
-        .global-progress-bar { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); stroke-dasharray: 125.6; stroke-dashoffset: 125.6; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid transparent; z-index: 2; }
+        
+        /* KORRIGIERTE RING LOGIK FÜR DAS PROFILBILD */
+        .avatar-container { position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
+        .global-progress-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); z-index: 1; }
+        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 3.5; }
+        .global-progress-bar { fill: none; stroke: var(--primary); stroke-width: 3.5; stroke-linecap: round; transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); stroke-dasharray: 138.2; stroke-dashoffset: 138.2; }
+        .avatar { position: relative; width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 3px solid var(--bg-card); z-index: 2; }
         
         .user-info { display: flex; flex-direction: column; width: 100%; max-width: 150px; }
         .user-name { font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: -0.3px; display: flex; align-items: center; gap: 5px; }
@@ -156,8 +157,8 @@
         .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; }
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; width: 100%; }
         
-        /* FESTGENAGELTE MONATS-PFEILE IN EINER LINIE (Listen Ansicht) */
-        .habit-month-nav { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: 120px; }
+        /* ZEMENTIERTE MONATS-PFEILE (Kein Umbrechen mehr!) */
+        .habit-month-nav { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: max-content; white-space: nowrap; }
         .habit-month-nav button { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0; }
         .habit-month-nav span { font-size: 0.9rem; font-weight: 700; text-align: center; flex: 1; white-space: nowrap; }
 
@@ -190,33 +191,33 @@
         .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
         .day-cell.checked.has-note::before, .day-cell.skipped.has-note::before { background-color: var(--warning); box-shadow: 0 0 0 2px var(--bg-card); }
 
-        /* PERFEKTES GRID VIEW (Ohne Lücken, exakt bündig) */
-        #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: start; }
+        /* PERFEKTES GRID VIEW (Ohne Lücken, exakt bündig ausgerichtet!) */
+        #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
         #habit-list.grid-view .habit-card-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; perspective: none; }
-        #habit-list.grid-view .habit-card-inner { display: flex; flex-direction: column; flex: 1; transition: transform 0.2s; }
-        #habit-list.grid-view .habit-card { flex: 1; padding: 15px; display: flex; flex-direction: column; justify-content: flex-start; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        #habit-list.grid-view .habit-card-inner { display: flex; flex-direction: column; flex: 1; transition: transform 0.2s; height: 100%; }
+        #habit-list.grid-view .habit-card { flex: 1; padding: 15px; display: flex; flex-direction: column; justify-content: flex-start; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; height: 100%; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
         
-        #habit-list.grid-view .habit-header { display: flex; flex-direction: column; flex: 1; }
+        #habit-list.grid-view .habit-header { display: flex; flex-direction: column; flex: 1 1 auto; height: 100%; }
         #habit-list.grid-view .habit-title-row { display: flex; flex-direction: column; flex: 1; align-items: stretch; width: 100%; }
-        #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; flex: 1; display: flex; }
-        #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 8px; flex: 1; display: flex; }
+        #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; flex: 1 1 auto; display: flex; }
+        #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 8px; flex: 1; display: flex; width: 100%; }
         
         #habit-list.grid-view .habit-title { font-size: 1rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
         #habit-list.grid-view .habit-category-icon { width: 40px; height: 40px; border-radius: 10px; font-size: 1.5rem; }
         
-        /* Streaks absolut bündig links anzeigen im Grid */
-        #habit-list.grid-view .streak-container { margin-left: 0; margin-top: 4px; font-size: 0.75rem; width: 100%; justify-content: flex-start; }
+        /* Streaks bündig links anzeigen im Grid */
+        #habit-list.grid-view .streak-container { margin-top: 4px; margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
         
         /* Sämtliche Aktions-Buttons und Pfeile restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
         #habit-list.grid-view .expand-btn { display: none !important; }
         
         /* Monat und Fortschrittsbalken PERFEKT BÜNDIG UND GANZ UNTEN FESTNAGELN */
-        #habit-list.grid-view .habit-meta { margin-top: 15px !important; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; padding-top: 0; }
+        #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; padding-top: 15px; flex: 0 0 auto; }
         #habit-list.grid-view .habit-month-nav { min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none; justify-content: flex-start; pointer-events: none; width: 100%; margin-bottom: 0;}
         #habit-list.grid-view .habit-month-nav button { display: none; }
-        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.8rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.85rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; flex: none; }
         
         #habit-list.grid-view .calendar-container { display: none !important; }
@@ -336,9 +337,9 @@
     <header class="app-header">
         <div class="user-profile" id="profile-trigger">
             <div class="avatar-container">
-                <svg class="global-progress-svg" viewBox="0 0 50 50">
-                    <circle class="global-progress-bg" cx="25" cy="25" r="20" />
-                    <circle class="global-progress-bar" id="global-progress" cx="25" cy="25" r="20" />
+                <svg class="global-progress-svg" viewBox="0 0 48 48">
+                    <circle class="global-progress-bg" cx="24" cy="24" r="22" />
+                    <circle class="global-progress-bar" id="global-progress" cx="24" cy="24" r="22" />
                 </svg>
                 <div class="avatar" id="header-avatar">?</div>
             </div>
@@ -368,7 +369,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v3.5</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v3.6</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -525,7 +526,6 @@
         <span class="settings-label">Handy-Sticker / Eignes Bild</span>
         <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Lade ein Bild hoch oder <b>tippe auf das Feld unten, um einen Sticker von deiner Tastatur einzufügen</b>.</p>
         
-        <!-- STICKER PASTE AREA -->
         <div id="sticker-paste-area" contenteditable="true" style="border: 2px dashed var(--primary); padding: 15px; border-radius: 12px; text-align: center; color: var(--primary); font-weight: 700; cursor: text; margin-bottom: 10px; background: var(--primary-light); outline: none; min-height: 50px;">
             👇 Hier tippen & Sticker einfügen
         </div>
@@ -894,7 +894,7 @@
             const p = document.getElementById('global-progress');
             if(!p) return;
             
-            let offset = 125.6; // Default to empty
+            let offset = 138.2; // Default to empty
             if(activeHabits.length > 0) { 
                 const todayStr = getLocalIsoDate();
                 let done = 0; let total = 0;
@@ -905,7 +905,7 @@
                     }
                 });
                 const pct = total === 0 ? 0 : (done / total);
-                offset = 125.6 - (125.6 * pct);
+                offset = 138.2 - (138.2 * pct);
             }
             
             // Force Layout Reflow und Zuweisung für weiche Animation
@@ -1641,7 +1641,7 @@
                         } 
                     }
                     
-                    saveData(); updateGlobalProgress();
+                    saveData(); 
                     updateGlobalAndSpecificRender();
                     return;
                 }
@@ -1955,7 +1955,6 @@
             saveData(); 
             renderArchiveManager(); 
             updateGlobalAndSpecificRender(); 
-            updateGlobalProgress(); 
         };
 
         window.deleteHabit = (id) => { 
@@ -1968,7 +1967,6 @@
                     saveData(); 
                     renderArchiveManager();
                     updateGlobalAndSpecificRender();
-                    updateGlobalProgress();
                     if(document.getElementById('stats-modal') && document.getElementById('stats-modal').classList.contains('open')) updateStatsDashboard();
                 }
             );
