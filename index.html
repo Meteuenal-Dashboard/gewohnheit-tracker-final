@@ -280,7 +280,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.3</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v2.4</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -540,18 +540,24 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
-        let swRegistered = false;
-        function registerSW() {
-            // Anti-Cache Logik: Falls alte Service Worker existieren, updaten erzwingen
+        // Radikaler Kill-Switch für Service Worker - Ersetzt "registerSW"
+        function killServiceWorkers() {
             if ('serviceWorker' in navigator) {
                 try {
-                    // Durch das Anfügen eines Timestamps zwingen wir den Browser zu einem Byte-Check
-                    navigator.serviceWorker.register('sw.js?v=' + new Date().getTime()).then(function(reg) {
-                        reg.update();
-                    }).catch(e => console.log('SW update error:', e));
-                } catch(err) {
-                    console.log('SW getRegistrations blocked (Sandbox):', err);
-                }
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                            console.log('Alten Cache gelöscht.');
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+            if ('caches' in window) {
+                try {
+                    caches.keys().then(function(names) {
+                        for (let name of names) caches.delete(name);
+                    }).catch(function(err){});
+                } catch(e) {}
             }
         }
 
@@ -582,7 +588,7 @@
                 try {
                     localStorage.setItem(key, JSON.stringify(val)); 
                 } catch(err) {
-                    console.error("Speicherlimit erreicht! Möglicherweise ist ein hochgeladenes Bild oder GIF zu groß.");
+                    console.error("Speicherlimit erreicht!");
                 }
             }
         }
@@ -756,7 +762,6 @@
             let d = new Date();
             let dStr = getLocalIsoDate(d);
             
-            // Wenn heute nicht abgehakt und nicht pausiert wurde, fange bei gestern an zu zählen
             if (!doneDates.has(dStr) && !skipSet.has(dStr)) {
                 d.setDate(d.getDate() - 1);
                 dStr = getLocalIsoDate(d);
@@ -766,9 +771,9 @@
                 if (doneDates.has(dStr)) {
                     streak++;
                 } else if (skipSet.has(dStr)) {
-                    // Pausiert -> Streak wird gehalten, aber nicht erhöht
+                    // Pausiert
                 } else {
-                    break; // Streak abgebrochen
+                    break;
                 }
                 d.setDate(d.getDate() - 1);
                 dStr = getLocalIsoDate(d);
@@ -1286,7 +1291,32 @@
             if (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open')) document.body.classList.remove('modal-open');
         }
 
-        // --- ZENTRALE EVENT LISTENERS (DEDUPLIZIERT) ---
+        // --- ZENTRALE EVENT LISTENERS & STICKER VERARBEITUNG ---
+        
+        function processStickerUpload(src, isGif = false) {
+            if (isGif) {
+                currentContext.currentSticker = src;
+                updateStickerPreview();
+                vibrate('success');
+            } else {
+                const img = new Image(); 
+                img.crossOrigin = "Anonymous";
+                img.onload = () => { 
+                    const cvs = document.createElement('canvas'); 
+                    const ctxC = cvs.getContext('2d'); 
+                    const MAX = 200;
+                    let w = img.width, h = img.height; 
+                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                    cvs.width = w; cvs.height = h; 
+                    ctxC.drawImage(img, 0, 0, w, h); 
+                    currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
+                    updateStickerPreview();
+                    vibrate('success');
+                }; 
+                img.src = src; 
+            }
+        }
+
         function setupEventListeners() {
             if (window._eventsSetup) return;
             window._eventsSetup = true;
@@ -1440,7 +1470,6 @@
                     if(editModal) editModal.classList.add('open'); 
                     document.body.classList.add('modal-open'); 
                     
-                    // Verhindern, dass die "Sticker-Box" beim Öffnen komisch aussieht
                     const pasteArea = document.getElementById('sticker-paste-area');
                     if (pasteArea) pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
 
@@ -1465,7 +1494,7 @@
                 }
             });
 
-            // STICKER UPLOAD HANDLER
+            // STICKER UPLOAD HANDLER (Datei wählen)
             const stickerUploadInput = document.getElementById('sticker-upload');
             if (stickerUploadInput) {
                 stickerUploadInput.addEventListener('change', function(e) {
@@ -1480,32 +1509,14 @@
 
                     const reader = new FileReader();
                     reader.onload = (ev) => { 
-                        const rawData = ev.target.result;
-                        if (file.type === 'image/gif') {
-                            currentContext.currentSticker = rawData;
-                            updateStickerPreview();
-                        } else {
-                            const img = new Image(); 
-                            img.onload = () => { 
-                                const cvs = document.createElement('canvas'); 
-                                const ctxC = cvs.getContext('2d'); 
-                                const MAX = 200;
-                                let w=img.width, h=img.height; 
-                                if (w>h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
-                                cvs.width=w; cvs.height=h; 
-                                ctxC.drawImage(img,0,0,w,h); 
-                                currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
-                                updateStickerPreview();
-                            }; 
-                            img.src = rawData; 
-                        }
+                        processStickerUpload(ev.target.result, file.type === 'image/gif');
                     }; 
                     reader.readAsDataURL(file);
                     e.target.value = '';
                 });
             }
             
-            // NEU: STICKER PASTE SUPPORT (Tastatur-Sticker abfangen)
+            // STICKER PASTE SUPPORT (Tastatur-Sticker abfangen)
             const pasteArea = document.getElementById('sticker-paste-area');
             if (pasteArea) {
                 pasteArea.addEventListener('paste', function(e) {
@@ -1515,70 +1526,52 @@
                         let foundImage = false;
                         for (let i = 0; i < items.length; i++) {
                             if (items[i].type.indexOf('image') !== -1) {
-                                e.preventDefault(); // Verhindert normalen Text-Paste
+                                e.preventDefault(); 
                                 foundImage = true;
                                 const file = items[i].getAsFile();
                                 const reader = new FileReader();
                                 reader.onload = function(event) {
-                                    const rawData = event.target.result;
-                                    if (file.type === 'image/gif') {
-                                        currentContext.currentSticker = rawData;
-                                        updateStickerPreview();
-                                        vibrate('success');
-                                    } else {
-                                        const img = new Image();
-                                        img.onload = () => {
-                                            const cvs = document.createElement('canvas'); 
-                                            const ctxC = cvs.getContext('2d'); 
-                                            const MAX = 200;
-                                            let w = img.width, h = img.height; 
-                                            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                                            cvs.width = w; cvs.height = h; 
-                                            ctxC.drawImage(img, 0, 0, w, h); 
-                                            currentContext.currentSticker = cvs.toDataURL('image/webp', 0.8); 
-                                            updateStickerPreview();
-                                            vibrate('success');
-                                        };
-                                        img.src = rawData;
-                                    }
+                                    processStickerUpload(event.target.result, file.type === 'image/gif');
                                 };
                                 reader.readAsDataURL(file);
                                 break;
                             }
                         }
-                        
-                        // Text wieder zurücksetzen, falls Text eingefügt wurde
-                        setTimeout(() => {
-                            pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen';
-                        }, 50);
+                        setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
                     }
                 });
                 
-                // Verhindern, dass man normalen Text reinschreibt
+                // Fallback für iOS Memojis die als <img> in den DOM geworfen werden
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                            mutation.addedNodes.forEach((node) => {
+                                if (node.tagName === 'IMG' && node.src) {
+                                    processStickerUpload(node.src, false);
+                                    setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
+                                }
+                            });
+                        }
+                    });
+                });
+                observer.observe(pasteArea, { childList: true, subtree: true });
+                
                 pasteArea.addEventListener('input', (e) => {
-                    setTimeout(() => { pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; }, 50);
+                    setTimeout(() => { 
+                        if (!pasteArea.querySelector('img')) {
+                            pasteArea.innerHTML = '👇 Hier tippen & Sticker einfügen'; 
+                        }
+                    }, 100);
                 });
             }
 
-            // NOTFALL UPDATE BUTTON
+            // NOTFALL UPDATE BUTTON ACTION (Cache & SW Kill)
             const forceUpdateBtn = document.getElementById('force-update-btn');
             if (forceUpdateBtn) {
                 forceUpdateBtn.addEventListener('click', () => {
                     vibrate('light');
-                    if ('serviceWorker' in navigator) {
-                        try {
-                            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                                for(let registration of registrations) {
-                                    registration.unregister();
-                                }
-                                window.location.reload(true);
-                            }).catch(() => window.location.reload(true));
-                        } catch (err) {
-                            window.location.reload(true);
-                        }
-                    } else {
-                        window.location.reload(true);
-                    }
+                    killServiceWorkers();
+                    setTimeout(() => window.location.reload(true), 500);
                 });
             }
 
@@ -1824,10 +1817,13 @@
         async function init() {
             canvas = document.getElementById('confetti-canvas');
             if (canvas) ctx = canvas.getContext('2d');
+            
+            // Führe radikalen Cache-Kill bei jedem Start aus (ähnlich dem Tagebuch)
+            killServiceWorkers();
+            
             await checkImportHash();
             await loadData();
             applySettings();
-            registerSW(); 
             renderColorGrid();
             setDynamicGreeting();
             resizeCanvas();
