@@ -343,9 +343,14 @@
     <!-- QR MODAL -->
     <div class="custom-modal" id="qr-modal" style="text-align: center;">
         <h3 style="font-size: 1.5rem;">Gerät wechseln</h3>
-        <p style="font-size: 0.95rem;">Scanne diesen Code mit der Kamera-App deines <b>neuen</b> Handys.</p>
+        <p style="font-size: 0.95rem;">Scanne diesen Code oder kopiere den Link, um deine Daten zu übertragen.</p>
         <div id="qr-code-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 20px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></div>
-        <div class="modal-actions" style="justify-content: center; margin-top:15px;">
+        
+        <!-- NEU: Textfeld für den Backup-Link -->
+        <input type="text" id="sync-url-input" readonly style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); margin-bottom: 15px; font-size: 0.8rem;">
+        
+        <div class="modal-actions" style="justify-content: center; margin-top:10px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn-primary" id="copy-sync-link" style="width: 100%;">📋 Link in Zwischenablage kopieren</button>
             <button class="btn-secondary" id="close-qr" style="width: 100%;">Schließen</button>
         </div>
     </div>
@@ -431,7 +436,6 @@
             <span id="sticker-placeholder-text" style="color: var(--text-muted); font-size: 0.8rem;">Kein Sticker gewählt</span>
         </div>
         <div class="sticker-controls">
-            <!-- MOBILE FIX: Statt einem Button, der einen Input klickt, nutzen wir ein <label>, das direkt mit dem Input verbunden ist -->
             <label for="sticker-upload" class="btn-secondary" style="flex:1; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0;">📷 Hochladen</label>
             <button class="btn-secondary" id="delete-sticker-btn" style="color: var(--danger); display: none; margin:0;" onclick="removeCurrentSticker()">🗑️ Entfernen</button>
         </div>
@@ -553,7 +557,6 @@
             } catch(e) { return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null; }
         }
         
-        // CATCH DB ERRORS FOR LARGE BASE64 DATA (Prevents PWA Crashing)
         async function dbSet(key, val) {
             try {
                 const db = await initDB();
@@ -658,7 +661,6 @@
                 if (!h.notes) h.notes = {}; 
                 if (!h.skipped) h.skipped = []; 
                 if (!h.image) h.image = null; 
-                // Zwingender Default-Wert für Kategorie-Bug
                 if (!h.category || !CATEGORIES.find(c => c.id === h.category)) h.category = 'anderes';
                 if (!h.customIcon) h.customIcon = null;
                 if (h.archived === undefined) h.archived = false; 
@@ -712,32 +714,50 @@
             }
         }
 
+        // --- STREAK LOGIC ---
         function calculateBestStreak(history, skipped = []) {
             if (!history || history.length === 0) return 0;
             const doneDates = [...new Set(history)].sort();
             const skipSet = new Set(skipped);
-            
-            let maxStreak = 0;
-            let currentStreak = 0;
-            
-            if (doneDates.length === 0) return 0;
-            
+            let maxStreak = 0; let currentStreak = 0;
             let currentDay = new Date(doneDates[0]);
             let endDay = new Date();
-            
             while(currentDay <= endDay) {
                 let dStr = getLocalIsoDate(currentDay);
-                if (history.includes(dStr)) {
-                    currentStreak++;
-                } else if (skipSet.has(dStr)) {
-                    // Streak bleibt erhalten
-                } else {
-                    currentStreak = 0;
-                }
+                if (history.includes(dStr)) currentStreak++;
+                else if (!skipSet.has(dStr)) currentStreak = 0;
                 maxStreak = Math.max(maxStreak, currentStreak);
                 currentDay.setDate(currentDay.getDate() + 1);
             }
             return maxStreak;
+        }
+
+        function calculateCurrentStreak(history, skipped = []) {
+            if (!history || history.length === 0) return 0;
+            const doneDates = new Set(history);
+            const skipSet = new Set(skipped);
+            let streak = 0;
+            let d = new Date();
+            let dStr = getLocalIsoDate(d);
+            
+            // Wenn heute nicht abgehakt und nicht pausiert wurde, fange bei gestern an zu zählen
+            if (!doneDates.has(dStr) && !skipSet.has(dStr)) {
+                d.setDate(d.getDate() - 1);
+                dStr = getLocalIsoDate(d);
+            }
+            
+            while (true) {
+                if (doneDates.has(dStr)) {
+                    streak++;
+                } else if (skipSet.has(dStr)) {
+                    // Pausiert -> Streak wird gehalten, aber nicht erhöht
+                } else {
+                    break; // Streak abgebrochen
+                }
+                d.setDate(d.getDate() - 1);
+                dStr = getLocalIsoDate(d);
+            }
+            return streak;
         }
 
         function getBestStreakOverall() {
@@ -918,8 +938,11 @@
                 }
 
                 const isFirst = index === 0; const isLast = index === activeHabits.length - 1;
-                // Category Fallback sicherstellen
                 const categoryObj = CATEGORIES.find(c => c.id === habit.category) || CATEGORIES.find(c => c.id === 'anderes');
+                
+                // Streaks berechnen
+                const bStreak = calculateBestStreak(habit.history, habit.skipped);
+                const cStreak = calculateCurrentStreak(habit.history, habit.skipped);
 
                 cardWrapper.innerHTML = `
                     <div class="habit-card-inner" id="habit-inner-${habit.id}">
@@ -927,12 +950,16 @@
                             <div class="habit-header">
                                 <div class="habit-title-row">
                                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 10px;">
-                                        <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
                                             <div class="habit-title" style="margin-bottom: 0;">
                                                 <div class="habit-category-icon">
                                                     ${habit.customIcon ? `<img src="${habit.customIcon}" style="width:100%; height:100%; object-fit:contain; border-radius: 6px;">` : categoryObj.icon}
                                                 </div>
                                                 ${escapeHtml(habit.name)}
+                                            </div>
+                                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px;">
+                                                <span style="color: var(--warning);" title="Aktueller Streak">🔥 ${cStreak} Aktuell</span>
+                                                <span style="color: var(--primary);" title="Bester Streak">🏆 ${bStreak} Best</span>
                                             </div>
                                         </div>
                                         <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
@@ -942,7 +969,7 @@
                                             <button class="expand-btn" onclick="toggleExpand('${habit.id}')" aria-label="Ausklappen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
                                         </div>
                                     </div>
-                                    <div class="habit-meta">
+                                    <div class="habit-meta" style="margin-top: 8px;">
                                         <div class="habit-month-nav"><button onclick="changeHabitMonth('${habit.id}', -1)">❮</button><span>${monthLabel}</span><button onclick="changeHabitMonth('${habit.id}', 1)">❯</button></div>
                                         <div class="progress-bar-container" style="margin-top: 0; flex-grow: 1; margin-left: 5px;"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
                                     </div>
@@ -1243,6 +1270,7 @@
             if (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open')) document.body.classList.remove('modal-open');
         }
 
+        // --- ZENTRALE EVENT LISTENERS (DEDUPLIZIERT) ---
         function setupEventListeners() {
             if (window._eventsSetup) return;
             window._eventsSetup = true;
@@ -1265,9 +1293,10 @@
                 saveData(); render(); updateGlobalProgress(); closeActionSheet();
             });
 
+            // ROBUSTER QR CODE (MAGIC SYNC)
             const btnQrSync = document.getElementById('btn-qr-sync');
             if (btnQrSync) btnQrSync.addEventListener('click', () => {
-                if(typeof LZString === 'undefined' || typeof QRCode === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
+                if(typeof LZString === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
                 
                 let optHabits = habits.map(h => ({ 
                     i: h.id, 
@@ -1282,12 +1311,20 @@
                 const syncData = JSON.stringify({ h: optHabits, s: optSettings });
                 const url = window.location.href.split('#')[0] + '#import=' + LZString.compressToEncodedURIComponent(syncData);
                 
-                if (url.length > 2900) { alert("Datenmenge zu groß für QR. Bitte nutze stattdessen manuellen Export/Import in den Einstellungen."); return; }
-                
                 const qrContainer = document.getElementById('qr-code-container');
-                if (qrContainer) {
-                    qrContainer.innerHTML = ''; new QRCode(qrContainer, { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
+                const urlInput = document.getElementById('sync-url-input');
+                
+                if (urlInput) urlInput.value = url;
+                
+                try {
+                    if (qrContainer && typeof QRCode !== 'undefined') {
+                        qrContainer.innerHTML = ''; 
+                        new QRCode(qrContainer, { text: url, width: 220, height: 220, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M });
+                    }
+                } catch(err) {
+                    if (qrContainer) qrContainer.innerHTML = '<span style="color:var(--danger); font-size: 0.9rem;">Datenmenge für QR-Code zu groß.<br><br>Bitte kopiere den Link unten, um die App auf dein neues Handy zu übertragen!</span>';
                 }
+
                 const panel = document.getElementById('settings-panel');
                 const sOverlay = document.getElementById('settings-overlay');
                 if (panel) panel.classList.remove('open'); 
@@ -1297,6 +1334,20 @@
                 if (qrModal) qrModal.classList.add('open'); 
                 document.body.classList.add('modal-open');
             });
+
+            const copySyncBtn = document.getElementById('copy-sync-link');
+            if (copySyncBtn) {
+                copySyncBtn.addEventListener('click', () => {
+                    const urlInput = document.getElementById('sync-url-input');
+                    if (urlInput) {
+                        urlInput.select();
+                        document.execCommand('copy');
+                        vibrate('light');
+                        copySyncBtn.textContent = '✅ Erfolgreich kopiert!';
+                        setTimeout(() => copySyncBtn.textContent = '📋 Link in Zwischenablage kopieren', 2500);
+                    }
+                });
+            }
 
             const btnExportCsv = document.getElementById('btn-export-csv');
             if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
@@ -1348,12 +1399,12 @@
                     return;
                 }
                 
+                // UMBENENNEN & BEARBEITEN
                 if (target.closest('.btn-edit')) { 
                     vibrate('light'); 
                     const id = target.closest('.habit-card-wrapper').dataset.id; 
                     const habit = habits.find(h => h.id == id); 
                     
-                    // Lade Zustand sauber
                     currentContext = { 
                         ...currentContext,
                         habitId: id, 
@@ -1393,14 +1444,13 @@
                 }
             });
 
-            // STICKER UPLOAD HANDLER (GIF & MOBILE FIX)
+            // STICKER UPLOAD HANDLER
             const stickerUploadInput = document.getElementById('sticker-upload');
             if (stickerUploadInput) {
                 stickerUploadInput.addEventListener('change', function(e) {
                     const file = e.target.files[0]; 
                     if (!file) return;
 
-                    // Für PWA/Mobile: Maximale Größe prüfen (z.B. 5 MB) um DB-Abstürze zu verhindern
                     if (file.size > 5 * 1024 * 1024) {
                         alert("Die Datei ist zu groß (max. 5 MB). Bitte wähle ein kleineres Bild.");
                         e.target.value = '';
@@ -1410,18 +1460,15 @@
                     const reader = new FileReader();
                     reader.onload = (ev) => { 
                         const rawData = ev.target.result;
-                        
-                        // Wenn es ein GIF ist, direkt speichern um Animation zu erhalten
                         if (file.type === 'image/gif') {
                             currentContext.currentSticker = rawData;
                             updateStickerPreview();
                         } else {
-                            // Bei statischen Bildern komprimieren über Canvas
                             const img = new Image(); 
                             img.onload = () => { 
                                 const cvs = document.createElement('canvas'); 
                                 const ctxC = cvs.getContext('2d'); 
-                                const MAX = 200; // Ausreichend für kleine Icons
+                                const MAX = 200;
                                 let w=img.width, h=img.height; 
                                 if (w>h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
                                 cvs.width=w; cvs.height=h; 
@@ -1433,7 +1480,7 @@
                         }
                     }; 
                     reader.readAsDataURL(file);
-                    e.target.value = ''; // Input zurücksetzen für neuen Versuch
+                    e.target.value = '';
                 });
             }
 
@@ -1464,7 +1511,6 @@
                 saveData(); render(); renderAllNotes(); closeAllModals(); 
             });
             
-            // ROBUSTER SPEICHER-VORGANG (Fix für Kategorien/Sticker)
             const saveEditBtn = document.getElementById('save-edit');
             if (saveEditBtn) saveEditBtn.addEventListener('click', () => { 
                 const h = habits.find(h => h.id == currentContext.habitId); 
