@@ -9,23 +9,16 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
+    <!-- INTEGRIERTE MANIFEST DATEI (Zwingt Android, es als APP zu erkennen) -->
+    <link rel="manifest" href="data:application/manifest+json;utf-8,%7B%22name%22%3A%22Gewohnheit%20Tracker%22%2C%22short_name%22%3A%22Habits%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bcharset%3Dutf-8%2C%253Csvg%2520xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%2520viewBox%3D%270%25200%2520100%2520100%27%253E%253Crect%2520width%3D%27100%27%2520height%3D%27100%27%2520fill%3D%27%25232563eb%27%2520rx%3D%2720%27%2F%253E%253Ctext%2520x%3D%2750%27%2520y%3D%2772%27%2520font-size%3D%2765%27%2520text-anchor%3D%27middle%27%2520fill%3D%27white%27%253E%25E2%259C%2593%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '4.3';
+            var currentVersion = '5.0';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for(let r of registrations) r.unregister();
-                    }).catch(function(e){});
-                }
-                if ('caches' in window) {
-                    caches.keys().then(function(names) {
-                        for (let name of names) caches.delete(name);
-                    }).catch(function(e){});
-                }
                 if (window.location.search.indexOf('updated') === -1) {
                     window.location.replace(window.location.pathname + '?updated=' + new Date().getTime());
                 }
@@ -106,19 +99,10 @@
 
         .user-profile { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; flex: 1; }
         
-        /* 100% FEINGESCHLIFFENER, DEZENTER SVG RING AUF 1.5 PIXEL */
         .avatar-container { position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .global-progress-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); z-index: 1; pointer-events: none; }
-        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 1.5; } /* Dezent 1.5px! */
-        .global-progress-bar { 
-            fill: none; 
-            stroke: var(--primary); 
-            stroke-width: 1.5; /* Dezent 1.5px! */
-            stroke-linecap: round; 
-            stroke-dasharray: 138.23; 
-            stroke-dashoffset: 138.23; 
-            transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.4s ease; 
-        }
+        .global-progress-bg { fill: none; stroke: var(--border); stroke-width: 1.5; }
+        .global-progress-bar { fill: none; stroke: var(--primary); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 138.23; stroke-dashoffset: 138.23; transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.4s ease; }
         .avatar { position: relative; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: var(--bg-body); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid transparent; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
         
         .user-info { display: flex; flex-direction: column; width: 100%; max-width: 150px; }
@@ -163,13 +147,10 @@
 
         .habit-actions-right { display: flex; gap: 4px; align-items: center; flex-shrink: 0; flex-wrap: nowrap; }
 
-        /* BÜNDIGE STREAKS UND META INFOS (LISTEN ANSICHT) */
         .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; white-space: nowrap; }
         
-        /* UNZERSTÖRBARE BÜNDIGKEIT AM UNTEREN RAND */
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; margin-top: auto; padding-top: 15px; width: 100%; }
         
-        /* ZEMENTIERTE MONATS-PFEILE (Verhindert das Stapeln!) */
         .habit-month-nav { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: fit-content; }
         .habit-month-nav button { display: flex !important; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0 !important; }
         .habit-month-nav span { font-size: 0.9rem; font-weight: 700; text-align: center; white-space: nowrap !important; flex-shrink: 0 !important; padding: 0 4px; }
@@ -203,31 +184,23 @@
         .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
         .day-cell.checked.has-note::before, .day-cell.skipped.has-note::before { background-color: var(--warning); box-shadow: 0 0 0 2px var(--bg-card); }
 
-        /* PERFEKTES GRID VIEW (Ohne Lücken, exakt bündig ausgerichtet!) */
+        /* PERFEKTES GRID VIEW */
         #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
         #habit-list.grid-view .habit-card { padding: 12px; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
-        
         #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; }
         #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; }
-        
         #habit-list.grid-view .habit-title { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
         #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
-        
-        /* Streaks bündig links anzeigen im Grid */
         #habit-list.grid-view .streak-container { margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        
-        /* Sämtliche Aktions-Buttons restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
-        
-        /* Monat und Fortschrittsbalken PERFEKT BÜNDIG UND GANZ UNTEN FESTNAGELN */
         #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100%; padding-top: 10px !important; flex-shrink: 0; }
         #habit-list.grid-view .habit-month-nav { min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none; justify-content: flex-start; pointer-events: none; width: 100%; margin-bottom: 0;}
         #habit-list.grid-view .habit-month-nav button { display: none !important; }
-        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.8rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.8rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
         #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; height: 6px; }
-        
         #habit-list.grid-view .calendar-container { display: none !important; }
+        #habit-list.grid-view .habit-card-inner.flipped { transform: none; }
 
         /* FULLSCREEN HABIT MODAL ("Wie eine App") */
         #fullscreen-habit-overlay {
@@ -280,7 +253,6 @@
         .stat-box-value { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
         .stat-box-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
         
-        /* SCHICKES CUSTOM DROPDOWN FÜR STATS */
         .custom-select-container { position: relative; width: 100%; margin-bottom: 15px; }
         .custom-select-trigger { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--bg-body); border: 2px solid var(--primary); border-radius: 14px; cursor: pointer; font-weight: 700; color: var(--text-main); transition: all 0.2s; }
         .custom-select-trigger:active { transform: scale(0.98); }
@@ -375,7 +347,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.3</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v5.0</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -647,27 +619,6 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
-        function killServiceWorkers() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for(let registration of registrations) {
-                            registration.unregister();
-                        }
-                    }).catch(function(err){});
-                } catch(e) {}
-            }
-            if ('caches' in window) {
-                try {
-                    caches.keys().then(function(names) {
-                        for (let name of names) {
-                            caches.delete(name);
-                        }
-                    }).catch(function(err){});
-                } catch(e) {}
-            }
-        }
-
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -919,8 +870,7 @@
             const p = document.getElementById('global-progress');
             if(!p) return;
             
-            // Echter mathematischer Umfang 2 * PI * 26 = 163.36
-            let offset = 163.36; 
+            let offset = 138.23; 
             if(activeHabits.length > 0) { 
                 const todayStr = getLocalIsoDate();
                 let done = 0; let total = 0;
@@ -931,7 +881,7 @@
                     }
                 });
                 const pct = total === 0 ? 0 : (done / total);
-                offset = 163.36 - (163.36 * pct);
+                offset = 138.23 - (138.23 * pct);
             }
             
             p.getBoundingClientRect(); 
@@ -1087,7 +1037,6 @@
             const bStreak = calculateBestStreak(habit.history, habit.skipped);
             const cStreak = calculateCurrentStreak(habit.history, habit.skipped);
             
-            // INTELLIGENTE PLATZSPAR-LOGIK FÜR STREAKS
             const cStreakStr = cStreak >= 100 ? `🔥 ${cStreak}` : `🔥 ${cStreak} Aktuell`;
             const bStreakStr = bStreak >= 100 ? `🏆 ${bStreak}` : `🏆 ${bStreak} Best`;
 
@@ -1098,7 +1047,7 @@
                             <div class="habit-header">
                                 <div class="habit-title-row">
                                     <div class="habit-title-container" style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; gap: 10px; width: 100%;">
-                                        <div class="habit-title-info" style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                                        <div class="habit-title-info">
                                             <div class="habit-title" style="margin-bottom: 0;">
                                                 <div class="habit-category-icon">
                                                     ${habit.customIcon ? `<img src="${habit.customIcon}">` : categoryObj.icon}
@@ -1381,6 +1330,33 @@
             vibrate('light');
             yearlyCalendarYear += delta;
             renderYearlyCalendar(habitId, yearlyCalendarYear);
+        };
+
+        window.openNoteDialog = function(habitId, dateStr) {
+            vibrate('light');
+            currentContext.habitId = habitId;
+            currentContext.dateStr = dateStr;
+            const habit = habits.find(h => h.id == habitId);
+            if (!habit) return;
+            
+            const noteData = habit.notes[dateStr] || {};
+            const dateLabel = dateStr.split('-').reverse().join('.');
+            document.getElementById('note-date-label').textContent = dateLabel + " - " + habit.name;
+            
+            const input = document.getElementById('note-input');
+            if(input) input.value = noteData.text || '';
+            
+            currentContext.selectedMood = noteData.mood || null;
+            document.querySelectorAll('.mood-btn').forEach(b => {
+                b.classList.remove('active');
+                if(b.dataset.mood === currentContext.selectedMood) b.classList.add('active');
+            });
+            
+            const overlay = document.getElementById('custom-modal-overlay');
+            const noteModal = document.getElementById('note-modal');
+            if (overlay) overlay.classList.add('open');
+            if (noteModal) noteModal.classList.add('open');
+            document.body.classList.add('modal-open');
         };
 
         function openActionSheet(habitId, dateStr) {
@@ -2077,8 +2053,9 @@
             canvas = document.getElementById('confetti-canvas');
             if (canvas) ctx = canvas.getContext('2d');
             
-            // Lösche den Service Worker, falls noch einer feststeckt
-            killServiceWorkers();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
             
             await checkImportHash();
             await loadData();
