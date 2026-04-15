@@ -9,13 +9,14 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <!-- INTEGRIERTE MANIFEST DATEI (Zwingt Android, es als APP zu erkennen) -->
-    <link rel="manifest" href="data:application/manifest+json;utf-8,%7B%22name%22%3A%22Gewohnheit%20Tracker%22%2C%22short_name%22%3A%22Habits%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bcharset%3Dutf-8%2C%253Csvg%2520xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%2520viewBox%3D%270%25200%2520100%2520100%27%253E%253Crect%2520width%3D%27100%27%2520height%3D%27100%27%2520fill%3D%27%25232563eb%27%2520rx%3D%2720%27%2F%253E%253Ctext%2520x%3D%2750%27%2520y%3D%2772%27%2520font-size%3D%2765%27%2520text-anchor%3D%27middle%27%2520fill%3D%27white%27%253E%25E2%259C%2593%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+    <!-- EIGENES APP ICON & MANIFEST (Verlinkt auf deine GitHub Dateien) -->
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
 
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '5.0';
+            var currentVersion = '4.6';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -347,7 +348,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v5.0</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.6</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -619,6 +620,27 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
+        function killServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+            if ('caches' in window) {
+                try {
+                    caches.keys().then(function(names) {
+                        for (let name of names) {
+                            caches.delete(name);
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+        }
+
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -870,7 +892,8 @@
             const p = document.getElementById('global-progress');
             if(!p) return;
             
-            let offset = 138.23; 
+            // Echter mathematischer Umfang 2 * PI * 26 = 163.36
+            let offset = 163.36; 
             if(activeHabits.length > 0) { 
                 const todayStr = getLocalIsoDate();
                 let done = 0; let total = 0;
@@ -881,7 +904,7 @@
                     }
                 });
                 const pct = total === 0 ? 0 : (done / total);
-                offset = 138.23 - (138.23 * pct);
+                offset = 163.36 - (163.36 * pct);
             }
             
             p.getBoundingClientRect(); 
@@ -1145,7 +1168,7 @@
 
         function updateGlobalAndSpecificRender() {
             render();
-            updateGlobalProgress(); 
+            updateGlobalProgress(); // Hier aufrufen, damit der Ring bei jedem Klick optisch gefüllt wird!
             if (currentFullscreenHabitId) {
                 const h = habits.find(x => x.id == currentFullscreenHabitId);
                 const container = document.getElementById('fullscreen-habit-content');
