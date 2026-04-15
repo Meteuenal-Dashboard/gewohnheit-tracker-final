@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
+    <!-- ANTI CACHE BEFEHLE -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
+    <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '4.2';
+            var currentVersion = '4.3';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -31,6 +33,7 @@
         })();
     </script>
 
+    <!-- PWA & iOS Kompatibilität -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -38,6 +41,7 @@
     
     <title>Gewohnheit Tracker Pro</title>
     
+    <!-- Externe Bibliotheken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -160,7 +164,7 @@
         .habit-actions-right { display: flex; gap: 4px; align-items: center; flex-shrink: 0; flex-wrap: nowrap; }
 
         /* BÜNDIGE STREAKS UND META INFOS (LISTEN ANSICHT) */
-        .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; }
+        .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; white-space: nowrap; }
         
         /* UNZERSTÖRBARE BÜNDIGKEIT AM UNTEREN RAND */
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; margin-top: auto; padding-top: 15px; width: 100%; }
@@ -211,7 +215,7 @@
         #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
         
         /* Streaks bündig links anzeigen im Grid */
-        #habit-list.grid-view .streak-container { margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
+        #habit-list.grid-view .streak-container { margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         
         /* Sämtliche Aktions-Buttons restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
@@ -239,7 +243,7 @@
         .action-sheet { position: fixed; bottom: -100%; left: 0; right: 0; background: var(--bg-card); border-radius: 24px 24px 0 0; padding: 20px 20px 40px 20px; z-index: 203; transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
         .action-sheet.open { bottom: 0; }
         .sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 3px; margin: 0 auto 15px auto; }
-        .sheet-btn { padding: 16px; border-radius: 14px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-align: center; background: var(--bg-body); color: var(--text-main); }
+        .sheet-btn { padding: 16px; border-radius: 14px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-align: center; background: var(--bg-body); color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 8px;}
         .sheet-btn.primary { background: var(--primary); color: white; }
         .sheet-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
 
@@ -371,7 +375,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.2</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.3</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -406,9 +410,15 @@
 
         <div class="settings-section">
             <span class="settings-label">Verwaltung</span>
-            <button class="btn-secondary" id="notes-overview-toggle" style="width:100%; margin-bottom: 10px;">📝 Notizen-Verzeichnis</button>
-            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 10px;">🗄️ Archiv & Mülleimer</button>
-            <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-bottom: 10px; color: var(--success); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05);">📊 Daten als Excel (CSV)</button>
+            <button class="btn-secondary" id="notes-overview-toggle" style="width:100%; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Notizen-Verzeichnis
+            </button>
+            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg> Archiv & Mülleimer
+            </button>
+            <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-bottom: 10px; color: var(--success); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); display:flex; align-items:center; justify-content:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Daten als Excel (CSV)
+            </button>
         </div>
         
         <button class="btn-primary" id="save-settings" style="width:100%; margin-top: 10px; padding: 16px;">Speichern & Schließen</button>
@@ -427,9 +437,18 @@
     <div class="action-sheet" id="action-sheet">
         <div class="sheet-handle"></div>
         <h3 id="sheet-title" style="text-align: center; margin-bottom: 10px; font-size: 1.1rem; color: var(--text-muted);">Aktion wählen</h3>
-        <button class="sheet-btn primary" id="sheet-btn-note">📝 Notiz & Mood schreiben</button>
-        <button class="sheet-btn" id="sheet-btn-freeze">❄️ Tag pausieren (Urlaub)</button>
-        <button class="sheet-btn danger" id="sheet-btn-clear">🧹 Eintrag löschen</button>
+        <button class="sheet-btn primary" id="sheet-btn-note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 
+            Notiz & Mood schreiben
+        </button>
+        <button class="sheet-btn" id="sheet-btn-freeze">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> 
+            Tag pausieren (Urlaub)
+        </button>
+        <button class="sheet-btn danger" id="sheet-btn-clear">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
+            Eintrag löschen
+        </button>
     </div>
 
     <div class="custom-modal" id="confirm-modal" style="text-align: center; max-width: 400px;">
@@ -508,11 +527,13 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
             <div class="custom-select-dropdown" id="custom-habit-select-dropdown">
-                </div>
+                <!-- Befüllt per JavaScript -->
+            </div>
         </div>
         
         <div id="yearly-calendar-container">
-            </div>
+            <!-- Befüllt per JavaScript -->
+        </div>
 
         <div class="modal-actions" style="margin-top: 25px;">
             <button class="btn-primary" id="close-stats" style="width: 100%; padding: 16px;">Schließen</button>
@@ -534,13 +555,17 @@
             <span id="sticker-placeholder-text" style="color: var(--text-muted); font-size: 0.8rem;">Kein Sticker gewählt</span>
         </div>
         <div class="sticker-controls">
-            <label for="sticker-upload" class="btn-secondary" style="flex:1; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0;">📷 Hochladen</label>
+            <label for="sticker-upload" class="btn-secondary" style="flex:1; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> 
+                Hochladen
+            </label>
             <button class="btn-secondary" id="delete-sticker-btn" style="color: var(--danger); display: none; margin:0;" onclick="removeCurrentSticker()">🗑️ Entfernen</button>
         </div>
 
         <span class="settings-label">Oder Kategorie wählen</span>
         <div class="category-grid" id="category-selector">
-            </div>
+            <!-- Befüllt per JS -->
+        </div>
 
         <div class="modal-actions">
             <button class="btn-secondary" id="cancel-edit">Abbrechen</button>
@@ -1061,6 +1086,10 @@
             
             const bStreak = calculateBestStreak(habit.history, habit.skipped);
             const cStreak = calculateCurrentStreak(habit.history, habit.skipped);
+            
+            // INTELLIGENTE PLATZSPAR-LOGIK FÜR STREAKS
+            const cStreakStr = cStreak >= 100 ? `🔥 ${cStreak}` : `🔥 ${cStreak} Aktuell`;
+            const bStreakStr = bStreak >= 100 ? `🏆 ${bStreak}` : `🏆 ${bStreak} Best`;
 
             return `
                 <div class="habit-card-wrapper" data-id="${habit.id}">
@@ -1069,7 +1098,7 @@
                             <div class="habit-header">
                                 <div class="habit-title-row">
                                     <div class="habit-title-container" style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; gap: 10px; width: 100%;">
-                                        <div class="habit-title-info">
+                                        <div class="habit-title-info" style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
                                             <div class="habit-title" style="margin-bottom: 0;">
                                                 <div class="habit-category-icon">
                                                     ${habit.customIcon ? `<img src="${habit.customIcon}">` : categoryObj.icon}
@@ -1077,8 +1106,8 @@
                                                 ${escapeHtml(habit.name)}
                                             </div>
                                             <div class="streak-container">
-                                                <span style="color: var(--warning);" title="Aktueller Streak">🔥 ${cStreak} Aktuell</span>
-                                                <span style="color: var(--primary);" title="Bester Streak">🏆 ${bStreak} Best</span>
+                                                <span style="color: var(--warning);" title="Aktueller Streak">${cStreakStr}</span>
+                                                <span style="color: var(--primary);" title="Bester Streak">${bStreakStr}</span>
                                             </div>
                                         </div>
                                         <div class="habit-actions-right">
@@ -1116,13 +1145,13 @@
                             <div style="position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%; width: 100%;">
                                 <h3 style="color: ${bgImage ? '#ffffff' : 'var(--text-main)'}; margin: 0; font-size: 1.4rem; text-align: center; text-shadow: ${bgImage ? '0 2px 5px rgba(0,0,0,0.8)' : 'none'};">${escapeHtml(habit.name)}</h3>
                                 <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: auto;">
-                                    <button class="btn-action" title="Bild wählen" onclick="triggerHabitImageUpload('${habit.id}')" style="background: ${bgImage ? 'rgba(255,255,255,0.2)' : 'var(--bg-body)'}; color: ${bgImage ? '#fff' : 'var(--text-main)'}; border: 1px solid ${bgImage ? 'rgba(255,255,255,0.5)' : 'var(--border)'}; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
+                                    <button class="icon-btn" title="Bild wählen" onclick="triggerHabitImageUpload('${habit.id}')" style="background: ${bgImage ? 'rgba(255,255,255,0.2)' : 'var(--bg-body)'}; color: ${bgImage ? '#fff' : 'var(--text-main)'}; border: 1px solid ${bgImage ? 'rgba(255,255,255,0.5)' : 'var(--border)'}; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                     </button>
-                                    ${bgImage ? `<button class="btn-action btn-delete" title="Bild löschen" onclick="deleteHabitImage('${habit.id}')" style="background: rgba(239, 68, 68, 0.8); color: #fff; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.5);">
+                                    ${bgImage ? `<button class="icon-btn" title="Bild löschen" onclick="deleteHabitImage('${habit.id}')" style="background: rgba(239, 68, 68, 0.8); color: #fff; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.5);">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     </button>` : ''}
-                                    <button class="btn-action" title="Zurückdrehen" onclick="document.getElementById('${habitInnerId}').classList.remove('flipped'); vibrate('light');" style="background: ${bgImage ? 'rgba(255,255,255,0.2)' : 'var(--bg-body)'}; color: ${bgImage ? '#fff' : 'var(--text-main)'}; border: 1px solid ${bgImage ? 'rgba(255,255,255,0.5)' : 'var(--border)'}; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
+                                    <button class="icon-btn" title="Zurückdrehen" onclick="document.getElementById('${habitInnerId}').classList.remove('flipped'); vibrate('light');" style="background: ${bgImage ? 'rgba(255,255,255,0.2)' : 'var(--bg-body)'}; color: ${bgImage ? '#fff' : 'var(--text-main)'}; border: 1px solid ${bgImage ? 'rgba(255,255,255,0.5)' : 'var(--border)'}; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
                                     </button>
                                 </div>
@@ -1148,33 +1177,6 @@
             if (overlay) overlay.classList.remove('open');
             document.body.classList.remove('modal-open');
             currentFullscreenHabitId = null;
-        };
-
-        window.openNoteDialog = function(habitId, dateStr) {
-            vibrate('light');
-            currentContext.habitId = habitId;
-            currentContext.dateStr = dateStr;
-            const habit = habits.find(h => h.id == habitId);
-            if (!habit) return;
-            
-            const noteData = habit.notes[dateStr] || {};
-            const dateLabel = dateStr.split('-').reverse().join('.');
-            document.getElementById('note-date-label').textContent = dateLabel + " - " + habit.name;
-            
-            const input = document.getElementById('note-input');
-            if(input) input.value = noteData.text || '';
-            
-            currentContext.selectedMood = noteData.mood || null;
-            document.querySelectorAll('.mood-btn').forEach(b => {
-                b.classList.remove('active');
-                if(b.dataset.mood === currentContext.selectedMood) b.classList.add('active');
-            });
-            
-            const overlay = document.getElementById('custom-modal-overlay');
-            const noteModal = document.getElementById('note-modal');
-            if (overlay) overlay.classList.add('open');
-            if (noteModal) noteModal.classList.add('open');
-            document.body.classList.add('modal-open');
         };
 
         function render() {
@@ -1392,8 +1394,14 @@
             
             const btnFreeze = document.getElementById('sheet-btn-freeze');
             if (btnFreeze) {
-                if (isSkipped) { btnFreeze.textContent = "▶️ Pause aufheben"; btnFreeze.dataset.action = "unfreeze"; }
-                else { btnFreeze.textContent = "❄️ Tag pausieren (Urlaub)"; btnFreeze.dataset.action = "freeze"; }
+                if (isSkipped) { 
+                    btnFreeze.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Pause aufheben'; 
+                    btnFreeze.dataset.action = "unfreeze"; 
+                }
+                else { 
+                    btnFreeze.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> Tag pausieren (Urlaub)'; 
+                    btnFreeze.dataset.action = "freeze"; 
+                }
             }
             
             const overlay = document.getElementById('custom-modal-overlay');
