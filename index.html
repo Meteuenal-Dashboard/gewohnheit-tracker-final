@@ -16,7 +16,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '4.6';
+            var currentVersion = '4.7';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -153,7 +153,7 @@
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; margin-top: auto; padding-top: 15px; width: 100%; }
         
         .habit-month-nav { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: fit-content; }
-        .habit-month-nav button { display: flex !important; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0 !important; }
+        .habit-month-nav button { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0 !important; }
         .habit-month-nav span { font-size: 0.9rem; font-weight: 700; text-align: center; white-space: nowrap !important; flex-shrink: 0 !important; padding: 0 4px; }
 
         .progress-bar-container { width: 100%; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); flex-grow: 1; min-width: 50px; margin-left: 0; }
@@ -161,6 +161,13 @@
 
         .btn-action { background: transparent; border: none; color: var(--text-muted); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
         .btn-action:active { background-color: var(--border); transform: scale(0.9); }
+
+        /* QUICK CHECK BUTTON */
+        .habit-quick-check { margin-left: auto; flex-shrink: 0; margin-right: 8px; display: flex; align-items: center; }
+        .btn-quick-check { background: var(--bg-body); border: 2px solid var(--border); color: var(--text-main); border-radius: 10px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); height: 32px; }
+        .btn-quick-check.checked { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 10px var(--primary-light); }
+        .btn-quick-check:active { transform: scale(0.9); }
+        #habit-list:not(.grid-view) .qc-text-grid { display: none; }
 
         /* CALENDAR GRID */
         .calendar-container { display: none; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
@@ -187,14 +194,20 @@
 
         /* PERFEKTES GRID VIEW */
         #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
-        #habit-list.grid-view .habit-card { padding: 12px; }
+        #habit-list.grid-view .habit-card { padding: 12px; position: relative; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
+        
+        #habit-list.grid-view .habit-title-row { padding-right: 60px; /* Platz für den Today-Button */ }
         #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; }
         #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; }
         #habit-list.grid-view .habit-title { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
         #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
         #habit-list.grid-view .streak-container { margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         #habit-list.grid-view .habit-actions-right { display: none !important; }
+        
+        #habit-list.grid-view .habit-quick-check { position: absolute; top: 12px; right: 12px; margin: 0; z-index: 10; }
+        #habit-list.grid-view .qc-text-grid { display: inline; }
+
         #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100%; padding-top: 10px !important; flex-shrink: 0; }
         #habit-list.grid-view .habit-month-nav { min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none; justify-content: flex-start; pointer-events: none; width: 100%; margin-bottom: 0;}
         #habit-list.grid-view .habit-month-nav button { display: none !important; }
@@ -217,7 +230,7 @@
         .action-sheet { position: fixed; bottom: -100%; left: 0; right: 0; background: var(--bg-card); border-radius: 24px 24px 0 0; padding: 20px 20px 40px 20px; z-index: 203; transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
         .action-sheet.open { bottom: 0; }
         .sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 3px; margin: 0 auto 15px auto; }
-        .sheet-btn { padding: 16px; border-radius: 14px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-align: center; background: var(--bg-body); color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .sheet-btn { padding: 16px; border-radius: 14px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-align: left; background: var(--bg-body); color: var(--text-main); display: flex; align-items: center; justify-content: flex-start; gap: 12px;}
         .sheet-btn.primary { background: var(--primary); color: white; }
         .sheet-btn.danger { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
 
@@ -278,7 +291,6 @@
         .mini-month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-align: center; z-index: 5;}
         .mini-month-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 5; align-content: start; }
         
-        /* Safari Grid Fix */
         .mini-day { border-radius: 2px; background: var(--border); opacity: 0.3; position: relative; width: 100%; min-height: 8px; aspect-ratio: 1; }
         .mini-day.empty { background: transparent; }
         .mini-day.checked { background: var(--primary); opacity: 1; }
@@ -348,7 +360,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.6</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.7</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -383,14 +395,14 @@
 
         <div class="settings-section">
             <span class="settings-label">Verwaltung</span>
-            <button class="btn-secondary" id="notes-overview-toggle" style="width:100%; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Notizen-Verzeichnis
+            <button class="btn-secondary" id="notes-overview-toggle" style="width:100%; margin-bottom: 10px; display:flex; align-items:center; justify-content:flex-start; gap:12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Notizen-Verzeichnis
             </button>
-            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg> Archiv & Mülleimer
+            <button class="btn-secondary" id="open-archive" style="width:100%; margin-bottom: 10px; display:flex; align-items:center; justify-content:flex-start; gap:12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg> Archiv & Mülleimer
             </button>
-            <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-bottom: 10px; color: var(--success); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); display:flex; align-items:center; justify-content:center; gap:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Daten als Excel (CSV)
+            <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-bottom: 10px; color: var(--success); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); display:flex; align-items:center; justify-content:flex-start; gap:12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Daten als Excel (CSV)
             </button>
         </div>
         
@@ -618,27 +630,6 @@
                 document.head.appendChild(metaTheme); 
             }
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
-        }
-
-        function killServiceWorkers() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for(let registration of registrations) {
-                            registration.unregister();
-                        }
-                    }).catch(function(err){});
-                } catch(e) {}
-            }
-            if ('caches' in window) {
-                try {
-                    caches.keys().then(function(names) {
-                        for (let name of names) {
-                            caches.delete(name);
-                        }
-                    }).catch(function(err){});
-                } catch(e) {}
-            }
         }
 
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
@@ -892,8 +883,7 @@
             const p = document.getElementById('global-progress');
             if(!p) return;
             
-            // Echter mathematischer Umfang 2 * PI * 26 = 163.36
-            let offset = 163.36; 
+            let offset = 138.23; 
             if(activeHabits.length > 0) { 
                 const todayStr = getLocalIsoDate();
                 let done = 0; let total = 0;
@@ -904,7 +894,7 @@
                     }
                 });
                 const pct = total === 0 ? 0 : (done / total);
-                offset = 163.36 - (163.36 * pct);
+                offset = 138.23 - (138.23 * pct);
             }
             
             p.getBoundingClientRect(); 
@@ -932,8 +922,32 @@
             updateGlobalAndSpecificRender();
         };
 
+        // --- QUICK CHECK (HEUTE) LOGIK ---
+        window.toggleToday = function(habitId) {
+            vibrate('light');
+            const date = getLocalIsoDate();
+            const habit = habits.find(h => h.id == habitId);
+            if (!habit) return;
+
+            if (habit.skipped.includes(date)) {
+                habit.skipped = habit.skipped.filter(d => d !== date);
+            }
+
+            const idx = habit.history.indexOf(date);
+            if (idx > -1) {
+                habit.history.splice(idx, 1);
+            } else {
+                habit.history.push(date);
+                fireConfetti();
+            }
+            saveData();
+            updateGlobalProgress();
+            updateGlobalAndSpecificRender();
+        };
+
         function showConfirmModal(title, text, confirmBtnText, actionFn) {
             vibrate('heavy');
+            pushHistoryState();
             document.getElementById('confirm-modal-title').textContent = title;
             document.getElementById('confirm-modal-text').textContent = text;
             document.getElementById('confirm-modal-ok').textContent = confirmBtnText;
@@ -946,7 +960,7 @@
             document.body.classList.add('modal-open');
         }
 
-        function closeConfirmModal() {
+        function closeConfirmModal(fromPopstate = false) {
             const modal = document.getElementById('confirm-modal');
             if (modal) modal.classList.remove('open');
             
@@ -957,6 +971,7 @@
                 document.body.classList.remove('modal-open');
             }
             confirmActionFn = null;
+            if (!fromPopstate) cleanHistoryState();
         }
 
         window.triggerHabitImageUpload = function(habitId) {
@@ -1002,6 +1017,7 @@
         function getHabitCardHTML(habit, index, activeHabitsLength, isFullscreenMode = false) {
             const formatter = new Intl.DateTimeFormat('de-DE', { month: 'long' });
             const todayStr = getLocalIsoDate();
+            const todayDateNum = new Date().getDate();
             
             if (!habitDisplayDates[habit.id]) habitDisplayDates[habit.id] = new Date();
             const displayDate = habitDisplayDates[habit.id];
@@ -1060,8 +1076,11 @@
             const bStreak = calculateBestStreak(habit.history, habit.skipped);
             const cStreak = calculateCurrentStreak(habit.history, habit.skipped);
             
-            const cStreakStr = cStreak >= 100 ? `🔥 ${cStreak}` : `🔥 ${cStreak} Aktuell`;
-            const bStreakStr = bStreak >= 100 ? `🏆 ${bStreak}` : `🏆 ${bStreak} Best`;
+            // INTELLIGENTE PLATZSPAR-LOGIK FÜR STREAKS
+            const cStreakStr = cStreak > 99 ? `🔥 ${cStreak}` : `🔥 ${cStreak} Aktuell`;
+            const bStreakStr = bStreak > 99 ? `🏆 ${bStreak}` : `🏆 ${bStreak} Best`;
+
+            const isTodayChecked = habit.history.includes(todayStr);
 
             return `
                 <div class="habit-card-wrapper" data-id="${habit.id}">
@@ -1069,9 +1088,9 @@
                         <div class="habit-card ${isExpanded}" data-id="${habit.id}">
                             <div class="habit-header">
                                 <div class="habit-title-row">
-                                    <div class="habit-title-container" style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; gap: 10px; width: 100%;">
+                                    <div class="habit-title-container">
                                         <div class="habit-title-info">
-                                            <div class="habit-title" style="margin-bottom: 0;">
+                                            <div class="habit-title">
                                                 <div class="habit-category-icon">
                                                     ${habit.customIcon ? `<img src="${habit.customIcon}">` : categoryObj.icon}
                                                 </div>
@@ -1081,6 +1100,11 @@
                                                 <span style="color: var(--warning);" title="Aktueller Streak">${cStreakStr}</span>
                                                 <span style="color: var(--primary);" title="Bester Streak">${bStreakStr}</span>
                                             </div>
+                                        </div>
+                                        <div class="habit-quick-check">
+                                            <button class="btn-quick-check ${isTodayChecked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleToday('${habit.id}')">
+                                                <span class="qc-text-grid">Today </span><span class="qc-day">${todayDateNum}</span>
+                                            </button>
                                         </div>
                                         <div class="habit-actions-right">
                                             ${!isFullscreenMode ? `
@@ -1136,6 +1160,7 @@
 
         window.openFullscreenHabit = function(id) {
             vibrate('light');
+            pushHistoryState();
             currentFullscreenHabitId = id;
             updateGlobalAndSpecificRender();
             const overlay = document.getElementById('fullscreen-habit-overlay');
@@ -1143,12 +1168,13 @@
             document.body.classList.add('modal-open');
         };
 
-        window.closeFullscreenHabit = function() {
+        window.closeFullscreenHabit = function(fromPopstate = false) {
             vibrate('light');
             const overlay = document.getElementById('fullscreen-habit-overlay');
             if (overlay) overlay.classList.remove('open');
             document.body.classList.remove('modal-open');
             currentFullscreenHabitId = null;
+            if (!fromPopstate) cleanHistoryState();
         };
 
         function render() {
@@ -1357,6 +1383,7 @@
 
         window.openNoteDialog = function(habitId, dateStr) {
             vibrate('light');
+            pushHistoryState();
             currentContext.habitId = habitId;
             currentContext.dateStr = dateStr;
             const habit = habits.find(h => h.id == habitId);
@@ -1383,6 +1410,7 @@
         };
 
         function openActionSheet(habitId, dateStr) {
+            pushHistoryState();
             currentContext = { ...currentContext, habitId, dateStr, selectedMood: null };
             const habit = habits.find(h => h.id == habitId);
             const isSkipped = habit.skipped.includes(dateStr);
@@ -1470,7 +1498,29 @@
             });
         }
 
-        function closeAllModals() {
+        // HISTORY API FÜR HARDWARE ZURÜCK-BUTTON
+        function pushHistoryState() {
+            if (!window.history.state || !window.history.state.isModal) {
+                window.history.pushState({isModal: true}, "modal");
+            }
+        }
+
+        function cleanHistoryState() {
+            if (window.history.state && window.history.state.isModal) {
+                window.history.back();
+            }
+        }
+
+        window.addEventListener('popstate', function(e) {
+            const panel = document.getElementById('settings-panel');
+            if (panel && panel.classList.contains('open')) {
+                toggleSettings(true); 
+            }
+            closeAllModals(true);
+            closeFullscreenHabit(true);
+        });
+
+        function closeAllModals(fromPopstate = false) {
             const overlay = document.getElementById('custom-modal-overlay');
             if (overlay && (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open'))) overlay.classList.remove('open');
             if (noteModal) noteModal.classList.remove('open'); 
@@ -1481,7 +1531,6 @@
             if (qrModal) qrModal.classList.remove('open'); 
             if (actionSheet) actionSheet.classList.remove('open');
             
-            // Kontext zurücksetzen
             currentContext = { habitId: null, dateStr: null, selectedMood: null, uploadHabitId: null, selectedCategory: 'anderes', currentSticker: null }; 
             
             if (!document.getElementById('confirm-modal') || !document.getElementById('confirm-modal').classList.contains('open')) {
@@ -1489,6 +1538,8 @@
                     document.body.classList.remove('modal-open');
                 }
             }
+
+            if (!fromPopstate) cleanHistoryState();
         }
 
         // --- ZENTRALE EVENT LISTENERS & STICKER VERARBEITUNG ---
@@ -1549,14 +1600,14 @@
                 vibrate('medium'); const habit = habits.find(h => h.id == currentContext.habitId); const action = e.target.dataset.action;
                 if(action === 'freeze') { habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped.push(currentContext.dateStr); }
                 else { habit.skipped = habit.skipped.filter(d => d !== currentContext.dateStr); }
-                saveData(); updateGlobalAndSpecificRender(); closeActionSheet();
+                saveData(); updateGlobalAndSpecificRender(); updateGlobalProgress(); closeActionSheet();
             });
             
             const sheetBtnClear = document.getElementById('sheet-btn-clear');
             if (sheetBtnClear) sheetBtnClear.addEventListener('click', () => {
                 vibrate('heavy'); const habit = habits.find(h => h.id == currentContext.habitId);
                 habit.history = habit.history.filter(d => d !== currentContext.dateStr); habit.skipped = habit.skipped.filter(d => d !== currentContext.dateStr); delete habit.notes[currentContext.dateStr];
-                saveData(); updateGlobalAndSpecificRender(); closeActionSheet();
+                saveData(); updateGlobalAndSpecificRender(); updateGlobalProgress(); closeActionSheet();
             });
 
             // ROBUSTER QR CODE (MAGIC SYNC)
@@ -1564,6 +1615,8 @@
             if (btnQrSync) btnQrSync.addEventListener('click', () => {
                 if(typeof LZString === 'undefined') { alert("Bitte lade die Seite mit Internet neu."); return; }
                 
+                pushHistoryState();
+
                 let optHabits = habits.map(h => ({ 
                     i: h.id, 
                     n: h.name, 
@@ -1627,7 +1680,7 @@
                 if (!name) return;
                 const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
                 habits.unshift({ id: newId, name: name, history: [], skipped: [], notes: {}, archived: false, image: null, category: 'anderes', customIcon: null });
-                habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); updateGlobalAndSpecificRender(); input.blur();
+                habitDisplayDates[newId] = new Date(); expandedHabits.add(newId); saveData(); input.value = ''; vibrate('light'); updateGlobalAndSpecificRender(); updateGlobalProgress(); input.blur();
             };
             if (addBtn) addBtn.addEventListener('click', addFn);
             const inputHabit = document.getElementById('new-habit-input');
@@ -1667,13 +1720,13 @@
                 // 3. Grid View Klick -> Öffnet Fullscreen
                 if (settings.isGridView && e.target.closest('#habit-list')) {
                     const cardWrapper = e.target.closest('.habit-card-wrapper');
-                    if (cardWrapper && !e.target.closest('.btn-action') && !e.target.closest('.expand-btn')) {
+                    if (cardWrapper && !e.target.closest('.btn-action') && !e.target.closest('.expand-btn') && !e.target.closest('.btn-quick-check')) {
                         openFullscreenHabit(cardWrapper.dataset.id);
                         return;
                     }
                 }
 
-                // 4. Tag abhaken (Funktioniert nun im Fullscreen und in der Liste!)
+                // 4. Tag abhaken (Kalender)
                 const dayCell = e.target.closest('.day-cell:not(.empty)');
                 if (dayCell) {
                     if (dayCell.dataset.preventClick === "true") { delete dayCell.dataset.preventClick; return; }
@@ -1695,14 +1748,15 @@
                         } 
                     }
                     
-                    saveData();
-                    updateGlobalAndSpecificRender();
+                    saveData(); updateGlobalProgress(); updateGlobalAndSpecificRender();
                     return;
                 }
                 
-                // 5. UMBENENNEN & BEARBEITEN (Aus der Liste oder dem Fullscreen Modal)
+                // 5. UMBENENNEN & BEARBEITEN
                 if (e.target.closest('.btn-edit')) { 
                     vibrate('light'); 
+                    pushHistoryState();
+
                     const wrapper = e.target.closest('.habit-card-wrapper') || e.target.closest('.habit-card');
                     const id = wrapper.dataset.id; 
                     const habit = habits.find(h => h.id == id); 
@@ -1748,7 +1802,7 @@
                         () => {
                             habit.archived = true;
                             if (currentFullscreenHabitId === id) closeFullscreenHabit();
-                            saveData(); updateGlobalAndSpecificRender();
+                            saveData(); updateGlobalAndSpecificRender(); updateGlobalProgress();
                         }
                     );
                 }
@@ -1846,10 +1900,10 @@
             document.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
             const statsToggle = document.getElementById('stats-toggle');
-            if (statsToggle) statsToggle.addEventListener('click', () => { vibrate('light'); updateStatsDashboard(); const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(statsModal) statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
+            if (statsToggle) statsToggle.addEventListener('click', () => { vibrate('light'); pushHistoryState(); updateStatsDashboard(); const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); if(statsModal) statsModal.classList.add('open'); document.body.classList.add('modal-open'); });
             
             const closeStatsX = document.getElementById('close-stats-x');
-            if (closeStatsX) closeStatsX.addEventListener('click', closeAllModals);
+            if (closeStatsX) closeStatsX.addEventListener('click', () => closeAllModals());
 
             const saveNoteBtn = document.getElementById('save-note');
             if (saveNoteBtn) saveNoteBtn.addEventListener('click', () => { 
@@ -1878,13 +1932,13 @@
                 closeAllModals(); 
             });
             
-            document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive, #close-qr, #close-all-notes').forEach(b => { if(b) b.addEventListener('click', closeAllModals); });
+            document.querySelectorAll('#cancel-note, #cancel-edit, #close-archive, #close-qr, #close-all-notes').forEach(b => { if(b) b.addEventListener('click', () => closeAllModals()); });
             
             const globalOverlay = document.getElementById('custom-modal-overlay');
-            if (globalOverlay) globalOverlay.addEventListener('click', closeAllModals);
+            if (globalOverlay) globalOverlay.addEventListener('click', () => closeAllModals());
 
             const confirmCancelBtn = document.getElementById('confirm-modal-cancel');
-            if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', closeConfirmModal);
+            if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', () => closeConfirmModal());
 
             const confirmOkBtn = document.getElementById('confirm-modal-ok');
             if (confirmOkBtn) confirmOkBtn.addEventListener('click', () => {
@@ -1892,17 +1946,29 @@
                 closeConfirmModal();
             });
 
-            const toggleSettings = () => { 
+            window.toggleSettings = (fromPopstate = false) => { 
                 const panel = document.getElementById('settings-panel');
                 const overlay = document.getElementById('settings-overlay');
+                const isOpening = !panel.classList.contains('open');
+                
+                if (isOpening && !fromPopstate) pushHistoryState();
+
                 if (panel) panel.classList.toggle('open'); 
                 if (overlay) overlay.classList.toggle('open'); 
-                if (panel && panel.classList.contains('open')) document.body.classList.add('modal-open');
-                else if (!document.getElementById('fullscreen-habit-overlay').classList.contains('open')) document.body.classList.remove('modal-open');
+                
+                if (isOpening) {
+                    document.body.classList.add('modal-open');
+                } else {
+                    if (!document.getElementById('fullscreen-habit-overlay').classList.contains('open')) {
+                        document.body.classList.remove('modal-open');
+                    }
+                    if (!fromPopstate) cleanHistoryState();
+                }
             };
+
             ['settings-toggle', 'profile-trigger', 'close-settings', 'settings-overlay'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.addEventListener('click', toggleSettings);
+                if (el) el.addEventListener('click', () => toggleSettings());
             });
 
             const themeToggle = document.getElementById('theme-toggle');
@@ -1947,6 +2013,7 @@
             const openArchiveBtn = document.getElementById('open-archive');
             if (openArchiveBtn) openArchiveBtn.addEventListener('click', () => { 
                 vibrate('light'); 
+                pushHistoryState();
                 renderArchiveManager();
                 const panel = document.getElementById('settings-panel'); if(panel) panel.classList.remove('open'); 
                 const sOverlay = document.getElementById('settings-overlay'); if(sOverlay) sOverlay.classList.remove('open'); 
@@ -1958,12 +2025,21 @@
             const notesOverviewToggle = document.getElementById('notes-overview-toggle');
             if (notesOverviewToggle) notesOverviewToggle.addEventListener('click', () => { 
                 vibrate('light'); 
+                pushHistoryState();
                 renderAllNotes(); 
                 const panel = document.getElementById('settings-panel'); if(panel) panel.classList.remove('open'); 
                 const sOverlay = document.getElementById('settings-overlay'); if(sOverlay) sOverlay.classList.remove('open'); 
                 const overlay = document.getElementById('custom-modal-overlay'); if(overlay) overlay.classList.add('open'); 
                 if(allNotesModal) allNotesModal.classList.add('open'); 
                 document.body.classList.add('modal-open'); 
+            });
+
+            // 0:00 UHR FIX: App beim Zurückkehren auf den neuesten Tag prüfen
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    updateGlobalProgress();
+                    updateGlobalAndSpecificRender();
+                }
             });
         }
 
@@ -2009,6 +2085,7 @@
             saveData(); 
             renderArchiveManager(); 
             updateGlobalAndSpecificRender(); 
+            updateGlobalProgress(); 
         };
 
         window.deleteHabit = (id) => { 
@@ -2021,6 +2098,7 @@
                     saveData(); 
                     renderArchiveManager();
                     updateGlobalAndSpecificRender();
+                    updateGlobalProgress();
                     if(document.getElementById('stats-modal') && document.getElementById('stats-modal').classList.contains('open')) updateStatsDashboard();
                 }
             );
