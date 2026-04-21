@@ -16,7 +16,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '5.5';
+            var currentVersion = '5.6';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -152,13 +152,12 @@
             align-items: center; 
             justify-content: center; 
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
-            position: relative; 
-            overflow: hidden; 
             flex-shrink: 0; 
         }
         .btn-quick-check:active { transform: scale(0.9); }
         .btn-quick-check.checked { 
             border-color: var(--primary); 
+            background: var(--bg-body); 
             box-shadow: 0 4px 10px var(--primary-light); 
         }
 
@@ -197,6 +196,17 @@
         
         #habit-list.grid-view .calendar-container { display: none !important; }
         #habit-list.grid-view .habit-card-inner.flipped { transform: none; }
+        
+        /* Sämtliche Aktions-Buttons und Pfeile restlos verstecken */
+        #habit-list.grid-view .habit-actions-right { display: none !important; }
+        #habit-list.grid-view .expand-btn { display: none !important; }
+        
+        /* Monat und Fortschrittsbalken PERFEKT BÜNDIG UND GANZ UNTEN FESTNAGELN */
+        #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100%; padding-top: 15px !important; flex-shrink: 0; }
+        #habit-list.grid-view .habit-month-nav { min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none; justify-content: flex-start; pointer-events: none; width: 100%; margin-bottom: 0;}
+        #habit-list.grid-view .habit-month-nav button { display: none !important; }
+        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.85rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+        #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; flex: none; height: 6px; }
 
         /* FULLSCREEN HABIT MODAL ("Wie eine App") */
         #fullscreen-habit-overlay {
@@ -342,7 +352,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v5.5</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v5.6</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -1093,28 +1103,29 @@
 
             if (isGrid) {
                 cardContentHTML = `
-                    <div class="habit-header" style="display: flex; flex-direction: column; flex-grow: 1; position: relative; min-width: 0;">
-                        <!-- Quick Check in the corner (absolute) -->
-                        <div style="position: absolute; top: 0px; right: 0px; display: flex; align-items: center; gap: 6px; z-index: 10;">
-                            <span style="font-size: 0.75rem; font-weight: 800; color: var(--primary);">Today</span>
-                            <button class="${buttonClass}" onclick="event.stopPropagation(); toggleToday('${habit.id}')" style="width: 32px; height: 32px; padding: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid ${isTodayChecked ? 'var(--primary)' : 'var(--border)'}; background: var(--bg-body); color: var(--text-main); font-weight: 800; font-size: 1.1rem; box-shadow: ${isTodayChecked ? '0 4px 10px var(--primary-light)' : 'none'}; cursor: pointer; transition: transform 0.2s;">
-                                <span>${checkContent}</span>
-                            </button>
-                        </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0;">
-                            <div class="habit-category-icon" style="width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+                    <div class="habit-header" style="display: flex; flex-direction: column; flex-grow: 1; min-width: 0;">
+                        <!-- Top Row: Icon & Quick Check -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: 8px;">
+                            <div class="habit-category-icon" style="width: 38px; height: 38px; border-radius: 10px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; background: var(--bg-body);">
                                 ${habit.customIcon ? `<img src="${habit.customIcon}" style="width: 100%; height: 100%; object-fit: contain;">` : categoryObj.icon}
                             </div>
-                            
-                            <div class="habit-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); word-break: break-word; line-height: 1.2; padding-right: 70px; min-height: 2.4em; min-width: 0;">
-                                ${escapeHtml(habit.name)}
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Today</span>
+                                <button class="${buttonClass}" onclick="event.stopPropagation(); toggleToday('${habit.id}')" style="width: 32px; height: 32px; padding: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 800; font-size: 1rem; transition: transform 0.2s;">
+                                    <span>${checkContent}</span>
+                                </button>
                             </div>
-                            
-                            <div class="streak-container" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 8px; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
-                                <span style="color: var(--warning);" title="Aktueller Streak">${cStreakStr}</span>
-                                <span style="color: var(--primary);" title="Bester Streak">${bStreakStr}</span>
-                            </div>
+                        </div>
+
+                        <!-- Title Row -->
+                        <div class="habit-title" style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); word-wrap: break-word; line-height: 1.25; margin-bottom: 4px; display: block;">
+                            ${escapeHtml(habit.name)}
+                        </div>
+                        
+                        <!-- Streak Row -->
+                        <div class="streak-container" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 0; align-items: center;">
+                            <span style="color: var(--warning);" title="Aktueller Streak">${cStreakStr}</span>
+                            <span style="color: var(--primary);" title="Bester Streak">${bStreakStr}</span>
                         </div>
                     </div>
 
@@ -1130,25 +1141,28 @@
                 `;
             } else {
                 cardContentHTML = `
-                    <div class="habit-header" style="display: flex; flex-direction: column; flex-grow: 1; width: 100%;">
-                        <div style="display: flex; gap: 15px; align-items: flex-start; width: 100%;">
+                    <div class="habit-header" style="display: flex; flex-direction: column; flex-grow: 1; width: 100%; min-width: 0;">
+                        <div style="display: flex; gap: 15px; align-items: stretch; width: 100%;">
                             
                             <!-- Left Column: Icon and Quick Check under it -->
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; min-width: 60px;">
-                                <div class="habit-category-icon" style="font-size: 1.2rem; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; width: 42px;">
+                                <div class="habit-category-icon" style="font-size: 1.2rem; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; background: var(--bg-body);">
                                     ${habit.customIcon ? `<img src="${habit.customIcon}" style="width: 100%; height: 100%; object-fit: contain;">` : categoryObj.icon}
                                 </div>
                                 ${!isFullscreenMode ? `
-                                    <button class="${buttonClass}" onclick="event.stopPropagation(); toggleToday('${habit.id}')" style="width: 32px; height: 32px; padding: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 800; font-size: 1.1rem; transition: transform 0.2s;">
-                                        <span>${checkContent}</span>
-                                    </button>
+                                    <div style="display: flex; align-items: center; justify-content: center;">
+                                        <button class="${buttonClass}" onclick="event.stopPropagation(); toggleToday('${habit.id}')" style="width: 32px; height: 32px; padding: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); background: var(--bg-body); color: var(--text-main); font-weight: 800; font-size: 1.1rem; transition: transform 0.2s;">
+                                            <span>${checkContent}</span>
+                                        </button>
+                                    </div>
                                 ` : ''}
                             </div>
 
                             <!-- Right Column: Title, Streaks, Actions -->
-                            <div style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; justify-content: flex-start;">
+                            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; justify-content: center;">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%;">
-                                    <div class="habit-title" style="margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; line-height: 1.2; padding-top: 4px;">
+                                    <!-- Title set to block to prevent squishing -->
+                                    <div class="habit-title" style="margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-wrap: break-word; letter-spacing: -0.3px; line-height: 1.2; display: block; flex: 1;">
                                         ${escapeHtml(habit.name)}
                                     </div>
                                     ${!isFullscreenMode ? `
@@ -1160,7 +1174,7 @@
                                     </div>
                                     ` : ''}
                                 </div>
-                                <div class="streak-container" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; white-space: nowrap; align-items: center; margin-left: 0; margin-top: 2px;">
+                                <div class="streak-container" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; white-space: nowrap; align-items: center; margin-left: 0; margin-top: 0px;">
                                     <span style="color: var(--warning);" title="Aktueller Streak">${cStreakStr}</span>
                                     <span style="color: var(--primary);" title="Bester Streak">${bStreakStr}</span>
                                 </div>
