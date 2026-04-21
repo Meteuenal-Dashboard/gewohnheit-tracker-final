@@ -16,7 +16,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '4.7';
+            var currentVersion = '4.8';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -131,7 +131,7 @@
         .habit-card-inner { display: flex; flex-direction: column; position: relative; width: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; flex-grow: 1; }
         .habit-card-inner.flipped { transform: rotateY(180deg); }
         
-        .habit-card { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--primary); backface-visibility: hidden; z-index: 2; transform: rotateY(0deg); }
+        .habit-card { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--primary); backface-visibility: hidden; z-index: 2; transform: rotateY(0deg); position: relative; }
         .habit-card-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotateY(180deg); z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow: hidden; background: var(--bg-card); border-radius: 20px; border: 1px solid var(--primary); box-shadow: var(--shadow); backface-visibility: hidden; }
 
         .habit-header { display: flex; flex-direction: column; flex-grow: 1; width: 100%; }
@@ -139,7 +139,8 @@
         .habit-title-container { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; gap: 10px; width: 100%; }
         .habit-title-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
         
-        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; margin-bottom: 0; display: flex; align-items: center; gap: 10px; }
+        .habit-title-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 0; }
+        .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; flex: 1; }
         .habit-category-icon { font-size: 1.2rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; flex-shrink: 0;}
         .habit-category-icon img { width: 100%; height: 100%; object-fit: contain; }
         
@@ -148,10 +149,22 @@
 
         .habit-actions-right { display: flex; gap: 4px; align-items: center; flex-shrink: 0; flex-wrap: nowrap; }
 
-        .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; white-space: nowrap; }
+        .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; white-space: nowrap; align-items: center;}
         
+        /* QUICK CHECK BUTTON */
+        .btn-quick-check { background: var(--bg-body); border: 2px solid var(--border); color: var(--text-main); border-radius: 10px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); height: 28px; position: relative; overflow: hidden; }
+        .btn-quick-check:active { transform: scale(0.9); }
+        .btn-quick-check.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); box-shadow: 0 2px 8px var(--primary-light); }
+        .btn-quick-check.checked::after { content: "✕"; position: absolute; font-size: 1.2rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; top: 0; left: 0;}
+        .btn-quick-check.checked span { opacity: 0.05; }
+        
+        /* Im Listen-Modus: Runder Button, nur Datum */
+        #habit-list:not(.grid-view) .btn-quick-check { border-radius: 50%; width: 32px; height: 32px; padding: 0; margin-top: 4px; }
+        #habit-list:not(.grid-view) .qc-text-today { display: none; }
+
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; margin-top: auto; padding-top: 15px; width: 100%; }
         
+        /* ZEMENTIERTE MONATS-PFEILE (Verhindert das Stapeln!) */
         .habit-month-nav { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center; gap: 4px; background: var(--bg-body); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; min-width: fit-content; }
         .habit-month-nav button { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-main); padding: 2px 6px; border-radius: 8px; transition: background 0.2s; flex-shrink: 0 !important; }
         .habit-month-nav span { font-size: 0.9rem; font-weight: 700; text-align: center; white-space: nowrap !important; flex-shrink: 0 !important; padding: 0 4px; }
@@ -161,13 +174,6 @@
 
         .btn-action { background: transparent; border: none; color: var(--text-muted); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
         .btn-action:active { background-color: var(--border); transform: scale(0.9); }
-
-        /* QUICK CHECK BUTTON */
-        .habit-quick-check { margin-left: auto; flex-shrink: 0; margin-right: 8px; display: flex; align-items: center; }
-        .btn-quick-check { background: var(--bg-body); border: 2px solid var(--border); color: var(--text-main); border-radius: 10px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); height: 32px; }
-        .btn-quick-check.checked { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 10px var(--primary-light); }
-        .btn-quick-check:active { transform: scale(0.9); }
-        #habit-list:not(.grid-view) .qc-text-grid { display: none; }
 
         /* CALENDAR GRID */
         .calendar-container { display: none; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
@@ -192,27 +198,40 @@
         .has-note::before { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; z-index: 2; box-shadow: 0 0 0 2px var(--bg-card); }
         .day-cell.checked.has-note::before, .day-cell.skipped.has-note::before { background-color: var(--warning); box-shadow: 0 0 0 2px var(--bg-card); }
 
-        /* PERFEKTES GRID VIEW */
+        /* PERFEKTES GRID VIEW (Ohne Lücken, exakt bündig ausgerichtet!) */
         #habit-list.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
-        #habit-list.grid-view .habit-card { padding: 12px; position: relative; }
+        #habit-list.grid-view .habit-card-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; perspective: none; }
+        #habit-list.grid-view .habit-card-inner { display: flex; flex-direction: column; flex: 1; transition: transform 0.2s; height: 100%; }
+        #habit-list.grid-view .habit-card { flex: 1; padding: 12px 12px 15px 12px; display: flex; flex-direction: column; justify-content: flex-start; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; height: 100%; position: relative; }
         #habit-list.grid-view .habit-card:active { transform: scale(0.96); }
         
-        #habit-list.grid-view .habit-title-row { padding-right: 60px; /* Platz für den Today-Button */ }
-        #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; }
-        #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; }
-        #habit-list.grid-view .habit-title { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
-        #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
-        #habit-list.grid-view .streak-container { margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        #habit-list.grid-view .habit-actions-right { display: none !important; }
+        #habit-list.grid-view .habit-header { display: flex; flex-direction: column; flex: 1 1 auto; height: 100%; }
+        #habit-list.grid-view .habit-title-row { display: flex; flex-direction: column; flex: 1; align-items: stretch; width: 100%; }
+        #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; flex: 1 1 auto; display: flex; }
+        #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 4px; flex: 1; display: flex; width: 100%; }
         
-        #habit-list.grid-view .habit-quick-check { position: absolute; top: 12px; right: 12px; margin: 0; z-index: 10; }
-        #habit-list.grid-view .qc-text-grid { display: inline; }
-
-        #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100%; padding-top: 10px !important; flex-shrink: 0; }
+        #habit-list.grid-view .habit-title-wrapper { margin-bottom: 0; padding-right: 30px; /* Platz für Button */ }
+        #habit-list.grid-view .habit-title { font-size: 0.95rem; }
+        #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
+        
+        /* Streaks bündig links anzeigen im Grid */
+        #habit-list.grid-view .streak-container { margin-top: 4px; margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
+        
+        /* Im Grid-Modus: Button in Ecke, mit Text "Today" */
+        #habit-list.grid-view .btn-quick-check { position: absolute; top: 12px; right: 12px; margin: 0; border-radius: 10px; width: auto; height: 28px; padding: 4px 8px; font-size: 0.75rem;}
+        #habit-list.grid-view .qc-text-today { display: inline; }
+        
+        /* Sämtliche Aktions-Buttons und Pfeile restlos verstecken */
+        #habit-list.grid-view .habit-actions-right { display: none !important; }
+        #habit-list.grid-view .expand-btn { display: none !important; }
+        
+        /* Monat und Fortschrittsbalken PERFEKT BÜNDIG UND GANZ UNTEN FESTNAGELN */
+        #habit-list.grid-view .habit-meta { margin-top: auto !important; flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100%; padding-top: 15px !important; flex-shrink: 0; }
         #habit-list.grid-view .habit-month-nav { min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none; justify-content: flex-start; pointer-events: none; width: 100%; margin-bottom: 0;}
         #habit-list.grid-view .habit-month-nav button { display: none !important; }
-        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.8rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
-        #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; height: 6px; }
+        #habit-list.grid-view .habit-month-nav span { text-align: left !important; font-size: 0.85rem; margin: 0 !important; padding: 0 !important; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+        #habit-list.grid-view .progress-bar-container { margin-left: 0 !important; width: 100%; flex: none; height: 6px; }
+        
         #habit-list.grid-view .calendar-container { display: none !important; }
         #habit-list.grid-view .habit-card-inner.flipped { transform: none; }
 
@@ -360,7 +379,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.7</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.8</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -632,6 +651,27 @@
             metaTheme.content = settings.theme === 'dark' ? '#0f172a' : settings.primaryColor;
         }
 
+        function killServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+            if ('caches' in window) {
+                try {
+                    caches.keys().then(function(names) {
+                        for (let name of names) {
+                            caches.delete(name);
+                        }
+                    }).catch(function(err){});
+                } catch(e) {}
+            }
+        }
+
         const DB_NAME = 'HabitTrackerProDB'; const STORE_NAME = 'appData';
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -883,7 +923,8 @@
             const p = document.getElementById('global-progress');
             if(!p) return;
             
-            let offset = 138.23; 
+            // Echter mathematischer Umfang 2 * PI * 26 = 163.36
+            let offset = 163.36; 
             if(activeHabits.length > 0) { 
                 const todayStr = getLocalIsoDate();
                 let done = 0; let total = 0;
@@ -894,7 +935,7 @@
                     }
                 });
                 const pct = total === 0 ? 0 : (done / total);
-                offset = 138.23 - (138.23 * pct);
+                offset = 163.36 - (163.36 * pct);
             }
             
             p.getBoundingClientRect(); 
@@ -1088,24 +1129,39 @@
                         <div class="habit-card ${isExpanded}" data-id="${habit.id}">
                             <div class="habit-header">
                                 <div class="habit-title-row">
-                                    <div class="habit-title-container">
+                                    <div class="habit-title-container" style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; gap: 10px; width: 100%;">
                                         <div class="habit-title-info">
-                                            <div class="habit-title">
+                                            <div class="habit-title-wrapper" style="display: flex; align-items: center; gap: 10px; width: 100%;">
                                                 <div class="habit-category-icon">
                                                     ${habit.customIcon ? `<img src="${habit.customIcon}">` : categoryObj.icon}
                                                 </div>
-                                                ${escapeHtml(habit.name)}
+                                                <div class="habit-title" style="flex: 1; min-width: 0; word-break: break-word; padding-right: 8px;">
+                                                    ${escapeHtml(habit.name)}
+                                                </div>
+                                                <!-- NEW: Today Quick Check in List Mode (Right of title) -->
+                                                ${!settings.isGridView && !isFullscreenMode ? `
+                                                    <div class="habit-quick-check">
+                                                        <button class="btn-quick-check ${isTodayChecked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleToday('${habit.id}')">
+                                                            <span class="qc-day">${todayDateNum}</span>
+                                                        </button>
+                                                    </div>
+                                                ` : ''}
                                             </div>
                                             <div class="streak-container">
                                                 <span style="color: var(--warning);" title="Aktueller Streak">${cStreakStr}</span>
                                                 <span style="color: var(--primary);" title="Bester Streak">${bStreakStr}</span>
                                             </div>
                                         </div>
+                                        
+                                        <!-- NEW: Today Quick Check in Grid Mode (Top Right) -->
+                                        ${settings.isGridView && !isFullscreenMode ? `
                                         <div class="habit-quick-check">
                                             <button class="btn-quick-check ${isTodayChecked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleToday('${habit.id}')">
-                                                <span class="qc-text-grid">Today </span><span class="qc-day">${todayDateNum}</span>
+                                                <span class="qc-text-today">Today </span><span class="qc-day">${todayDateNum}</span>
                                             </button>
                                         </div>
+                                        ` : ''}
+
                                         <div class="habit-actions-right">
                                             ${!isFullscreenMode ? `
                                             <button class="btn-action" title="Nach oben" onclick="moveHabit('${habit.id}', -1)" ${isFirst ? 'style="opacity:0.3; pointer-events:none;"' : ''}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
@@ -1175,6 +1231,9 @@
             document.body.classList.remove('modal-open');
             currentFullscreenHabitId = null;
             if (!fromPopstate) cleanHistoryState();
+            
+            // Re-render, damit die List-Ansicht/Grid-Ansicht wieder stimmt
+            updateGlobalAndSpecificRender();
         };
 
         function render() {
