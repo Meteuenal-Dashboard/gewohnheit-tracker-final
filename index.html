@@ -16,7 +16,7 @@
     <!-- AUTOMATISCHES UPDATE-SKRIPT -->
     <script>
         (function() {
-            var currentVersion = '4.8';
+            var currentVersion = '4.9';
             var lastVersion = localStorage.getItem('app_version');
             if (lastVersion !== currentVersion) {
                 localStorage.setItem('app_version', currentVersion);
@@ -139,7 +139,7 @@
         .habit-title-container { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; gap: 10px; width: 100%; }
         .habit-title-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
         
-        .habit-title-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 0; }
+        .habit-title-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 0; width: 100%; }
         .habit-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; user-select: none; flex: 1; }
         .habit-category-icon { font-size: 1.2rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; flex-shrink: 0;}
         .habit-category-icon img { width: 100%; height: 100%; object-fit: contain; }
@@ -151,16 +151,14 @@
 
         .streak-container { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: flex; gap: 12px; margin-left: 42px; white-space: nowrap; align-items: center;}
         
-        /* QUICK CHECK BUTTON */
-        .btn-quick-check { background: var(--bg-body); border: 2px solid var(--border); color: var(--text-main); border-radius: 10px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); height: 28px; position: relative; overflow: hidden; }
+        /* QUICK CHECK BUTTON (Viereckig, abgerundet) */
+        .habit-quick-check { margin-left: auto; flex-shrink: 0; display: flex; align-items: center; }
+        #habit-list:not(.grid-view) .habit-quick-check { margin-right: 8px; }
+        .btn-quick-check { background: var(--bg-body); border: 2px solid var(--border); color: var(--text-main); border-radius: 10px; width: 36px; height: 36px; padding: 0; font-size: 0.95rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; flex-shrink: 0; }
         .btn-quick-check:active { transform: scale(0.9); }
-        .btn-quick-check.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); box-shadow: 0 2px 8px var(--primary-light); }
-        .btn-quick-check.checked::after { content: "✕"; position: absolute; font-size: 1.2rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; top: 0; left: 0;}
+        .btn-quick-check.checked { background: var(--bg-card); border-color: var(--primary); color: var(--primary); box-shadow: 0 4px 10px var(--primary-light); }
+        .btn-quick-check.checked::after { content: "✕"; position: absolute; font-size: 1.4rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; top: 0; left: 0;}
         .btn-quick-check.checked span { opacity: 0.05; }
-        
-        /* Im Listen-Modus: Runder Button, nur Datum */
-        #habit-list:not(.grid-view) .btn-quick-check { border-radius: 50%; width: 32px; height: 32px; padding: 0; margin-top: 4px; }
-        #habit-list:not(.grid-view) .qc-text-today { display: none; }
 
         .habit-meta { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px; margin-top: auto; padding-top: 15px; width: 100%; }
         
@@ -210,16 +208,15 @@
         #habit-list.grid-view .habit-title-container { flex-direction: column; align-items: stretch; gap: 8px; flex: 1 1 auto; display: flex; }
         #habit-list.grid-view .habit-title-info { flex-direction: column; align-items: flex-start; gap: 4px; flex: 1; display: flex; width: 100%; }
         
-        #habit-list.grid-view .habit-title-wrapper { margin-bottom: 0; padding-right: 30px; /* Platz für Button */ }
-        #habit-list.grid-view .habit-title { font-size: 0.95rem; }
+        #habit-list.grid-view .habit-title-wrapper { margin-bottom: 0; padding-right: 42px; /* Verhindert einengen durch Button */ width: 100%; }
+        #habit-list.grid-view .habit-title { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
         #habit-list.grid-view .habit-category-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 1.3rem; }
         
         /* Streaks bündig links anzeigen im Grid */
-        #habit-list.grid-view .streak-container { margin-top: 4px; margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; }
+        #habit-list.grid-view .streak-container { margin-top: 4px; margin-left: 0 !important; width: 100%; justify-content: flex-start; gap: 8px; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         
-        /* Im Grid-Modus: Button in Ecke, mit Text "Today" */
-        #habit-list.grid-view .btn-quick-check { position: absolute; top: 12px; right: 12px; margin: 0; border-radius: 10px; width: auto; height: 28px; padding: 4px 8px; font-size: 0.75rem;}
-        #habit-list.grid-view .qc-text-today { display: inline; }
+        /* Quick Check Anpassung für Grid */
+        #habit-list.grid-view .habit-quick-check { position: absolute; top: 15px; right: 15px; margin: 0; z-index: 10; }
         
         /* Sämtliche Aktions-Buttons und Pfeile restlos verstecken */
         #habit-list.grid-view .habit-actions-right { display: none !important; }
@@ -379,7 +376,7 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-panel" id="settings-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
-            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.8</span></h2>
+            <h2 style="font-weight: 900; font-size: 1.5rem;">Einstellungen <span style="font-size:0.8rem; color:var(--text-muted);">v4.9</span></h2>
             <button class="icon-btn" id="close-settings">✕</button>
         </div>
 
@@ -1117,7 +1114,7 @@
             const bStreak = calculateBestStreak(habit.history, habit.skipped);
             const cStreak = calculateCurrentStreak(habit.history, habit.skipped);
             
-            // INTELLIGENTE PLATZSPAR-LOGIK FÜR STREAKS
+            // INTELLIGENTE PLATZSPAR-LOGIK FÜR STREAKS (Blendet Text ab 100 aus)
             const cStreakStr = cStreak > 99 ? `🔥 ${cStreak}` : `🔥 ${cStreak} Aktuell`;
             const bStreakStr = bStreak > 99 ? `🏆 ${bStreak}` : `🏆 ${bStreak} Best`;
 
@@ -1142,7 +1139,7 @@
                                                 ${!settings.isGridView && !isFullscreenMode ? `
                                                     <div class="habit-quick-check">
                                                         <button class="btn-quick-check ${isTodayChecked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleToday('${habit.id}')">
-                                                            <span class="qc-day">${todayDateNum}</span>
+                                                            <span>${todayDateNum}</span>
                                                         </button>
                                                     </div>
                                                 ` : ''}
@@ -1157,7 +1154,7 @@
                                         ${settings.isGridView && !isFullscreenMode ? `
                                         <div class="habit-quick-check">
                                             <button class="btn-quick-check ${isTodayChecked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleToday('${habit.id}')">
-                                                <span class="qc-text-today">Today </span><span class="qc-day">${todayDateNum}</span>
+                                                <span>${todayDateNum}</span>
                                             </button>
                                         </div>
                                         ` : ''}
@@ -2094,12 +2091,31 @@
             });
 
             // 0:00 UHR FIX: App beim Zurückkehren auf den neuesten Tag prüfen
+            let lastKnownDate = getLocalIsoDate();
+            
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
+                    const currentDate = getLocalIsoDate();
+                    if (currentDate !== lastKnownDate) {
+                        lastKnownDate = currentDate;
+                        updateGlobalProgress();
+                        updateGlobalAndSpecificRender();
+                    } else {
+                        updateGlobalProgress();
+                        updateGlobalAndSpecificRender();
+                    }
+                }
+            });
+
+            // Automatischer Reset Check jede Minute im Hintergrund
+            setInterval(() => {
+                const currentDate = getLocalIsoDate();
+                if (currentDate !== lastKnownDate) {
+                    lastKnownDate = currentDate;
                     updateGlobalProgress();
                     updateGlobalAndSpecificRender();
                 }
-            });
+            }, 60000);
         }
 
         function updateStickerPreview() {
